@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -10,10 +11,15 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const { userId } = await auth()
+  if (!userId) {
+    redirect("/company/sign-in")
+  }
+
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect("/sign-in")
+    redirect("/onboarding")
   }
 
   const workspaces: WorkspaceItem[] = []
@@ -64,7 +70,7 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <DynamicSidebar userData={userData} workspaces={workspaces} />
-      <SidebarInset className="bg-background flex flex-col flex-1 h-full min-h-screen">
+      <SidebarInset className="flex h-full min-h-screen flex-1 flex-col bg-background">
         {children}
       </SidebarInset>
     </SidebarProvider>

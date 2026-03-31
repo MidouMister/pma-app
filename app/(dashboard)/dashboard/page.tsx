@@ -1,11 +1,17 @@
+import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 
 export default async function DashboardRedirectHub() {
+  const { userId } = await auth()
+  if (!userId) {
+    redirect("/company/sign-in")
+  }
+
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect("/sign-in")
+    redirect("/onboarding")
   }
 
   if (user.role === "OWNER" && user.companyId) {
