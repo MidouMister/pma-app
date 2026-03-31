@@ -61,22 +61,22 @@ skill({ name: "nextjs-best-practices" })
 
 > **These rules apply to every agent on every task. Read them before touching any file.**
 
-### 1.1 Two Environments, Two Branches
+### 1.1 One Environment, Two Branches
 
-| Environment | Branch    | Vercel URL               | Purpose                       |
-| ----------- | --------- | ------------------------ | ----------------------------- |
-| Production  | `main`    | `pma.yourdomain.com`     | Live app — real users         |
-| Staging     | `staging` | `staging-pma.vercel.app` | Where all development happens |
+| Environment | Branch    | Vercel URL            | Purpose                            |
+| ----------- | --------- | --------------------- | ---------------------------------- |
+| Production  | `main`    | `pma.yourdomain.com`  | Live app — real users              |
+| Local       | `staging` | _(none — local only)_ | Integration branch, tested locally |
 
-Every push to `staging` triggers an automatic Vercel build on the staging URL.  
-Every merge into `main` triggers a production deploy.  
-They are fully isolated — separate Clerk apps, separate Supabase projects, separate Uploadthing apps.
+Only `main` is connected to Vercel for production deploys.  
+The `staging` branch is used locally for integration testing before merging to `main`.  
+They share the same Clerk, Supabase, and Uploadthing apps (one set of env vars).
 
 ### 1.2 Branch Structure
 
 ```
-main          ← production only. Never commit here directly.
-└── staging   ← all development lands here via PRs.
+main          ← production only. Never commit here directly. Vercel deploys from here.
+└── staging   ← integration branch. Merge features here, test locally, then merge to main.
       └── feature/your-task-name   ← where you actually write code.
 ```
 
@@ -156,7 +156,6 @@ add auth and phases and kanban and fix bugs
 - PR title = human-readable description of the feature/fix.
 - Before opening a PR, verify:
   - [ ] Branch is up to date with `staging` (`git rebase staging`)
-  - [ ] Vercel preview build passes (auto-built for every PR)
   - [ ] `pnpm typecheck` passes with no errors
   - [ ] `pnpm lint` passes with no errors
 
@@ -184,7 +183,7 @@ git push origin feature/task-name
 
 ### 1.6 Merging to Production
 
-Only after staging is confirmed working on the Vercel staging URL:
+Only after staging is confirmed working locally:
 
 ```bash
 git checkout main
