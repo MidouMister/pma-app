@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { ClerkProvider } from "@clerk/nextjs"
 import { Geist_Mono, Oxanium } from "next/font/google"
 
@@ -11,6 +12,20 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata: Metadata = {
+  title: "PMA — Gestion de projets BTP",
+  description:
+    "Plateforme de gestion de projets pour les entreprises de construction, travaux publics et ingénierie en Algérie.",
+  keywords: [
+    "gestion de projets",
+    "BTP",
+    "construction",
+    "Algérie",
+    "Gantt",
+    "Kanban",
+  ],
+}
 
 export default function RootLayout({
   children,
