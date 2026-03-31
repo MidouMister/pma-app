@@ -4,6 +4,8 @@ const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/unite(.*)",
   "/user(.*)",
+  "/company(.*)",
+  "/onboarding(.*)",
 ])
 
 const isPublicRoute = createRouteMatcher([
@@ -11,12 +13,14 @@ const isPublicRoute = createRouteMatcher([
   "/company/sign-in(.*)",
   "/company/sign-up(.*)",
   "/api/webhooks/clerk(.*)",
+  "/api/uploadthing(.*)",
 ])
 
 export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) {
     return
   }
+
   if (isProtectedRoute(req)) {
     await auth.protect()
   }
