@@ -4,7 +4,6 @@ const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/unite(.*)",
   "/user(.*)",
-  "/onboarding(.*)",
 ])
 
 const isPublicRoute = createRouteMatcher([
