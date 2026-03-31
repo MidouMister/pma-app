@@ -38,7 +38,7 @@ export default async function DashboardLayout({
         select: { id: true, name: true },
       })
 
-      units.forEach((unit) => {
+      units.forEach((unit: { id: string; name: string }) => {
         workspaces.push({
           id: unit.id,
           name: unit.name,
