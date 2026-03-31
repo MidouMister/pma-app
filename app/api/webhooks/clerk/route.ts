@@ -3,6 +3,11 @@ import { headers } from "next/headers"
 import { type WebhookEvent, type UserJSON } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 
+type TransactionClient = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>
+
 export async function POST(req: Request) {
   const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
@@ -82,7 +87,7 @@ async function handleUserCreated(data: UserJSON) {
   })
 
   if (pendingInvitation) {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: TransactionClient) => {
       await tx.user.create({
         data: {
           clerkId,
