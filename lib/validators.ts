@@ -110,6 +110,13 @@ export const clientSchema = z.object({
   companyId: z.string().uuid("Entreprise invalide"),
 })
 
+export const sendInvitationSchema = z.object({
+  email: z.string().email("Email invalide"),
+  unitId: z.string().uuid("Unité invalide"),
+  role: z.enum(["ADMIN", "USER"]).default("USER"),
+  jobTitle: z.string().max(100).optional().nullable(),
+})
+
 export const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
   unitId: z.string().uuid("Unité invalide"),
@@ -145,6 +152,67 @@ export const tagSchema = z.object({
   color: z.string().min(4, "Couleur invalide").max(20),
   unitId: z.string().uuid("Unité invalide"),
 })
+
+export const createUnitSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(255),
+  address: z
+    .string()
+    .min(5, "L'adresse doit contenir au moins 5 caractères")
+    .max(500),
+  phone: z.string().min(8, "Le numéro de téléphone est invalide").max(20),
+  email: z.string().email("Email invalide"),
+  logo: z.string().url("URL invalide").optional().or(z.literal("")),
+  companyId: z.string().uuid("Entreprise invalide"),
+})
+
+export const updateUnitSchema = z.object({
+  id: z.string().uuid("Identifiant invalide"),
+  name: z
+    .string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(255),
+  address: z
+    .string()
+    .min(5, "L'adresse doit contenir au moins 5 caractères")
+    .max(500),
+  phone: z.string().min(8, "Le numéro de téléphone est invalide").max(20),
+  email: z.string().email("Email invalide"),
+  logo: z.string().url("URL invalide").optional().or(z.literal("")),
+  companyId: z.string().uuid("Entreprise invalide"),
+})
+
+export const updateCompanySchema = z.object({
+  name: z
+    .string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(255),
+  companyEmail: z.string().email("Email invalide"),
+  companyAddress: z
+    .string()
+    .min(5, "L'adresse doit contenir au moins 5 caractères")
+    .max(500),
+  companyPhone: z
+    .string()
+    .min(8, "Le numéro de téléphone est invalide")
+    .max(20),
+  state: z.string().min(1, "La wilaya est requise"),
+  formJur: z.string().min(1, "La forme juridique est requise"),
+  nif: z.string().min(1, "Le NIF est requis"),
+  secteur: z.string().min(1, "Le secteur est requis"),
+  logo: z.string().url("URL invalide").optional().or(z.literal("")),
+  productionAlertThreshold: z
+    .number()
+    .int("Doit être un nombre entier")
+    .min(1, "Le seuil minimum est 1")
+    .max(100, "Le seuil maximum est 100"),
+})
+
+export type CreateUnitFormData = z.infer<typeof createUnitSchema>
+export type UpdateUnitFormData = z.infer<typeof updateUnitSchema>
+export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>
 
 export type CompanyFormData = z.infer<typeof companySchema>
 export type UnitFormData = z.infer<typeof unitSchema>

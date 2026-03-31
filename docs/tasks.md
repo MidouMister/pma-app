@@ -228,56 +228,61 @@
 
 ## Milestone 4: Company & Unit Management
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-03-31`
 **Depends on:** Milestone 3 (onboarding creates company/unit)
 **Goal:** OWNER manages company, units, team, and billing. ADMIN manages their unit.
 
 ### 4.1 — Company Dashboard
 
-- [ ] Create `app/(dashboard)/company/[companyId]/page.tsx` — KPI cards:
+- [x] Create `app/(dashboard)/company/[companyId]/page.tsx` — KPI cards:
   - Total units, total projects, total members, total contract value (TTC), active projects count
-  - Units overview list with project count per unit (COMP-05)
+  - Units overview list with project count per unit (COMP-05) ✅ 2026-03-31
 
 ### 4.2 — Company Settings
 
-- [ ] Create `app/(dashboard)/company/[companyId]/settings/page.tsx` (COMP-01):
+- [x] Create `app/(dashboard)/company/[companyId]/settings/page.tsx` (COMP-01): ✅ 2026-03-31
   - Edit: name, logo (Uploadthing), address, phone, email, formJur, NIF, sector, wilaya
   - Edit: `productionAlertThreshold` (1-100 slider/input) (PROD-09)
-- [ ] Create `actions/company.ts` — `updateCompany()` server action
+- [x] Create `actions/company.ts` — `updateCompany()` server action ✅ 2026-03-31
 
-### 4.3 — Billing Page
+### 4.3 — Billing Page ✅ 2026-03-31
 
-- [ ] Create `app/(dashboard)/company/[companyId]/settings/billing/page.tsx` (SUB-08):
+- [x] Create `app/(dashboard)/company/[companyId]/settings/billing/page.tsx` (SUB-08): ✅ 2026-03-31
   - Current plan name and tier
   - Usage vs limits: units, projects, members, tasks per project
   - Trial countdown (if status=TRIAL): days remaining until expiry
   - Upgrade CTA button (SUB-04): opens upgrade request form (plan picker, payment method, contact)
+- [x] Create `components/company/upgrade-request-dialog.tsx` — Client component for upgrade request form ✅ 2026-03-31
+- [x] Create `actions/subscription.ts` — `submitUpgradeRequest()` server action ✅ 2026-03-31
+- [x] Add `UpgradeRequest` model to Prisma schema ✅ 2026-03-31
 
-### 4.4 — Units Management
+### 4.4 — Units Management ✅ 2026-03-31
 
-- [ ] Create `app/(dashboard)/company/[companyId]/units/page.tsx` (UNIT-01, UNIT-05):
+- [x] Create `app/(dashboard)/company/[companyId]/units/page.tsx` (UNIT-01, UNIT-05): ✅ 2026-03-31
   - List all units with name, admin, member count, project count
   - Create unit button (checks Plan.maxUnits before allowing — BR-05)
   - Delete unit with confirmation dialog (UNIT-06)
-- [ ] Create `actions/unit.ts` — `createUnit()`, `updateUnit()`, `deleteUnit()` server actions
+- [x] Create `actions/unit.ts` — `createUnit()`, `updateUnit()`, `deleteUnit()` server actions ✅ 2026-03-31
   - **CRITICAL** `createUnit` must check `Plan.maxUnits` limit (BR-05)
   - **CRITICAL** `deleteUnit` cascades to all projects, tasks, clients, members (UNIT-06)
 
 ### 4.5 — Company Team Page
 
-- [ ] Create `app/(dashboard)/company/[companyId]/users/page.tsx` (INV-09):
+- [x] Create `app/(dashboard)/company/[companyId]/users/page.tsx` (INV-09): ✅ 2026-03-31
   - Table of all members across all units with: name, email, role, unit, joined date
   - Pending invitations list
   - Invite member button with unit picker + role picker
 
-### 4.6 — Unit Pages
+### 4.6 — Unit Pages ✅ 2026-03-31
 
-- [ ] Create `app/(dashboard)/unite/[unitId]/page.tsx` — Unit Dashboard:
+- [x] Create `app/(dashboard)/unite/[unitId]/page.tsx` — Unit Dashboard: ✅ 2026-03-31
   - Unit KPIs: projects count, active projects, team size, total contract value
   - Recent activity feed
-- [ ] Create `app/(dashboard)/unite/[unitId]/settings/page.tsx` — Unit Settings:
-  - Edit unit name, logo, address, phone, email
-- [ ] Create `app/(dashboard)/unite/[unitId]/members/page.tsx` — Unit Members (INV-01 to INV-09):
+  - Recent projects (last 5)
+- [x] Create `app/(dashboard)/unite/[unitId]/loading.tsx` — Loading skeleton ✅ 2026-03-31
+- [x] Create `app/(dashboard)/unite/[unitId]/settings/page.tsx` — Unit Settings: ✅ 2026-03-31
+  - Edit unit name, logo (UploadThing), address, phone, email
+- [x] Create `app/(dashboard)/unite/[unitId]/members/page.tsx` — Unit Members (INV-01 to INV-09): ✅ 2026-03-31
   - List unit members with role, joined date
   - Invite member form (email + role)
   - Remove member button (BR-16: data retained, access revoked)
@@ -286,7 +291,7 @@
 
 ### 4.7 — Invitation Server Actions
 
-- [ ] Create `actions/invitation.ts`:
+- [x] Create `actions/invitation.ts`: ✅ 2026-03-31
   - `sendInvitation()` — create Invitation record, send email via Clerk (INV-02)
   - `revokeInvitation()` — set status to EXPIRED (INV-06)
   - **CRITICAL** Reject duplicate invitations to same email within same unit (INV-04)
