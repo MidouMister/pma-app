@@ -1,6 +1,6 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
+import { auth, clerkClient } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { companySchema, unitSchema, invitationSchema } from "@/lib/validators"
 import { revalidatePath } from "next/cache"
@@ -14,17 +14,36 @@ type OnboardingInput = {
 
 export async function completeOnboarding(data: OnboardingInput) {
   try {
-    const { userId } = await auth()
+    const { userId, sessionClaims } = await auth()
     if (!userId) {
       return { success: false, error: "Non autorisé" }
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     })
 
+    // User doesn't exist yet — Clerk webhook hasn't fired.
+    // Create the user eagerly from Clerk's Backend API.
     if (!user) {
-      return { success: false, error: "Utilisateur non trouvé" }
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(userId)
+      const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress
+
+      if (!primaryEmail) {
+        return { success: false, error: "Impossible de récupérer l'email" }
+      }
+
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: primaryEmail,
+          name:
+            [clerkUser.firstName, clerkUser.lastName]
+              .filter(Boolean)
+              .join(" ") || primaryEmail,
+        },
+      })
     }
 
     if (user.companyId) {
@@ -113,7 +132,7 @@ export async function completeOnboarding(data: OnboardingInput) {
           if (inviteValidation.success) {
             const token = randomBytes(32).toString("hex")
             const expiresAt = new Date()
-            expiresAt.setDate(expiresAt.getDate() + 30)
+            expiresAt.setDate(expiresAt.getDate() + 7)
 
             await tx.invitation.create({
               data: {
