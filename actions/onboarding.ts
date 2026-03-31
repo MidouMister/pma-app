@@ -1,6 +1,7 @@
 "use server"
 
 import { auth } from "@clerk/nextjs/server"
+import { type PrismaClient } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { companySchema, unitSchema, invitationSchema } from "@/lib/validators"
 import { revalidatePath } from "next/cache"
@@ -53,92 +54,104 @@ export async function completeOnboarding(data: OnboardingInput) {
     const companyData = companyValidation.data
     const unitData = unitValidation.data
 
-    const result = await prisma.$transaction(async (tx) => {
-      const company = await tx.company.create({
-        data: {
-          name: companyData.name,
-          companyEmail: companyData.companyEmail,
-          companyAddress: companyData.companyAddress,
-          companyPhone: companyData.companyPhone,
-          state: companyData.state,
-          formJur: companyData.formJur,
-          registre: companyData.registre,
-          nif: companyData.nif,
-          secteur: companyData.secteur,
-          logo: companyData.logo ?? "",
-          ownerId: user.id,
-        },
-      })
-
-      const unit = await tx.unit.create({
-        data: {
-          name: unitData.name,
-          address: unitData.address,
-          phone: unitData.phone,
-          email: unitData.email,
-          companyId: company.id,
-          adminId: user.id,
-        },
-      })
-
-      const starterPlan = await tx.plan.findFirst({
-        where: { name: "Starter" },
-      })
-
-      if (starterPlan) {
-        const now = new Date()
-        const endAt = new Date(now)
-        endAt.setMonth(endAt.getMonth() + 2)
-
-        await tx.subscription.create({
+    const result = await prisma.$transaction(
+      async (
+        tx: Omit<
+          PrismaClient,
+          | "$connect"
+          | "$disconnect"
+          | "$on"
+          | "$transaction"
+          | "$use"
+          | "$extends"
+        >
+      ) => {
+        const company = await tx.company.create({
           data: {
-            companyId: company.id,
-            planId: starterPlan.id,
-            startAt: now,
-            endAt,
-            price: starterPlan.priceDA,
-            status: "TRIAL",
+            name: companyData.name,
+            companyEmail: companyData.companyEmail,
+            companyAddress: companyData.companyAddress,
+            companyPhone: companyData.companyPhone,
+            state: companyData.state,
+            formJur: companyData.formJur,
+            registre: companyData.registre,
+            nif: companyData.nif,
+            secteur: companyData.secteur,
+            logo: companyData.logo ?? "",
+            ownerId: user.id,
           },
         })
-      }
 
-      if (data.invites && data.invites.length > 0) {
-        for (const invite of data.invites) {
-          const inviteValidation = invitationSchema.safeParse({
-            email: invite.email,
-            role: invite.role,
-            unitId: unit.id,
+        const unit = await tx.unit.create({
+          data: {
+            name: unitData.name,
+            address: unitData.address,
+            phone: unitData.phone,
+            email: unitData.email,
+            companyId: company.id,
+            adminId: user.id,
+          },
+        })
+
+        const starterPlan = await tx.plan.findFirst({
+          where: { name: "Starter" },
+        })
+
+        if (starterPlan) {
+          const now = new Date()
+          const endAt = new Date(now)
+          endAt.setMonth(endAt.getMonth() + 2)
+
+          await tx.subscription.create({
+            data: {
+              companyId: company.id,
+              planId: starterPlan.id,
+              startAt: now,
+              endAt,
+              price: starterPlan.priceDA,
+              status: "TRIAL",
+            },
           })
+        }
 
-          if (inviteValidation.success) {
-            const token = randomBytes(32).toString("hex")
-            const expiresAt = new Date()
-            expiresAt.setDate(expiresAt.getDate() + 30)
-
-            await tx.invitation.create({
-              data: {
-                email: invite.email,
-                token,
-                expiresAt,
-                unitId: unit.id,
-                companyId: company.id,
-                role: invite.role,
-              },
+        if (data.invites && data.invites.length > 0) {
+          for (const invite of data.invites) {
+            const inviteValidation = invitationSchema.safeParse({
+              email: invite.email,
+              role: invite.role,
+              unitId: unit.id,
             })
+
+            if (inviteValidation.success) {
+              const token = randomBytes(32).toString("hex")
+              const expiresAt = new Date()
+              expiresAt.setDate(expiresAt.getDate() + 30)
+
+              await tx.invitation.create({
+                data: {
+                  email: invite.email,
+                  token,
+                  expiresAt,
+                  unitId: unit.id,
+                  companyId: company.id,
+                  role: invite.role,
+                },
+              })
+            }
           }
         }
+
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            companyId: company.id,
+            role: "OWNER",
+          },
+        })
+
+        return { companyId: company.id, unitId: unit.id }
       }
-
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          companyId: company.id,
-          role: "OWNER",
-        },
-      })
-
-      return { companyId: company.id, unitId: unit.id }
-    })
+    )
 
     revalidatePath("/dashboard")
 
