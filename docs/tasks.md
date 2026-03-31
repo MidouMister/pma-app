@@ -203,6 +203,29 @@
 
 ---
 
+## Post-Milestone Fixes
+
+### Fix: Sign-Up → Onboarding Redirect Loop (2026-03-31)
+
+**Problem:** After sign-up, users redirected to `/company/sign-in` instead of `/onboarding` due to race condition between Clerk auth and Prisma User creation via webhook.
+
+**Root Cause:** Dashboard layout called `getCurrentUser()` (which queries Prisma) before checking if Clerk had authenticated the user. Webhook hadn't processed yet → no Prisma record → redirect to sign-in.
+
+**Fix:** Applied two-step auth guard pattern across all protected pages:
+
+1. Check Clerk `auth()` first → redirect to `/company/sign-in` if unauthenticated
+2. Then check Prisma record → redirect to `/onboarding` if authenticated but no user record
+
+**Files changed:**
+
+- `app/(dashboard)/layout.tsx` — Clerk auth check before Prisma, fallback to `/onboarding`
+- `app/(dashboard)/onboarding/page.tsx` — Clerk auth check, allow through if no Prisma user (new user)
+- `app/(dashboard)/dashboard/page.tsx` — Clerk auth check before Prisma, fallback to `/onboarding`
+
+**Branch:** `fix/sign-up-redirect-loop` → PR target: `staging`
+
+---
+
 ## Milestone 4: Company & Unit Management
 
 **Status:** `[ ] NOT STARTED`
