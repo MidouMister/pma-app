@@ -1,0 +1,540 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  USER
+}
+
+enum Status {
+  New
+  InProgress
+  Pause
+  Complete
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum NotificationType {
+  INVITATION
+  PROJECT
+  TASK
+  CLIENT
+  PHASE
+  TEAM
+  LANE
+  TAG
+  PRODUCTION
+  GENERAL
+}
+
+enum TaskDependencyType {
+  finishToStart
+  startToStart
+  finishToFinish
+  startToFinish
+}
+
+enum SubPhaseStatus {
+  TODO
+  COMPLETED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  GRACE
+  READONLY
+  SUSPENDED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  name      String
+  email     String   @unique
+  role      Role     @default(USER)
+  jobeTitle String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedCompany  Company?    @relation("OwnerCompany")
+  admin         Unit?       @relation(fields: [adminID], references: [id])
+  adminID       String?     @unique
+  unit          Unit?       @relation("UnitMember", fields: [unitId], references: [id], onDelete: Cascade)
+  unitId        String?
+  company       Company?    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String?
+
+  Notification  Notification[]
+  Team          TeamMember[]
+  Task          Task[]
+  TimeEntry     TimeEntry[]
+  TaskComment   TaskComment[]  @relation("CommentAuthor")
+  ActivityLog   ActivityLog[]
+
+  @@index([unitId])
+  @@index([companyId])
+}
+
+model Company {
+  id                       String   @id @default(uuid())
+  name                     String
+  companyEmail             String   @unique
+  companyAddress           String
+  companyPhone             String
+  companyOwner             User     @relation("OwnerCompany", fields: [ownerId], references: [id])
+  ownerId                  String   @unique
+  logo                     String
+  state                    String
+  formJur                  String
+  registre                 String
+  nif                      String
+  secteur                  String
+  productionAlertThreshold Int     @default(80)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  subscription  Subscription?
+  units         Unit[]
+  invitations   Invitation[]
+  users         User[]
+  Notification  Notification[]
+  TaskComment   TaskComment[]
+  TaskMention   TaskMention[]
+  ActivityLog   ActivityLog[]
+  Project       Project[]
+  Client        Client[]
+  Task          Task[]
+  TimeEntry     TimeEntry[]
+
+  @@index([ownerId])
+}
+
+model Subscription {
+  id         String             @id @default(uuid())
+  startAt    DateTime
+  endAt      DateTime
+  price      Float
+  status     SubscriptionStatus
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  Company    Company            @relation(fields: [companyId], references: [id])
+  companyId  String             @unique
+  Plan       Plan              @relation(fields: [planId], references: [id])
+  planId     String
+
+  @@index([companyId])
+}
+
+model Plan {
+  id                 String          @id @default(uuid())
+  name               String
+  priceDA            Float
+  maxUnits           Int?
+  maxProjects        Int?
+  maxTasksPerProject Int?
+  maxMembers         Int?
+  subscriptions      Subscription[]
+}
+
+model Invitation {
+  id                String           @id @default(uuid())
+  email             String
+  token             String           @unique
+  expiresAt         DateTime
+  Unit              Unit             @relation(fields: [unitId], references: [id])
+  unitId            String
+  status            InvitationStatus @default(PENDING)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  Company           Company          @relation(fields: [companyId], references: [id])
+  companyId         String
+  role              Role             @default(USER)
+  jobeTilte         String?
+  clerkInvitationId String?
+
+  @@unique([email, unitId])
+  @@index([companyId])
+  @@index([unitId])
+}
+
+model Unit {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  phone     String
+  email     String   @unique
+  logo      String?
+  Company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  admin     User?
+  adminId   String?  @unique
+  members   User[]    @relation("UnitMember")
+  invitations Invitation[]
+  projects  Project[]
+  clients   Client[]
+  Notification Notification[]
+  Task      Task[]
+  Lane      Lane[]
+  Tag       Tag[]
+  ActivityLog ActivityLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([adminId])
+}
+
+model Notification {
+  id           String           @id @default(uuid())
+  notification String
+  companyId    String
+  unitId       String?
+  userId       String
+  targetRole   Role?
+  targetUserId String?
+  read         Boolean          @default(false)
+  type         NotificationType @default(GENERAL)
+
+  User    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Unit    Unit?   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([unitId])
+  @@index([userId])
+  @@index([targetRole])
+  @@index([targetUserId])
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  code        String
+  type        String
+  montantHT   Float
+  montantTTC  Float
+  ods         DateTime?
+  delaiMonths Int      @default(0)
+  delaiDays   Int      @default(0)
+  status      Status   @default(New)
+  signe       Boolean  @default(false)
+  Client      Client   @relation(fields: [clientId], references: [id])
+  clientId    String
+  Unit        Unit     @relation(fields: [unitId], references: [id])
+  unitId      String
+  companyId   String
+  Company     Company  @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  phases      Phase[]
+  team        Team?
+  GanttMarker GanttMarker[]
+  TimeEntry   TimeEntry[]
+  Task        Task[]
+
+  @@index([unitId])
+  @@index([companyId])
+}
+
+model Team {
+  id        String       @id @default(uuid())
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String       @unique
+  members   TeamMember[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  role      String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+}
+
+model Phase {
+  id        String   @id @default(uuid())
+  name      String
+  code      String
+  montantHT Float
+  startDate DateTime?
+  endDate   DateTime?
+  status    Status   @default(New)
+  obs       String?
+  progress  Int      @default(0)
+  duration  Int?
+
+  Project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  Product   Product?
+  SubPhases SubPhase[]
+  Task      Task[]
+  Production Production[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([startDate, endDate])
+}
+
+model SubPhase {
+  id       String         @id @default(uuid())
+  name     String
+  code     String
+  status   SubPhaseStatus @default(TODO)
+  progress Int            @default(0)
+  startDate DateTime?
+  endDate   DateTime?
+
+  Phase   Phase  @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  phaseId String
+  Task    Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phaseId])
+  @@index([startDate, endDate])
+}
+
+model GanttMarker {
+  id        String   @id @default(uuid())
+  label     String
+  date      DateTime
+  className String?
+
+  Project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([date])
+}
+
+model Product {
+  id          String       @id @default(uuid())
+  date        DateTime
+  taux        Float
+  montantProd Float
+  Phase       Phase        @relation(fields: [phaseId], references: [id])
+  phaseId     String       @unique
+  Productions Production[] @relation("ProductProductions")
+
+  @@index([phaseId])
+}
+
+model Production {
+  id        String   @id @default(uuid())
+  date      DateTime
+  taux      Float
+  mntProd   Float
+  phaseId   String
+  Phase     Phase    @relation(fields: [phaseId], references: [id])
+  Product   Product  @relation("ProductProductions", fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  @@index([productId])
+  @@index([phaseId])
+}
+
+model Client {
+  id     String    @id @default(uuid())
+  name   String
+  wilaya String?
+  phone  String?
+  email  String?
+  projects Project[]
+  unit   Unit      @relation(fields: [unitId], references: [id])
+  unitId String
+  companyId String
+  Company Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([name, unitId])
+  @@unique([email, unitId])
+  @@index([unitId])
+  @@index([companyId])
+}
+
+model Task {
+  id             String     @id @default(uuid())
+  title          String
+  description    String?
+  startDate      DateTime?  @default(now())
+  dueDate        DateTime?
+  endDate        DateTime?
+  complete       Boolean    @default(false)
+  assignedUserId String?
+  Assigned       User?      @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  Lane           Lane?      @relation(fields: [laneId], references: [id])
+  laneId         String?
+  order          Int        @default(0)
+  Tags           Tag[]
+  Unit           Unit       @relation(fields: [unitId], references: [id])
+  unitId         String
+  companyId      String
+  Company        Company    @relation(fields: [companyId], references: [id])
+  projectId      String
+  Project        Project    @relation(fields: [projectId], references: [id])
+  phaseId        String
+  Phase          Phase      @relation(fields: [phaseId], references: [id])
+  subPhaseId     String?
+  subPhase       SubPhase?  @relation(fields: [subPhaseId], references: [id])
+
+  TimeEntry    TimeEntry[]
+  TaskComment  TaskComment[]
+
+  @@index([laneId])
+  @@index([unitId])
+  @@index([companyId])
+  @@index([assignedUserId])
+  @@index([projectId])
+  @@index([phaseId])
+}
+
+model Lane {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Unit      Unit     @relation(fields: [unitId], references: [id])
+  unitId    String
+  Tasks     Task[]
+  order     Int      @default(0)
+  color     String?
+
+  @@index([unitId])
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  color     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Unit   Unit   @relation(fields: [unitId], references: [id])
+  unitId String
+  Task   Task[]
+
+  @@index([unitId])
+}
+
+model TimeEntry {
+  id          String    @id @default(uuid())
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  projectId String
+  Project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  companyId String
+  Company   Company  @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([projectId])
+  @@index([companyId])
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  body      String
+  edited    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  taskId     String
+  Task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId   String
+  Author     User     @relation("CommentAuthor", fields: [authorId], references: [id])
+  companyId  String
+  Company    Company  @relation(fields: [companyId], references: [id])
+
+  mentions TaskMention[]
+
+  @@index([taskId])
+  @@index([authorId])
+  @@index([companyId])
+}
+
+model TaskMention {
+  id        String @id @default(uuid())
+
+  commentId String
+  comment   TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  mentionedUserId String
+  companyId String
+  Company   Company     @relation(fields: [companyId], references: [id])
+
+  @@unique([commentId, mentionedUserId])
+  @@index([commentId])
+  @@index([mentionedUserId])
+  @@index([companyId])
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  companyId String
+  Company   Company @relation(fields: [companyId], references: [id])
+  unitId    String?
+  Unit      Unit?   @relation(fields: [unitId], references: [id])
+  userId    String
+  User      User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([unitId])
+  @@index([userId])
+  @@index([entityType, entityId])
+}
