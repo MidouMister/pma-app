@@ -167,19 +167,19 @@
 
 ## Milestone 3: Onboarding & Auth Flow
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-03-31`
 **Depends on:** Milestone 1 (Clerk), Milestone 2 (Layout)
 **Goal:** Complete user journey from sign-up → onboarding wizard → first dashboard.
 
 ### 3.1 — Auth Pages
 
-- [ ] Create `app/(auth)/company/sign-in/[[...sign-in]]/page.tsx` — Clerk SignIn component (AUTH-01)
-- [ ] Create `app/(auth)/company/sign-up/[[...sign-up]]/page.tsx` — Clerk SignUp component (AUTH-01)
-- [ ] Create `app/(auth)/layout.tsx` — centered auth layout with branding
+- [x] Create `app/(auth)/company/sign-in/[[...sign-in]]/page.tsx` — Clerk SignIn component (AUTH-01) ✅ 2026-03-31
+- [x] Create `app/(auth)/company/sign-up/[[...sign-up]]/page.tsx` — Clerk SignUp component (AUTH-01) ✅ 2026-03-31
+- [x] Create `app/(auth)/layout.tsx` — centered auth layout with branding ✅ 2026-03-31
 
 ### 3.2 — Clerk Webhook
 
-- [ ] **BLOCKER** Create `app/api/webhooks/clerk/route.ts` — handle `user.created` event (AUTH-07):
+- [x] **BLOCKER** Create `app/api/webhooks/clerk/route.ts` — handle `user.created` event (AUTH-07): ✅ 2026-03-31
   - Verify webhook signature via Svix
   - Check if pending Invitation exists for the user's email
   - If invitation found: create User record, assign to Unit with invited role, mark invitation ACCEPTED
@@ -187,14 +187,14 @@
 
 ### 3.3 — Onboarding Wizard
 
-- [ ] Create `app/(dashboard)/onboarding/page.tsx` — multi-step wizard container
-- [ ] Create `components/onboarding/step-company.tsx` — Step 1: Company Profile form (AUTH-03):
+- [x] Create `app/(dashboard)/onboarding/page.tsx` — multi-step wizard container ✅ 2026-03-31
+- [x] Create `components/onboarding/step-company.tsx` — Step 1: Company Profile form (AUTH-03): ✅ 2026-03-31
   - Fields: name, logo (Uploadthing), formJur, NIF, sector, wilaya (dropdown), address, phone, email
-- [ ] Create `components/onboarding/step-unit.tsx` — Step 2: First Unit (AUTH-04):
+- [x] Create `components/onboarding/step-unit.tsx` — Step 2: First Unit (AUTH-04): ✅ 2026-03-31
   - Fields: name, address, phone, email
-- [ ] Create `components/onboarding/step-invite.tsx` — Step 3: Invite Team (AUTH-05):
+- [x] Create `components/onboarding/step-invite.tsx` — Step 3: Invite Team (AUTH-05): ✅ 2026-03-31
   - Fields: email + role picker (ADMIN/USER) — skippable
-- [ ] Create `actions/onboarding.ts` — server action `completeOnboarding()`:
+- [x] Create `actions/onboarding.ts` — server action `completeOnboarding()`: ✅ 2026-03-31
   - Create Company record with OWNER (AUTH-04)
   - Create first Unit (AUTH-04)
   - Auto-create Starter trial Subscription (startAt=now, endAt=now+2mo) (SUB-01)
@@ -664,7 +664,7 @@
 | --------- | ----------------------------------------- | ------- | ------ |
 | 1         | Foundation & Database                     | 26      | `[x]`  |
 | 2         | Layout & Navigation                       | 13      | `[x]`  |
-| 3         | Onboarding & Auth Flow                    | 9       | `[ ]`  |
+| 3         | Onboarding & Auth Flow                    | 9       | `[x]`  |
 | 4         | Company & Unit Management                 | 16      | `[ ]`  |
 | 5         | Client CRM                                | 7       | `[ ]`  |
 | 6         | Project Management & Phases               | 17      | `[ ]`  |
@@ -672,7 +672,7 @@
 | 8         | Kanban Board & Tasks                      | 21      | `[ ]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **152** | 2/10   |
+| **TOTAL** |                                           | **152** | 3/10   |
 
 ---
 
