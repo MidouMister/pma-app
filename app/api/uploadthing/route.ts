@@ -1,8 +1,6 @@
 import { createRouteHandler } from "uploadthing/next"
 import { uploadthingRouter } from "./core"
 
-const handler = createRouteHandler({
+export const { GET, POST } = createRouteHandler({
   router: uploadthingRouter,
 })
-
-export { handler as GET, handler as POST }

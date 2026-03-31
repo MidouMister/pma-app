@@ -143,6 +143,7 @@ export const INVITATION_STATUSES = {
   PENDING: "PENDING",
   ACCEPTED: "ACCEPTED",
   REJECTED: "REJECTED",
+  EXPIRED: "EXPIRED",
 } as const
 
 export type InvitationStatus =
