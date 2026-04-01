@@ -146,6 +146,28 @@ export const tagSchema = z.object({
   unitId: z.string().uuid("Unité invalide"),
 })
 
+export const sendInvitationSchema = z.object({
+  email: z.string().email("Email invalide"),
+  unitId: z.string().uuid("Unité invalide"),
+  role: z.enum(["ADMIN", "USER"], "Rôle invalide"),
+})
+
+export const createUnitSchema = unitSchema.extend({
+  adminId: z.string().uuid("Admin invalide").optional().nullable(),
+})
+export type CreateUnitFormData = z.infer<typeof createUnitSchema>
+
+export const updateUnitSchema = unitSchema.partial().extend({
+  id: z.string().uuid("Unité invalide"),
+  adminId: z.string().uuid("Admin invalide").optional().nullable(),
+})
+export type UpdateUnitFormData = z.infer<typeof updateUnitSchema>
+
+export const removeMemberSchema = z.object({
+  userId: z.string().uuid("Utilisateur invalide"),
+})
+export type RemoveMemberFormData = z.infer<typeof removeMemberSchema>
+
 export type CompanyFormData = z.infer<typeof companySchema>
 export type UnitFormData = z.infer<typeof unitSchema>
 export type ProjectFormData = z.infer<typeof projectSchema>
@@ -154,7 +176,21 @@ export type SubPhaseFormData = z.infer<typeof subPhaseSchema>
 export type TaskFormData = z.infer<typeof taskSchema>
 export type ClientFormData = z.infer<typeof clientSchema>
 export type InvitationFormData = z.infer<typeof invitationSchema>
+export type SendInvitationFormData = z.infer<typeof sendInvitationSchema>
 export type TimeEntryFormData = z.infer<typeof timeEntrySchema>
 export type TeamMemberFormData = z.infer<typeof teamMemberSchema>
 export type LaneFormData = z.infer<typeof laneSchema>
 export type TagFormData = z.infer<typeof tagSchema>
+
+export const updateCompanySchema = companySchema
+  .extend({
+    productionAlertThreshold: z.coerce
+      .number()
+      .int()
+      .min(1, "Le seuil doit être entre 1 et 100")
+      .max(100, "Le seuil doit être entre 1 et 100")
+      .optional(),
+  })
+  .partial()
+
+export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>

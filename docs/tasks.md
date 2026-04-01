@@ -2,7 +2,7 @@
 
 > **Project:** PMA (Project Management App)
 > **PRD Version:** 3.0.0
-> **Last Updated:** 2026-03-30 (Milestone 1 complete)
+> **Last Updated:** 2026-04-01 (Milestone 4 complete)
 > **Plan Reference:** [implementation_plan.md](./implementation_plan.md)
 > **Schema Reference:** [schema.prisma](./schema.prisma)
 > **PRD Reference:** [PRD.md](./PRD.md)
@@ -228,26 +228,27 @@
 
 ## Milestone 4: Company & Unit Management
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-04-01`
 **Depends on:** Milestone 3 (onboarding creates company/unit)
 **Goal:** OWNER manages company, units, team, and billing. ADMIN manages their unit.
 
 ### 4.1 — Company Dashboard
 
-- [ ] Create `app/(dashboard)/company/[companyId]/page.tsx` — KPI cards:
+- [x] Create `app/(dashboard)/company/[companyId]/page.tsx` — KPI cards: ✅ 2026-04-01
   - Total units, total projects, total members, total contract value (TTC), active projects count
   - Units overview list with project count per unit (COMP-05)
+- [x] Create `app/(dashboard)/company/[companyId]/loading.tsx` — Loading skeleton ✅ 2026-04-01
 
 ### 4.2 — Company Settings
 
-- [ ] Create `app/(dashboard)/company/[companyId]/settings/page.tsx` (COMP-01):
+- [x] Create `app/(dashboard)/company/[companyId]/settings/page.tsx` (COMP-01): ✅ 2026-04-01
   - Edit: name, logo (Uploadthing), address, phone, email, formJur, NIF, sector, wilaya
   - Edit: `productionAlertThreshold` (1-100 slider/input) (PROD-09)
-- [ ] Create `actions/company.ts` — `updateCompany()` server action
+- [x] Create `actions/company.ts` — `updateCompany()` server action ✅ 2026-04-01
 
 ### 4.3 — Billing Page
 
-- [ ] Create `app/(dashboard)/company/[companyId]/settings/billing/page.tsx` (SUB-08):
+- [x] Create `app/(dashboard)/company/[companyId]/settings/billing/page.tsx` (SUB-08): ✅ 2026-04-01
   - Current plan name and tier
   - Usage vs limits: units, projects, members, tasks per project
   - Trial countdown (if status=TRIAL): days remaining until expiry
@@ -255,29 +256,30 @@
 
 ### 4.4 — Units Management
 
-- [ ] Create `app/(dashboard)/company/[companyId]/units/page.tsx` (UNIT-01, UNIT-05):
+- [x] Create `app/(dashboard)/company/[companyId]/units/page.tsx` (UNIT-01, UNIT-05): ✅ 2026-04-01
   - List all units with name, admin, member count, project count
   - Create unit button (checks Plan.maxUnits before allowing — BR-05)
   - Delete unit with confirmation dialog (UNIT-06)
-- [ ] Create `actions/unit.ts` — `createUnit()`, `updateUnit()`, `deleteUnit()` server actions
+- [x] Create `actions/unit.ts` — `createUnit()`, `updateUnit()`, `deleteUnit()`, `removeMember()` server actions ✅ 2026-04-01
   - **CRITICAL** `createUnit` must check `Plan.maxUnits` limit (BR-05)
   - **CRITICAL** `deleteUnit` cascades to all projects, tasks, clients, members (UNIT-06)
 
 ### 4.5 — Company Team Page
 
-- [ ] Create `app/(dashboard)/company/[companyId]/users/page.tsx` (INV-09):
+- [x] Create `app/(dashboard)/company/[companyId]/users/page.tsx` (INV-09): ✅ 2026-04-01
   - Table of all members across all units with: name, email, role, unit, joined date
   - Pending invitations list
   - Invite member button with unit picker + role picker
 
 ### 4.6 — Unit Pages
 
-- [ ] Create `app/(dashboard)/unite/[unitId]/page.tsx` — Unit Dashboard:
+- [x] Create `app/(dashboard)/unite/[unitId]/page.tsx` — Unit Dashboard: ✅ 2026-04-01
   - Unit KPIs: projects count, active projects, team size, total contract value
-  - Recent activity feed
-- [ ] Create `app/(dashboard)/unite/[unitId]/settings/page.tsx` — Unit Settings:
+  - Recent projects list (activity feed placeholder)
+- [x] Create `app/(dashboard)/unite/[unitId]/loading.tsx` — Loading skeleton ✅ 2026-04-01
+- [x] Create `app/(dashboard)/unite/[unitId]/settings/page.tsx` — Unit Settings: ✅ 2026-04-01
   - Edit unit name, logo, address, phone, email
-- [ ] Create `app/(dashboard)/unite/[unitId]/members/page.tsx` — Unit Members (INV-01 to INV-09):
+- [x] Create `app/(dashboard)/unite/[unitId]/members/page.tsx` — Unit Members (INV-01 to INV-09): ✅ 2026-04-01
   - List unit members with role, joined date
   - Invite member form (email + role)
   - Remove member button (BR-16: data retained, access revoked)
@@ -286,7 +288,7 @@
 
 ### 4.7 — Invitation Server Actions
 
-- [ ] Create `actions/invitation.ts`:
+- [x] Create `actions/invitation.ts`: ✅ 2026-04-01
   - `sendInvitation()` — create Invitation record, send email via Clerk (INV-02)
   - `revokeInvitation()` — set status to EXPIRED (INV-06)
   - **CRITICAL** Reject duplicate invitations to same email within same unit (INV-04)
@@ -688,14 +690,14 @@
 | 1         | Foundation & Database                     | 26      | `[x]`  |
 | 2         | Layout & Navigation                       | 13      | `[x]`  |
 | 3         | Onboarding & Auth Flow                    | 9       | `[x]`  |
-| 4         | Company & Unit Management                 | 16      | `[ ]`  |
+| 4         | Company & Unit Management                 | 16      | `[x]`  |
 | 5         | Client CRM                                | 7       | `[ ]`  |
 | 6         | Project Management & Phases               | 17      | `[ ]`  |
 | 7         | Gantt Chart                               | 8       | `[ ]`  |
 | 8         | Kanban Board & Tasks                      | 21      | `[ ]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **152** | 3/10   |
+| **TOTAL** |                                           | **152** | 4/10   |
 
 ---
 
