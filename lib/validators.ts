@@ -187,6 +187,41 @@ export type TeamMemberFormData = z.infer<typeof teamMemberSchema>
 export type LaneFormData = z.infer<typeof laneSchema>
 export type TagFormData = z.infer<typeof tagSchema>
 
+export const updateProjectSchema = projectSchema
+  .partial()
+  .extend({ id: z.string().uuid("Projet invalide") })
+export type UpdateProjectFormData = z.infer<typeof updateProjectSchema>
+
+export const updatePhaseSchema = phaseSchema
+  .partial()
+  .extend({ id: z.string().uuid("Phase invalide") })
+export type UpdatePhaseFormData = z.infer<typeof updatePhaseSchema>
+
+export const updateSubPhaseSchema = subPhaseSchema
+  .partial()
+  .extend({ id: z.string().uuid("Sous-phase invalide") })
+export type UpdateSubPhaseFormData = z.infer<typeof updateSubPhaseSchema>
+
+export const addTeamMemberSchema = z.object({
+  teamId: z.string().uuid("Équipe invalide"),
+  userId: z.string().uuid("Utilisateur invalide"),
+  roleLabel: z.string().min(1).max(100),
+})
+export type AddTeamMemberFormData = z.infer<typeof addTeamMemberSchema>
+
+export const createGanttMarkerSchema = z.object({
+  projectId: z.string().uuid("Projet invalide"),
+  label: z.string().min(1).max(255),
+  date: z.date(),
+  className: z.string().max(50).optional().nullable(),
+})
+export type CreateGanttMarkerFormData = z.infer<typeof createGanttMarkerSchema>
+
+export const updateGanttMarkerSchema = createGanttMarkerSchema
+  .partial()
+  .extend({ id: z.string().uuid("Marqueur invalide") })
+export type UpdateGanttMarkerFormData = z.infer<typeof updateGanttMarkerSchema>
+
 export const updateCompanySchema = companySchema
   .extend({
     productionAlertThreshold: z.coerce

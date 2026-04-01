@@ -239,6 +239,7 @@ model Project {
   delaiDays   Int      @default(0)
   status      Status   @default(New)
   signe       Boolean  @default(false)
+  archived    Boolean  @default(false)
   Client      Client   @relation(fields: [clientId], references: [id])
   clientId    String
   Unit        Unit     @relation(fields: [unitId], references: [id])
