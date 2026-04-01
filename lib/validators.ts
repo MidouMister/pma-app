@@ -110,6 +110,11 @@ export const clientSchema = z.object({
   companyId: z.string().uuid("Entreprise invalide"),
 })
 
+export const updateClientSchema = clientSchema.partial().extend({
+  id: z.string().uuid("Client invalide"),
+})
+export type UpdateClientFormData = z.infer<typeof updateClientSchema>
+
 export const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
   unitId: z.string().uuid("Unité invalide"),

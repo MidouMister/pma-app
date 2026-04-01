@@ -299,13 +299,13 @@
 
 ## Milestone 5: Client CRM
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-04-01`
 **Depends on:** Milestone 4 (unit pages exist)
 **Goal:** Unit-scoped client management with linked project visibility.
 
 ### 5.1 — Client List
 
-- [ ] Create `app/(dashboard)/unite/[unitId]/clients/page.tsx` (CLT-01, CLT-06):
+- [x] Create `app/(dashboard)/unite/[unitId]/clients/page.tsx` (CLT-01, CLT-06): ✅ 2026-04-01
   - Table: name, wilaya, phone, email, project count, total TTC value
   - Search by name
   - Sort by name or total contract value
@@ -313,7 +313,7 @@
 
 ### 5.2 — Client Profile
 
-- [ ] Create `app/(dashboard)/unite/[unitId]/clients/[clientId]/page.tsx` (CLT-04):
+- [x] Create `app/(dashboard)/unite/[unitId]/clients/[clientId]/page.tsx` (CLT-04): ✅ 2026-04-01
   - Contact details section (name, wilaya, phone, email)
   - Linked projects list with status and montantTTC
   - Total TTC across all projects
@@ -321,7 +321,7 @@
 
 ### 5.3 — Client Server Actions
 
-- [ ] Create `actions/client.ts`:
+- [x] Create `actions/client.ts`: ✅ 2026-04-01
   - `createClient()` — with unit scope and companyId (CLT-02)
   - `updateClient()` — ADMIN/OWNER only (CLT-02)
   - `deleteClient()` — **CRITICAL** block if any project is `InProgress` (CLT-07, BR-20)
@@ -329,8 +329,8 @@
 
 ### 5.4 — Client RBAC
 
-- [ ] USERs can only view clients linked to their assigned projects (CLT-05)
-- [ ] ADMIN/OWNER have full CRUD access within their unit scope
+- [x] USERs can only view clients linked to their assigned projects (CLT-05) ✅ 2026-04-01
+- [x] ADMIN/OWNER have full CRUD access within their unit scope ✅ 2026-04-01
 
 ---
 
