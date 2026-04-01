@@ -4,7 +4,13 @@ import { Users, FolderKanban } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -99,7 +105,7 @@ export default async function UnitsPage({
                       <TableCell>
                         <Link
                           href={`/unite/${unit.id}`}
-                          className="group flex items-center gap-3 font-medium text-foreground hover:text-primary transition-colors"
+                          className="group flex items-center gap-3 font-medium text-foreground transition-colors hover:text-primary"
                         >
                           <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-xs font-medium text-primary">
                             {getInitials(unit.name)}
@@ -117,9 +123,7 @@ export default async function UnitsPage({
                                 {getInitials(unit.admin.name)}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-sm">
-                              {unit.admin.name}
-                            </span>
+                            <span className="text-sm">{unit.admin.name}</span>
                           </div>
                         ) : (
                           <Badge variant="outline" className="text-xs">

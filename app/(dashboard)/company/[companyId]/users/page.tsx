@@ -11,14 +11,22 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { EmptyState } from "@/components/shared/empty-state"
 import { formatDate } from "@/lib/format"
 import { InviteMemberDialog } from "./invite-member-dialog"
 import { RevokeInvitationButton } from "./revoke-invitation-button"
 
-function getRoleBadgeVariant(role: string): "default" | "secondary" | "outline" {
+function getRoleBadgeVariant(
+  role: string
+): "default" | "secondary" | "outline" {
   switch (role) {
     case "OWNER":
       return "default"
@@ -101,7 +109,10 @@ export default async function UsersPage({
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <PageHeader title="Équipe" description="Gérez les membres de votre entreprise">
+      <PageHeader
+        title="Équipe"
+        description="Gérez les membres de votre entreprise"
+      >
         <InviteMemberDialog companyId={companyId} units={units} />
       </PageHeader>
 
@@ -110,7 +121,8 @@ export default async function UsersPage({
         <CardHeader>
           <CardTitle>Membres</CardTitle>
           <CardDescription>
-            {members.length} membre{members.length !== 1 ? "s" : ""} dans l&apos;entreprise
+            {members.length} membre{members.length !== 1 ? "s" : ""} dans
+            l&apos;entreprise
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -128,7 +140,9 @@ export default async function UsersPage({
                     <TableHead>Email</TableHead>
                     <TableHead>Rôle</TableHead>
                     <TableHead>Unité</TableHead>
-                    <TableHead className="text-right">Date d&apos;adhésion</TableHead>
+                    <TableHead className="text-right">
+                      Date d&apos;adhésion
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -66,10 +66,10 @@ function UnitCard({ unit }: UnitCardProps) {
       className="group flex flex-col gap-3 rounded-lg border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-sm"
     >
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+        <h3 className="font-medium text-foreground transition-colors group-hover:text-primary">
           {unit.name}
         </h3>
-        <ArrowRight className="size-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+        <ArrowRight className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
       </div>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">

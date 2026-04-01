@@ -7,7 +7,13 @@ import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -57,7 +63,9 @@ const STATUS_LABELS: Record<string, string> = {
   Complete: "Terminé",
 }
 
-function getStatusBadgeVariant(status: string): "default" | "secondary" | "outline" {
+function getStatusBadgeVariant(
+  status: string
+): "default" | "secondary" | "outline" {
   switch (status) {
     case "InProgress":
       return "default"
@@ -196,7 +204,7 @@ export default async function UnitDashboardPage({
                           {project.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-sm">
+                      <TableCell className="font-mono text-sm text-muted-foreground">
                         {project.code}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
