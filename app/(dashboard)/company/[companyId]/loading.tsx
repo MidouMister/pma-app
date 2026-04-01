@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/shared/page-header"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 export default function CompanyDashboardLoading() {
   return (
@@ -15,15 +16,18 @@ export default function CompanyDashboardLoading() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-7 w-40" />
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-10 w-full" />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

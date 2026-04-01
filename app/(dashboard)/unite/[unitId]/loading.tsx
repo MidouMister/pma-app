@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/shared/page-header"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 export default function UnitDashboardLoading() {
   return (
@@ -17,23 +18,30 @@ export default function UnitDashboardLoading() {
       </div>
 
       {/* Recent Projects Skeleton */}
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-7 w-40" />
-        <div className="rounded-lg border">
-          <div className="flex flex-col gap-2 p-4">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-60" />
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2">
             <Skeleton className="h-10 w-full" />
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-14 w-full rounded-lg" />
             ))}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Activity Placeholder Skeleton */}
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-32 w-full rounded-lg" />
-      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-40" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </CardContent>
+      </Card>
     </div>
   )
 }
