@@ -13,7 +13,9 @@ export function PageHeader({ title, description, children }: PageHeaderProps) {
         <SidebarTrigger className="-ml-1" />
         <div className="flex flex-col">
           <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
         </div>
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}

@@ -29,9 +29,21 @@ import Image from "next/image"
 
 const IconRender = ({ type, logo }: { type: string; logo?: string | null }) => {
   if (logo) {
-    return <Image src={logo} alt="Logo" width={32} height={32} className="w-full h-full object-cover" />
+    return (
+      <Image
+        src={logo}
+        alt="Logo"
+        width={32}
+        height={32}
+        className="h-full w-full object-cover"
+      />
+    )
   }
-  return type === "company" ? <Building2 className="w-4 h-4" /> : <Pickaxe className="w-4 h-4" />
+  return type === "company" ? (
+    <Building2 className="h-4 w-4" />
+  ) : (
+    <Pickaxe className="h-4 w-4" />
+  )
 }
 
 export function CompanyUnitSwitcher({
@@ -61,14 +73,21 @@ export function CompanyUnitSwitcher({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground overflow-hidden">
-                <IconRender type={currentWorkspace.type} logo={currentWorkspace.logo} />
+              <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <IconRender
+                  type={currentWorkspace.type}
+                  logo={currentWorkspace.logo}
+                />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{currentWorkspace.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{currentWorkspace.type === "company" ? "Entreprise" : "Unité"}</span>
+                <span className="truncate font-medium">
+                  {currentWorkspace.name}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {currentWorkspace.type === "company" ? "Entreprise" : "Unité"}
+                </span>
               </div>
-              <ChevronsUpDown className="ml-auto w-4 h-4 text-muted-foreground" />
+              <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -84,9 +103,9 @@ export function CompanyUnitSwitcher({
               <DropdownMenuItem
                 key={`${ws.type}-${ws.id}`}
                 onClick={() => handleSelect(ws)}
-                className="gap-2 p-2 cursor-pointer"
+                className="cursor-pointer gap-2 p-2"
               >
-                <div className="flex size-6 items-center justify-center rounded-md border text-muted-foreground overflow-hidden">
+                <div className="flex size-6 items-center justify-center overflow-hidden rounded-md border text-muted-foreground">
                   <IconRender type={ws.type} logo={ws.logo} />
                 </div>
                 {ws.name}

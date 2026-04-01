@@ -45,8 +45,8 @@ export function DataTable<T>({
                     {column.cell
                       ? column.cell(row)
                       : column.accessorKey
-                      ? String(row[column.accessorKey] ?? "")
-                      : null}
+                        ? String(row[column.accessorKey] ?? "")
+                        : null}
                   </TableCell>
                 ))}
               </TableRow>

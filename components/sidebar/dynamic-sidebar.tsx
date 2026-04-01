@@ -26,7 +26,7 @@ export function DynamicSidebar({
   // Extrait l'ID de l'unité ou de l'entreprise depuis l'URL
   const isUnitPath = pathname.startsWith("/unite/")
   const isCompanyPath = pathname.startsWith("/company/")
-  
+
   let currentUnitId: string | null = null
   let currentCompId: string | null = null
 
@@ -46,15 +46,24 @@ export function DynamicSidebar({
   }
 
   if (currentUnitId) {
-    const found = workspaces.find((w) => w.type === "unit" && w.id === currentUnitId)
+    const found = workspaces.find(
+      (w) => w.type === "unit" && w.id === currentUnitId
+    )
     if (found) currentWorkspace = found
   } else if (currentCompId) {
-    const found = workspaces.find((w) => w.type === "company" && w.id === currentCompId)
+    const found = workspaces.find(
+      (w) => w.type === "company" && w.id === currentCompId
+    )
     if (found) currentWorkspace = found
   }
 
   // Si on est sur une route utilisateur, companyId et unitId ne sont pas nécessaires
-  const navItems = getNavigation(userData.role, userData.companyId, currentUnitId, userData.id)
+  const navItems = getNavigation(
+    userData.role,
+    userData.companyId,
+    currentUnitId,
+    userData.id
+  )
 
   return (
     <AppSidebar

@@ -27,10 +27,16 @@ export function NavMain({
       <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`) && item.url !== "/dashboard"
+          const isActive =
+            pathname === item.url ||
+            (pathname.startsWith(`${item.url}/`) && item.url !== "/dashboard")
           return (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive}
+                tooltip={item.title}
+              >
                 <Link href={item.url}>
                   {item.icon && <item.icon className="size-4" />}
                   <span>{item.title}</span>
