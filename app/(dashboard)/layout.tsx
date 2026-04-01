@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { DynamicSidebar } from "@/components/sidebar/dynamic-sidebar"
 import type { WorkspaceItem } from "@/components/sidebar/company-unit-switcher"
 
@@ -54,7 +55,7 @@ export default async function DashboardLayout({
       id: user.unit.id,
       name: user.unit.name,
       type: "unit",
-      logo: null, // Si l'unité n'a pas de logo propre
+      logo: null,
     })
   }
 
@@ -68,11 +69,13 @@ export default async function DashboardLayout({
   }
 
   return (
-    <SidebarProvider>
-      <DynamicSidebar userData={userData} workspaces={workspaces} />
-      <SidebarInset className="flex h-full min-h-screen flex-1 flex-col bg-background">
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <TooltipProvider>
+      <SidebarProvider>
+        <DynamicSidebar userData={userData} workspaces={workspaces} />
+        <SidebarInset className="flex h-full min-h-screen flex-1 flex-col bg-background">
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }
