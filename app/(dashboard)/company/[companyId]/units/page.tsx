@@ -25,8 +25,6 @@ import { CreateUnitDialog } from "./create-unit-dialog"
 import { DeleteUnitDialog } from "./delete-unit-dialog"
 import Link from "next/link"
 
-
-
 function getInitials(name: string): string {
   return name
     .split(" ")

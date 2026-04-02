@@ -23,6 +23,7 @@ import {
   projectGanttTag,
   projectTeamTag,
   projectTimeTag,
+  projectDocumentsTag,
   phaseProductionTag,
   userTag,
   userTasksTag,
@@ -506,6 +507,16 @@ export async function getTimeEntries(projectId: string) {
       user: { select: { id: true, name: true, avatarUrl: true } },
     },
     orderBy: { startTime: "desc" },
+  })
+}
+
+export async function getProjectDocuments(projectId: string) {
+  "use cache"
+  cacheTag(projectDocumentsTag(projectId))
+  cacheLife(HOURS)
+  return prisma.projectDocument.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
   })
 }
 

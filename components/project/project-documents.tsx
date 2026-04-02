@@ -1,49 +1,94 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
+import { toast } from "sonner"
+import { UploadButton } from "@/utils/uploadthing"
+import { createDocument, deleteDocument } from "@/actions/document"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, FileText, Trash2 } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { FileText, Trash2, Download } from "lucide-react"
 
 interface ProjectDocumentsProps {
   projectId: string
   companyId: string
-}
-
-interface UploadedFile {
-  name: string
-  size: number
-  url: string
-  uploadedAt: Date
+  initialDocuments: {
+    id: string
+    name: string
+    url: string
+    size: number
+    type: string
+    createdAt: Date
+  }[]
 }
 
 export function ProjectDocuments({
-  projectId: _projectId,
+  projectId,
   companyId: _companyId,
+  initialDocuments,
 }: ProjectDocumentsProps) {
-  const [files, setFiles] = useState<UploadedFile[]>([])
+  const [documents, setDocuments] = useState(initialDocuments)
+  const [isPending, startTransition] = useTransition()
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files
-    if (!selectedFiles || selectedFiles.length === 0) return
+  const handleUploadComplete = async (
+    res: {
+      serverData: { url: string }
+      name: string
+      size: number
+      type: string
+    }[]
+  ) => {
+    for (const file of res) {
+      startTransition(async () => {
+        const result = await createDocument({
+          projectId,
+          companyId: "",
+          name: file.name,
+          url: file.serverData.url,
+          size: file.size,
+          type: file.type,
+        })
 
-    const newFiles: UploadedFile[] = Array.from(selectedFiles).map((file) => ({
-      name: file.name,
-      size: file.size,
-      url: URL.createObjectURL(file),
-      uploadedAt: new Date(),
-    }))
-    setFiles((prev) => [...prev, ...newFiles])
+        if (result.success) {
+          toast.success(`"${file.name}" ajouté`)
+        } else {
+          toast.error(result.error ?? "Erreur lors de l'ajout")
+        }
+      })
+    }
   }
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index))
+  const handleDelete = (docId: string, docName: string) => {
+    startTransition(async () => {
+      const result = await deleteDocument(docId)
+      if (result.success) {
+        toast.success(`"${docName}" supprimé`)
+        setDocuments((prev) => prev.filter((d) => d.id !== docId))
+      } else {
+        toast.error(result.error ?? "Erreur lors de la suppression")
+      }
+    })
   }
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " o"
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " Ko"
-    return (bytes / (1024 * 1024)).toFixed(1) + " Mo"
+    if (bytes < 1024) return `${bytes} o`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  }
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
   }
 
   return (
@@ -52,57 +97,102 @@ export function ProjectDocuments({
         <CardTitle>Documents du projet</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Les documents seront sauvegardés dans une future mise à jour.
-          </p>
-
-          <div className="flex items-center gap-2">
-            <label>
-              <input
-                type="file"
-                multiple
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={handleUpload}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="cursor-pointer"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Ajouter des fichiers
-              </Button>
-            </label>
+        <div className="flex flex-col gap-4">
+          <div>
+            <UploadButton
+              endpoint="projectDocument"
+              onClientUploadComplete={handleUploadComplete}
+              onUploadError={(error: Error) => {
+                toast.error(`Erreur: ${error.message}`)
+              }}
+              content={{
+                button({ ready }) {
+                  if (ready) return <div>Télécharger des fichiers</div>
+                  return <div>Chargement...</div>
+                },
+              }}
+            />
           </div>
 
-          {files.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <h4 className="text-sm font-medium">Fichiers</h4>
-              {files.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between rounded-md border p-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1 truncate text-sm">{file.name}</div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatFileSize(file.size)}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => removeFile(index)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+          {documents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+              <FileText className="size-8 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Aucun document</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Téléversez des PDF, images ou plans pour les associer à ce
+                projet.
+              </p>
             </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Taille</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documents.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FileText
+                          className="size-4 text-muted-foreground"
+                          data-icon="inline-start"
+                        />
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline"
+                        >
+                          {doc.name}
+                        </a>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {doc.type}
+                    </TableCell>
+                    <TableCell>{formatFileSize(doc.size)}</TableCell>
+                    <TableCell>{formatDate(doc.createdAt)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          asChild
+                        >
+                          <a
+                            href={doc.url}
+                            download={doc.name}
+                            title="Télécharger"
+                          >
+                            <Download
+                              className="size-4"
+                              data-icon="inline-start"
+                            />
+                          </a>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-destructive"
+                          onClick={() => handleDelete(doc.id, doc.name)}
+                          disabled={isPending}
+                          title="Supprimer"
+                        >
+                          <Trash2 className="size-4" data-icon="inline-start" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
       </CardContent>

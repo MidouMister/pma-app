@@ -383,7 +383,7 @@
 
 ## Milestone 6: Project Management & Phases
 
-**Status:** `[/] IN PROGRESS`
+**Status:** `[x] COMPLETED 2026-04-02`
 **Depends on:** Milestone 5 (clients exist for project linking), Milestone 5.5 (infrastructure)
 **Goal:** Project CRUD, team management, phase/sub-phase management with all business rules.
 
@@ -391,9 +391,9 @@
 
 - [x] Create `app/(dashboard)/unite/[unitId]/projects/page.tsx` (PROJ-08, PROJ-09): ✅ 2026-04-01
   - [x] Table/card list: name, code, client, status, montantTTC, progress, ODS date
-  - [ ] Filter by: status, client | OWNER also filters by unit
-  - [ ] Sort by: date, montantTTC
-  - [ ] OWNER sees all projects across units; ADMIN sees unit projects; USER sees assigned only
+  - [x] Filter by: status, client | OWNER also filters by unit ✅ 2026-04-02
+  - [x] Sort by: date, montantTTC ✅ 2026-04-02
+  - [x] OWNER sees all projects across units; ADMIN sees unit projects; USER sees assigned only ✅ 2026-04-02
 
 ### 6.2 — Project Create/Edit
 
@@ -404,7 +404,7 @@
 
 ### 6.3 — Project Detail Page
 
-- [ ] Create `app/(dashboard)/unite/[unitId]/projects/[projectId]/page.tsx` (PROJ-06):
+- [x] Create `app/(dashboard)/unite/[unitId]/projects/[projectId]/page.tsx` (PROJ-06): ✅ 2026-04-02
   - Tab navigation: Overview | Gantt | Production | Tasks | Time Tracking | Documents
 
 ### 6.4 — Project Overview Tab
@@ -430,29 +430,30 @@
 - [x] Create Phase creation/edit form (PH-01, PH-02): ✅ 2026-04-01
   - [x] Fields: name, code, montantHT, startDate, endDate, status, observations, progress (0-100)
   - [x] `duration` auto-calculated as `(endDate - startDate)` in calendar days (PH-04)
-  - [/] **CRITICAL** `Phase.startDate >= Project.ods` — hard block on save (PH-03, BR-11) — form built but submit is stub
-  - [/] **CRITICAL** Sum of all `Phase.montantHT` <= `Project.montantHT` — hard block shown but submit is stub (PH-05, BR-10)
+  - [x] **CRITICAL** `Phase.startDate >= Project.ods` — hard block on save (PH-03, BR-11) ✅ 2026-04-02
+  - [x] **CRITICAL** Sum of all `Phase.montantHT` <= `Project.montantHT` — hard block (PH-05, BR-10) ✅ 2026-04-02
 - [x] Create `actions/phase.ts`: `createPhase()`, `updatePhase()`, `deletePhase()` ✅ 2026-04-01
 
 ### 6.7 — SubPhase CRUD
 
 - [x] Create SubPhase creation/edit form (PH-06, PH-07): ✅ 2026-04-01
   - [x] Fields: name, code, status (TODO/COMPLETED), progress (0-100), startDate, endDate
-  - [/] **CRITICAL** SubPhase dates must be within parent Phase date range (PH-08, BR-12) — form built but submit is stub
-- [ ] Auto-calculate Phase.progress as average of SubPhase.progress when SubPhases exist (PH-09)
+  - [x] **CRITICAL** SubPhase dates must be within parent Phase date range (PH-08, BR-12) ✅ 2026-04-02
+- [x] Auto-calculate Phase.progress as average of SubPhase.progress when SubPhases exist (PH-09) ✅ 2026-04-02
 - [x] Create `actions/subphase.ts`: `createSubPhase()`, `updateSubPhase()`, `deleteSubPhase()` ✅ 2026-04-01
 
 ### 6.8 — GanttMarker CRUD
 
-- [ ] Create GanttMarker form (PH-10): label, date, optional className
+- [x] Create GanttMarker form (PH-10): label, date, optional className ✅ 2026-04-02
 - [x] Create `actions/gantt-marker.ts`: `createGanttMarker()`, `updateGanttMarker()`, `deleteGanttMarker()` ✅ 2026-04-01
 
 ### 6.9 — Documents Tab
 
-- [ ] Build Documents tab with Uploadthing file upload (PROJ-10):
-  - Upload PDFs, images, drawings
-  - File list with name, type, size, upload date
-  - Download and delete actions
+- [x] Build Documents tab with Uploadthing file upload (PROJ-10): ✅ 2026-04-02
+  - [x] Upload PDFs, images, drawings via UploadThing
+  - [x] File list with name, type, size, upload date
+  - [x] Download and delete actions
+  - [x] ProjectDocument model for DB persistence
 
 ### 6.10 — Project Server Actions
 
@@ -740,12 +741,12 @@
 | 4         | Company & Unit Management                 | 16      | `[x]`  |
 | 5         | Client CRM                                | 7       | `[x]`  |
 | 5.5       | PRD v3.2.0 Infrastructure                 | 21      | `[x]`  |
-| 6         | Project Management & Phases               | 17      | `[/]`  |
+| 6         | Project Management & Phases               | 17      | `[x]`  |
 | 7         | Gantt Chart                               | 8       | `[ ]`  |
 | 8         | Kanban Board & Tasks                      | 21      | `[ ]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **173** | 6/11   |
+| **TOTAL** |                                           | **173** | 7/11   |
 
 ---
 

@@ -87,7 +87,7 @@ export async function updateCompany(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidateTag(companyTag(user.companyId), 'max')
+    revalidateTag(companyTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {

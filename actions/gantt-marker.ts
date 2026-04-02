@@ -75,7 +75,7 @@ export async function createGanttMarker(data: unknown) {
       },
     })
 
-    revalidateTag(projectGanttTag(project.id), 'max')
+    revalidateTag(projectGanttTag(project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -164,7 +164,7 @@ export async function updateGanttMarker(data: unknown) {
       },
     })
 
-    revalidateTag(projectGanttTag(marker.Project.id), 'max')
+    revalidateTag(projectGanttTag(marker.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -233,7 +233,7 @@ export async function deleteGanttMarker(id: string) {
       where: { id },
     })
 
-    revalidateTag(projectGanttTag(marker.Project.id), 'max')
+    revalidateTag(projectGanttTag(marker.Project.id), "max")
 
     return { success: true }
   } catch (error) {

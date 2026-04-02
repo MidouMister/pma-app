@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
 import { getCurrentUser } from "@/lib/auth"
-import { getProjectById, isProjectMember } from "@/lib/queries"
+import {
+  getProjectById,
+  getProjectDocuments,
+  isProjectMember,
+} from "@/lib/queries"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
 import { ProjectOverview } from "@/components/project/project-overview"
@@ -47,6 +51,8 @@ export default async function ProjectDetailPage({
     }
   }
 
+  const documents = await getProjectDocuments(projectId)
+
   return (
     <div className="container mx-auto py-6">
       <PageHeader
@@ -91,6 +97,7 @@ export default async function ProjectDetailPage({
           <ProjectDocuments
             projectId={project.id}
             companyId={user.companyId!}
+            initialDocuments={documents ?? []}
           />
         </TabsContent>
       </Tabs>

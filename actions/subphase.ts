@@ -122,8 +122,8 @@ export async function createSubPhase(data: unknown) {
 
     await recalculatePhaseProgress(phase.id)
 
-    revalidateTag(projectPhasesTag(phase.Project.id), 'max')
-    revalidateTag(projectTag(phase.Project.id), 'max')
+    revalidateTag(projectPhasesTag(phase.Project.id), "max")
+    revalidateTag(projectTag(phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -240,8 +240,8 @@ export async function updateSubPhase(data: unknown) {
 
     await recalculatePhaseProgress(subPhase.phaseId)
 
-    revalidateTag(projectPhasesTag(subPhase.Phase.Project.id), 'max')
-    revalidateTag(projectTag(subPhase.Phase.Project.id), 'max')
+    revalidateTag(projectPhasesTag(subPhase.Phase.Project.id), "max")
+    revalidateTag(projectTag(subPhase.Phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -314,8 +314,8 @@ export async function deleteSubPhase(subPhaseId: string) {
 
     await recalculatePhaseProgress(phaseId)
 
-    revalidateTag(projectPhasesTag(subPhase.Phase.Project.id), 'max')
-    revalidateTag(projectTag(subPhase.Phase.Project.id), 'max')
+    revalidateTag(projectPhasesTag(subPhase.Phase.Project.id), "max")
+    revalidateTag(projectTag(subPhase.Phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {

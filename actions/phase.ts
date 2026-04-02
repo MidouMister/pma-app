@@ -133,9 +133,9 @@ export async function createPhase(data: unknown) {
       },
     })
 
-    revalidateTag(projectPhasesTag(project.id), 'max')
-    revalidateTag(projectGanttTag(project.id), 'max')
-    revalidateTag(projectTag(project.id), 'max')
+    revalidateTag(projectPhasesTag(project.id), "max")
+    revalidateTag(projectGanttTag(project.id), "max")
+    revalidateTag(projectTag(project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -264,9 +264,9 @@ export async function updatePhase(data: unknown) {
 
     await recalculatePhaseProgress(phase.id)
 
-    revalidateTag(projectPhasesTag(phase.Project.id), 'max')
-    revalidateTag(projectGanttTag(phase.Project.id), 'max')
-    revalidateTag(projectTag(phase.Project.id), 'max')
+    revalidateTag(projectPhasesTag(phase.Project.id), "max")
+    revalidateTag(projectGanttTag(phase.Project.id), "max")
+    revalidateTag(projectTag(phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -335,8 +335,8 @@ export async function deletePhase(phaseId: string) {
       where: { id: phaseId },
     })
 
-    revalidateTag(projectPhasesTag(phase.Project.id), 'max')
-    revalidateTag(projectGanttTag(phase.Project.id), 'max')
+    revalidateTag(projectPhasesTag(phase.Project.id), "max")
+    revalidateTag(projectGanttTag(phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {

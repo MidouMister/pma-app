@@ -28,6 +28,7 @@ export const projectPhasesTag = (id: string) => `project:${id}:phases`
 export const projectGanttTag = (id: string) => `project:${id}:gantt`
 export const projectTeamTag = (id: string) => `project:${id}:team`
 export const projectTimeTag = (id: string) => `project:${id}:time`
+export const projectDocumentsTag = (id: string) => `project:${id}:documents`
 
 // Phase
 export const phaseTag = (id: string) => `phase:${id}`

@@ -96,7 +96,7 @@ export async function createUnit(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidateTag(companyTag(user.companyId), 'max')
+    revalidateTag(companyTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {
@@ -184,7 +184,7 @@ export async function updateUnit(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidateTag(unitTag(unit.id), 'max')
+    revalidateTag(unitTag(unit.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -254,8 +254,8 @@ export async function deleteUnit(unitId: string) {
     })
 
     // 6. Revalidate
-    revalidateTag(companyTag(user.companyId), 'max')
-    revalidateTag(unitTag(unitId), 'max')
+    revalidateTag(companyTag(user.companyId), "max")
+    revalidateTag(unitTag(unitId), "max")
 
     return { success: true }
   } catch (error) {
@@ -336,9 +336,9 @@ export async function removeMember(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidateTag(companyTag(user.companyId), 'max')
-    revalidateTag(unitMembersTag(targetUser.unitId ?? ""), 'max')
-    revalidateTag(companyTeamTag(user.companyId), 'max')
+    revalidateTag(companyTag(user.companyId), "max")
+    revalidateTag(unitMembersTag(targetUser.unitId ?? ""), "max")
+    revalidateTag(companyTeamTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {

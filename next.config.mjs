@@ -8,6 +8,11 @@ const nextConfig = {
         hostname: "utfs.io",
         pathname: "/f/**",
       },
+      {
+        protocol: "https",
+        hostname: "uploadthing.com",
+        pathname: "/f/**",
+      },
     ],
   },
 }

@@ -1,9 +1,9 @@
-import { ClerkProvider } from "@clerk/nextjs"
 import { Geist_Mono, Oxanium } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
+import { ClerkProvider } from "@/components/providers/clerk-provider"
 
 const oxanium = Oxanium({ subsets: ["latin"], variable: "--font-sans" })
 

@@ -82,7 +82,7 @@ export async function createClient(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidateTag(unitClientsTag(validData.unitId), 'max')
+    revalidateTag(unitClientsTag(validData.unitId), "max")
 
     return { success: true }
   } catch (error) {
@@ -181,8 +181,8 @@ export async function updateClient(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidateTag(unitClientsTag(client.unitId), 'max')
-    revalidateTag(projectTag(client.id), 'max')
+    revalidateTag(unitClientsTag(client.unitId), "max")
+    revalidateTag(projectTag(client.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -278,7 +278,7 @@ export async function deleteClient(clientId: string) {
     })
 
     // 7. Revalidate
-    revalidateTag(unitClientsTag(client.unitId), 'max')
+    revalidateTag(unitClientsTag(client.unitId), "max")
 
     return { success: true }
   } catch (error) {

@@ -99,9 +99,9 @@ export async function addTeamMember(data: unknown) {
       },
     })
 
-    revalidateTag(projectTeamTag(team.project.id), 'max')
-    revalidateTag(userProjectsTag(validData.userId), 'max')
-    revalidateTag(companyTeamTag(user.companyId), 'max')
+    revalidateTag(projectTeamTag(team.project.id), "max")
+    revalidateTag(userProjectsTag(validData.userId), "max")
+    revalidateTag(companyTeamTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {
@@ -170,9 +170,9 @@ export async function removeTeamMember(memberId: string) {
       where: { id: memberId },
     })
 
-    revalidateTag(projectTeamTag(teamMember.team.project.id), 'max')
-    revalidateTag(userProjectsTag(teamMember.userId), 'max')
-    revalidateTag(companyTeamTag(user.companyId), 'max')
+    revalidateTag(projectTeamTag(teamMember.team.project.id), "max")
+    revalidateTag(userProjectsTag(teamMember.userId), "max")
+    revalidateTag(companyTeamTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {

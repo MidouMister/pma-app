@@ -112,7 +112,7 @@ export async function createProject(data: unknown) {
 
     void result
 
-    revalidateTag(unitProjectsTag(validData.unitId), 'max')
+    revalidateTag(unitProjectsTag(validData.unitId), "max")
 
     return { success: true }
   } catch (error) {
@@ -216,8 +216,8 @@ export async function updateProject(data: unknown) {
       },
     })
 
-    revalidateTag(projectTag(project.id), 'max')
-    revalidateTag(unitProjectsTag(project.unitId), 'max')
+    revalidateTag(projectTag(project.id), "max")
+    revalidateTag(unitProjectsTag(project.unitId), "max")
 
     return { success: true }
   } catch (error) {
@@ -280,7 +280,7 @@ export async function archiveProject(projectId: string) {
       data: { archived: true },
     })
 
-    revalidateTag(unitProjectsTag(project.unitId), 'max')
+    revalidateTag(unitProjectsTag(project.unitId), "max")
 
     return { success: true }
   } catch (error) {

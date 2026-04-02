@@ -12,9 +12,9 @@ import type { WorkspaceItem } from "@/components/sidebar/company-unit-switcher"
 function SidebarSkeleton() {
   return (
     <div className="w-64 border-r bg-card p-4">
-      <Skeleton className="h-8 w-full mb-4" />
-      <Skeleton className="h-6 w-3/4 mb-2" />
-      <Skeleton className="h-6 w-1/2 mb-2" />
+      <Skeleton className="mb-4 h-8 w-full" />
+      <Skeleton className="mb-2 h-6 w-3/4" />
+      <Skeleton className="mb-2 h-6 w-1/2" />
       <Skeleton className="h-6 w-2/3" />
     </div>
   )

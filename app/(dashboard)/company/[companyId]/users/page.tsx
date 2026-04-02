@@ -63,8 +63,6 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-
-
 export default async function UsersPage({
   params,
 }: {

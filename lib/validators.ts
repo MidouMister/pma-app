@@ -234,3 +234,13 @@ export const updateCompanySchema = companySchema
   .partial()
 
 export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>
+
+export const createDocumentSchema = z.object({
+  projectId: z.string().uuid("Projet invalide"),
+  companyId: z.string().uuid("Entreprise invalide"),
+  name: z.string().min(1, "Le nom est requis").max(255),
+  url: z.string().url("URL invalide"),
+  size: z.number().int().positive("Taille invalide"),
+  type: z.string().min(1, "Le type est requis").max(100),
+})
+export type CreateDocumentFormData = z.infer<typeof createDocumentSchema>

@@ -37,8 +37,6 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
     redirect("/dashboard")
   }
 
-
-
   const simpleProjects = projects.map((p) => ({
     ...p,
     client: p.Client,

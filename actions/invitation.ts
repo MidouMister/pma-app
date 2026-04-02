@@ -130,8 +130,8 @@ export async function sendInvitation(data: unknown) {
     })
 
     // 9. Revalidate
-    revalidateTag(unitMembersTag(validData.unitId), 'max')
-    revalidateTag(companyTeamTag(user.companyId), 'max')
+    revalidateTag(unitMembersTag(validData.unitId), "max")
+    revalidateTag(companyTeamTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {
@@ -190,8 +190,8 @@ export async function revokeInvitation(invitationId: string) {
     })
 
     // 5. Revalidate
-    revalidateTag(unitMembersTag(invitation.unitId), 'max')
-    revalidateTag(companyTeamTag(user.companyId), 'max')
+    revalidateTag(unitMembersTag(invitation.unitId), "max")
+    revalidateTag(companyTeamTag(user.companyId), "max")
 
     return { success: true }
   } catch (error) {
