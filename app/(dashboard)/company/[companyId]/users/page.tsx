@@ -1,6 +1,10 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import {
+  getCompanyTeam,
+  getPendingInvitations,
+  getAllUnits,
+} from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import {
   Table,
@@ -59,37 +63,7 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-async function getMembers(companyId: string) {
-  return prisma.user.findMany({
-    where: { companyId },
-    include: {
-      unit: {
-        select: { id: true, name: true },
-      },
-    },
-    orderBy: { name: "asc" },
-  })
-}
 
-async function getPendingInvitations(companyId: string) {
-  return prisma.invitation.findMany({
-    where: { companyId, status: "PENDING" },
-    include: {
-      Unit: {
-        select: { id: true, name: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  })
-}
-
-async function getUnits(companyId: string) {
-  return prisma.unit.findMany({
-    where: { companyId },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  })
-}
 
 export default async function UsersPage({
   params,
@@ -102,9 +76,9 @@ export default async function UsersPage({
   const { companyId } = await params
 
   const [members, pendingInvitations, units] = await Promise.all([
-    getMembers(companyId),
+    getCompanyTeam(companyId),
     getPendingInvitations(companyId),
-    getUnits(companyId),
+    getAllUnits(companyId),
   ])
 
   return (

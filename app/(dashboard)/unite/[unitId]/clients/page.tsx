@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
-import { getCurrentUser } from "@/lib/auth"
+import { getUnitById, getScopedClients, getCurrentUser } from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import { ClientList } from "@/components/client/client-list"
 
@@ -18,53 +17,14 @@ export default async function ClientsPage({
   const user = await getCurrentUser()
   if (!user || !user.companyId) redirect("/onboarding")
 
-  // Verify unit belongs to user's company (BR-01)
-  const unit = await prisma.unit.findFirst({
-    where: { id: unitId, companyId: user.companyId },
-  })
+  const [unit, clients] = await Promise.all([
+    getUnitById(unitId),
+    getScopedClients(unitId, user.companyId, user.id, user.role),
+  ])
 
-  if (!unit) redirect("/dashboard")
-
-  // RBAC: USERs can only view clients linked to their assigned projects (CLT-05)
-  // ADMIN/OWNER have full visibility within their unit scope
-  let whereClause: {
-    unitId: string
-    companyId: string
-    projects?: { some: { team?: { members?: { some: { userId: string } } } } }
-  } = {
-    unitId,
-    companyId: user.companyId,
+  if (!unit || unit.companyId !== user.companyId) {
+    redirect("/dashboard")
   }
-
-  if (user.role === "USER") {
-    whereClause = {
-      unitId,
-      companyId: user.companyId,
-      projects: {
-        some: {
-          team: {
-            members: {
-              some: { userId: user.id },
-            },
-          },
-        },
-      },
-    }
-  }
-
-  // Query clients with project count and total TTC
-  const clients = await prisma.client.findMany({
-    where: whereClause,
-    include: {
-      _count: {
-        select: { projects: true },
-      },
-      projects: {
-        select: { id: true, montantTTC: true, status: true },
-      },
-    },
-    orderBy: { name: "asc" },
-  })
 
   // Map to add totalValue for sorting and display
   const clientsData = clients.map((client) => ({

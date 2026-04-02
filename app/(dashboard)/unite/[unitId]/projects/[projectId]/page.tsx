@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
 import { getCurrentUser } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { getProjectById, isProjectMember } from "@/lib/queries"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
 import { ProjectOverview } from "@/components/project/project-overview"
@@ -34,37 +34,15 @@ export default async function ProjectDetailPage({
     redirect("/onboarding")
   }
 
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, companyId: user.companyId },
-    include: {
-      phases: {
-        include: {
-          SubPhases: true,
-        },
-        orderBy: { startDate: "asc" },
-      },
-      team: {
-        include: {
-          members: {
-            include: { user: true },
-          },
-        },
-      },
-    },
-  } as never)
+  const project = await getProjectById(projectId)
 
-  if (!project) {
+  if (!project || project.companyId !== user.companyId) {
     redirect(`/unite/${unitId}/projects`)
   }
 
   if (user.role === "USER") {
-    const isTeamMember = await prisma.teamMember.findFirst({
-      where: {
-        userId: user.id,
-        team: { projectId },
-      },
-    })
-    if (!isTeamMember) {
+    const isMember = await isProjectMember(projectId, user.id)
+    if (!isMember) {
       redirect(`/unite/${unitId}/projects`)
     }
   }

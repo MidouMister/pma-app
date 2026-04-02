@@ -2,10 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { projectSchema, updateProjectSchema } from "@/lib/validators"
+import { unitProjectsTag, projectTag } from "@/lib/cache"
 
 export async function createProject(data: unknown) {
   try {
@@ -111,8 +112,7 @@ export async function createProject(data: unknown) {
 
     void result
 
-    revalidatePath(`/unite/${validData.unitId}/projects`)
-    revalidatePath(`/unite/${validData.unitId}/dashboard`)
+    revalidateTag(unitProjectsTag(validData.unitId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -216,8 +216,8 @@ export async function updateProject(data: unknown) {
       },
     })
 
-    revalidatePath(`/unite/${project.unitId}/projects`)
-    revalidatePath(`/unite/${project.unitId}/projects/${project.id}`)
+    revalidateTag(projectTag(project.id), 'max')
+    revalidateTag(unitProjectsTag(project.unitId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -280,7 +280,7 @@ export async function archiveProject(projectId: string) {
       data: { archived: true },
     })
 
-    revalidatePath(`/unite/${project.unitId}/projects`)
+    revalidateTag(unitProjectsTag(project.unitId), 'max')
 
     return { success: true }
   } catch (error) {

@@ -69,7 +69,7 @@ model User {
   name      String
   email     String   @unique
   role      Role     @default(USER)
-  jobeTitle String?
+  jobTitle  String?  @map("jobeTitle")
   avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -102,7 +102,7 @@ model Company {
   companyOwner             User     @relation("OwnerCompany", fields: [ownerId], references: [id])
   ownerId                  String   @unique
   logo                     String
-  state                    String
+  wilaya                   String   @map("state")
   formJur                  String
   registre                 String
   nif                      String
@@ -123,6 +123,7 @@ model Company {
   Client        Client[]
   Task          Task[]
   TimeEntry     TimeEntry[]
+  Lane          Lane[]
 
   @@index([ownerId])
 }
@@ -167,7 +168,7 @@ model Invitation {
   Company           Company          @relation(fields: [companyId], references: [id])
   companyId         String
   role              Role             @default(USER)
-  jobeTilte         String?
+  jobTitle  String?  @map("jobeTilte")
   clerkInvitationId String?
 
   @@unique([email, unitId])
@@ -204,7 +205,7 @@ model Unit {
 
 model Notification {
   id           String           @id @default(uuid())
-  notification String
+  message      String   @map("notification")
   companyId    String
   unitId       String?
   userId       String
@@ -435,11 +436,14 @@ model Lane {
   updatedAt DateTime @updatedAt
   Unit      Unit     @relation(fields: [unitId], references: [id])
   unitId    String
+  Company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
   Tasks     Task[]
   order     Int      @default(0)
   color     String?
 
   @@index([unitId])
+  @@index([companyId])
 }
 
 model Tag {

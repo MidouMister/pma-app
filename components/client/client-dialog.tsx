@@ -5,26 +5,13 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Plus } from "lucide-react"
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Field,
-  FieldLabel,
-  FieldDescription,
-} from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { clientSchema } from "@/lib/validators"
 import { createClient, updateClient } from "@/actions/client"
 import { type Client } from "@prisma/client"
+import { FormModal } from "@/components/shared/form-modal"
 
 interface ClientDialogProps {
   unitId: string
@@ -65,9 +52,8 @@ export function ClientDialog({
     }
   }
 
-  function handleOpenChange(newOpen: boolean) {
-    if (!newOpen && !isEditing) {
-      // Reset form if closing create dialog
+  function handleReset() {
+    if (!isEditing) {
       setFormData({
         name: "",
         email: "",
@@ -78,10 +64,9 @@ export function ClientDialog({
       })
       setErrors({})
     }
-    setOpen(newOpen)
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
@@ -115,7 +100,7 @@ export function ClientDialog({
         toast.success(
           isEditing ? "Client mis à jour" : "Client créé avec succès"
         )
-        handleOpenChange(false)
+        setOpen(false)
         router.refresh()
       } else {
         toast.error(res.error || "Une erreur est survenue")
@@ -127,105 +112,94 @@ export function ClientDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+    <FormModal
+      open={open}
+      onOpenChange={setOpen}
+      title={isEditing ? "Modifier le client" : "Ajouter un client"}
+      description={
+        isEditing
+          ? "Modifiez les informations du client ci-dessous."
+          : "Créez un nouveau client pour cette unité."
+      }
+      trigger={
+        trigger ?? (
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau client
           </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Modifier le client" : "Ajouter un client"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Modifiez les informations du client ci-dessous."
-              : "Créez un nouveau client pour cette unité."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
-            <Field data-invalid={!!errors.name} className="md:col-span-2">
-              <FieldLabel htmlFor="name">Nom du client *</FieldLabel>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                aria-invalid={!!errors.name}
-                className="h-11"
-                placeholder="SARL Exemple"
-              />
-              {errors.name && (
-                <FieldDescription>{errors.name}</FieldDescription>
-              )}
-            </Field>
+        )
+      }
+      size="lg"
+      isPending={isPending}
+      onSubmit={handleSubmit}
+      onReset={handleReset}
+      submitLabel={isEditing ? "Enregistrer" : "Créer"}
+      submitPendingLabel="Enregistrement..."
+      showCancel={!isEditing}
+    >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Field data-invalid={!!errors.name} className="md:col-span-2">
+          <FieldLabel htmlFor="name">Nom du client *</FieldLabel>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            aria-invalid={!!errors.name}
+            className="h-11"
+            placeholder="SARL Exemple"
+          />
+          {errors.name && <FieldDescription>{errors.name}</FieldDescription>}
+        </Field>
 
-            <Field data-invalid={!!errors.wilaya}>
-              <FieldLabel htmlFor="wilaya">Wilaya</FieldLabel>
-              <Input
-                id="wilaya"
-                value={formData.wilaya}
-                onChange={(e) => handleChange("wilaya", e.target.value)}
-                aria-invalid={!!errors.wilaya}
-                className="h-11"
-                placeholder="Ex: Alger"
-              />
-              {errors.wilaya && (
-                <FieldDescription>{errors.wilaya}</FieldDescription>
-              )}
-            </Field>
-
-            <Field data-invalid={!!errors.email}>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                aria-invalid={!!errors.email}
-                className="h-11"
-                placeholder="contact@exemple.com"
-              />
-              {errors.email && (
-                <FieldDescription>{errors.email}</FieldDescription>
-              )}
-            </Field>
-
-            <Field data-invalid={!!errors.phone}>
-              <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                aria-invalid={!!errors.phone}
-                className="h-11"
-                placeholder="0555 00 00 00"
-              />
-              {errors.phone && (
-                <FieldDescription>{errors.phone}</FieldDescription>
-              )}
-            </Field>
-          </div>
-
-          {errors.form && (
-            <FieldDescription className="mt-2 text-destructive">
-              {errors.form}
-            </FieldDescription>
+        <Field data-invalid={!!errors.wilaya}>
+          <FieldLabel htmlFor="wilaya">Wilaya</FieldLabel>
+          <Input
+            id="wilaya"
+            value={formData.wilaya}
+            onChange={(e) => handleChange("wilaya", e.target.value)}
+            aria-invalid={!!errors.wilaya}
+            className="h-11"
+            placeholder="Ex: Alger"
+          />
+          {errors.wilaya && (
+            <FieldDescription>{errors.wilaya}</FieldDescription>
           )}
+        </Field>
 
-          <DialogFooter className="mt-6">
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Spinner data-icon="inline-start" />}
-              {isPending ? "Enregistrement..." : "Enregistrer"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <Field data-invalid={!!errors.email}>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => handleChange("email", e.target.value)}
+            aria-invalid={!!errors.email}
+            className="h-11"
+            placeholder="contact@exemple.com"
+          />
+          {errors.email && <FieldDescription>{errors.email}</FieldDescription>}
+        </Field>
+
+        <Field data-invalid={!!errors.phone}>
+          <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
+          <Input
+            id="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => handleChange("phone", e.target.value)}
+            aria-invalid={!!errors.phone}
+            className="h-11"
+            placeholder="0555 00 00 00"
+          />
+          {errors.phone && <FieldDescription>{errors.phone}</FieldDescription>}
+        </Field>
+      </div>
+
+      {errors.form && (
+        <FieldDescription className="mt-2 text-destructive">
+          {errors.form}
+        </FieldDescription>
+      )}
+    </FormModal>
   )
 }

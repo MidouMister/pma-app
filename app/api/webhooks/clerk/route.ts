@@ -94,7 +94,7 @@ async function handleUserCreated(data: UserJSON) {
           name,
           email: primaryEmail,
           role: pendingInvitation.role,
-          jobeTitle: pendingInvitation.jobeTilte,
+          jobTitle: pendingInvitation.jobTitle,
           avatarUrl: imageUrl,
           companyId: pendingInvitation.companyId,
           unitId: pendingInvitation.unitId,

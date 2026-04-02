@@ -49,7 +49,7 @@ export function CompanySettingsForm({ company }: CompanySettingsFormProps) {
     companyEmail: company.companyEmail,
     companyAddress: company.companyAddress,
     companyPhone: company.companyPhone,
-    state: company.state,
+    wilaya: company.wilaya,
     formJur: company.formJur,
     registre: company.registre,
     nif: company.nif,
@@ -210,13 +210,13 @@ export function CompanySettingsForm({ company }: CompanySettingsFormProps) {
               )}
             </Field>
 
-            <Field data-invalid={!!errors.state}>
-              <FieldLabel htmlFor="state">Wilaya</FieldLabel>
+            <Field data-invalid={!!errors.wilaya}>
+              <FieldLabel htmlFor="wilaya">Wilaya</FieldLabel>
               <Select
-                value={formData.state}
-                onValueChange={(value) => handleChange("state", value)}
+                value={formData.wilaya}
+                onValueChange={(value) => handleChange("wilaya", value)}
               >
-                <SelectTrigger id="state">
+                <SelectTrigger id="wilaya">
                   <SelectValue placeholder="Sélectionner une wilaya" />
                 </SelectTrigger>
                 <SelectContent>
@@ -227,8 +227,8 @@ export function CompanySettingsForm({ company }: CompanySettingsFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.state && (
-                <FieldDescription>{errors.state}</FieldDescription>
+              {errors.wilaya && (
+                <FieldDescription>{errors.wilaya}</FieldDescription>
               )}
             </Field>
           </FieldGroup>

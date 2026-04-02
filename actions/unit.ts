@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import {
@@ -10,6 +10,12 @@ import {
   updateUnitSchema,
   removeMemberSchema,
 } from "@/lib/validators"
+import {
+  companyTag,
+  unitTag,
+  unitMembersTag,
+  companyTeamTag,
+} from "@/lib/cache"
 
 export async function createUnit(data: unknown) {
   try {
@@ -90,7 +96,7 @@ export async function createUnit(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/company/${user.companyId}/units`)
+    revalidateTag(companyTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -178,7 +184,7 @@ export async function updateUnit(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/company/${user.companyId}/units`)
+    revalidateTag(unitTag(unit.id), 'max')
 
     return { success: true }
   } catch (error) {
@@ -248,7 +254,8 @@ export async function deleteUnit(unitId: string) {
     })
 
     // 6. Revalidate
-    revalidatePath(`/company/${user.companyId}/units`)
+    revalidateTag(companyTag(user.companyId), 'max')
+    revalidateTag(unitTag(unitId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -329,7 +336,9 @@ export async function removeMember(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/company/${user.companyId}/units`)
+    revalidateTag(companyTag(user.companyId), 'max')
+    revalidateTag(unitMembersTag(targetUser.unitId ?? ""), 'max')
+    revalidateTag(companyTeamTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {

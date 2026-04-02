@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
-import { prisma } from "@/lib/prisma"
+import { getCompanyBilling, getPlans } from "@/lib/queries"
 import {
   getSubscriptionDisplayStatus,
   getGraceDaysRemaining,
@@ -113,30 +113,14 @@ export default async function BillingPage({
   }
 
   // Fetch company with subscription, plan, and counts
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    include: {
-      subscription: {
-        include: { Plan: true },
-      },
-      _count: {
-        select: {
-          units: true,
-          Project: true,
-          users: true,
-        },
-      },
-    },
-  })
+  const company = await getCompanyBilling(companyId)
 
   if (!company) {
     redirect("/onboarding")
   }
 
   // Fetch all available plans for upgrade dialog
-  const allPlans = await prisma.plan.findMany({
-    orderBy: { priceDA: "asc" },
-  })
+  const allPlans = await getPlans()
 
   const subscription = company.subscription
   const plan = subscription?.Plan ?? null

@@ -2,13 +2,14 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import {
   createGanttMarkerSchema,
   updateGanttMarkerSchema,
 } from "@/lib/validators"
+import { projectGanttTag } from "@/lib/cache"
 
 export async function createGanttMarker(data: unknown) {
   try {
@@ -74,7 +75,7 @@ export async function createGanttMarker(data: unknown) {
       },
     })
 
-    revalidatePath(`/unite/${project.unitId}/projects/${project.id}`)
+    revalidateTag(projectGanttTag(project.id), 'max')
 
     return { success: true }
   } catch (error) {
@@ -163,9 +164,7 @@ export async function updateGanttMarker(data: unknown) {
       },
     })
 
-    revalidatePath(
-      `/unite/${marker.Project.unitId}/projects/${marker.Project.id}`
-    )
+    revalidateTag(projectGanttTag(marker.Project.id), 'max')
 
     return { success: true }
   } catch (error) {
@@ -234,9 +233,7 @@ export async function deleteGanttMarker(id: string) {
       where: { id },
     })
 
-    revalidatePath(
-      `/unite/${marker.Project.unitId}/projects/${marker.Project.id}`
-    )
+    revalidateTag(projectGanttTag(marker.Project.id), 'max')
 
     return { success: true }
   } catch (error) {

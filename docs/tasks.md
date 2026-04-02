@@ -1,11 +1,12 @@
 # PMA — Project Tasks & Milestones
 
 > **Project:** PMA (Project Management App)
-> **PRD Version:** 3.0.0
-> **Last Updated:** 2026-04-01 (Milestone 4 complete)
+> **PRD Version:** 3.2.0
+> **Last Updated:** 2026-04-02 (PRD v3.2.0 alignment + M6 partial)
 > **Plan Reference:** [implementation_plan.md](./implementation_plan.md)
 > **Schema Reference:** [schema.prisma](./schema.prisma)
 > **PRD Reference:** [PRD.md](./PRD.md)
+> **Changes Reference:** [changes.md](./changes.md)
 
 ---
 
@@ -334,26 +335,72 @@
 
 ---
 
+## Milestone 5.5: PRD v3.2.0 Infrastructure
+
+**Status:** `[x] COMPLETED 2026-04-02`
+**Depends on:** Milestone 5 (completed)
+**Goal:** Align codebase with PRD v3.2.0 changes: reusable modal system, schema fixes, cache layer, route updates.
+
+### 5.5.1 — Reusable FormModal System
+
+- [x] Create `components/shared/form-modal.tsx` — reusable dialog wrapper with open/close, pending state, form, footer ✅ 2026-04-02
+- [x] Create `components/shared/form-section.tsx` — numbered section headers for multi-section forms ✅ 2026-04-02
+- [x] Refactor `components/project/project-dialog.tsx` → use `FormModal` + `FormSection` ✅ 2026-04-02
+- [x] Refactor `components/project/phase-dialog.tsx` → use `FormModal` ✅ 2026-04-02
+- [x] Refactor `components/project/subphase-dialog.tsx` → use `FormModal` ✅ 2026-04-02
+- [x] Refactor `components/client/client-dialog.tsx` → use `FormModal` ✅ 2026-04-02
+- [x] Delete `components/client/create-client-dialog.tsx` (duplicate) and update all imports ✅ 2026-04-02
+
+### 5.5.2 — Prisma Schema Fixes
+
+- [x] Rename `User.jobeTitle` → `User.jobTitle` (typo fix) with `@map("jobeTitle")` ✅ 2026-04-02
+- [x] Rename `Invitation.jobeTilte` → `Invitation.jobTitle` (typo fix) with `@map("jobeTilte")` ✅ 2026-04-02
+- [x] Rename `Notification.notification` → `Notification.message` (PRD alignment) with `@map("notification")` ✅ 2026-04-02
+- [x] Rename `Company.state` → `Company.wilaya` (PRD alignment) with `@map("state")` ✅ 2026-04-02
+- [x] Add `companyId String` + relation to `Lane` model (PRD §14) ✅ 2026-04-02
+- [x] Run `pnpm prisma generate` to apply schema changes ✅ 2026-04-02
+- [x] Update all code references to renamed fields across actions, components, and pages ✅ 2026-04-02
+
+### 5.5.3 — Cache & Data Architecture (PRD §4)
+
+- [x] Create `lib/cache.ts` — all cache tag constants and cacheLife profiles per PRD §4.3 ✅ 2026-04-02
+- [x] Create `lib/types.ts` — centralized TypeScript interfaces per PRD §3.3 ✅ 2026-04-02
+- [x] Create `lib/queries.ts` — all data-fetching functions with `'use cache'` per PRD §3.2 ✅ 2026-04-02
+- [x] Update all server actions: replace `revalidatePath()` → `updateTag()` per PRD §4.5 ✅ 2026-04-02
+
+### 5.5.4 — Route & Navigation Updates (PRD §15-16)
+
+- [x] Update `lib/nav.ts` — French labels, rename Kanban→Tâches, add Production nav item ✅ 2026-04-02
+- [x] Create `/unite/[unitId]/tasks/page.tsx` placeholder (Kanban board route) ✅ 2026-04-02
+- [x] Create `/unite/[unitId]/productions/page.tsx` placeholder (unit-wide production) ✅ 2026-04-02
+
+### 5.5.5 — Wire Stub Dialogs
+
+- [x] Wire `PhaseDialog.handleSubmit` → `actions/phase.ts` `createPhase()`/`updatePhase()` ✅ 2026-04-02
+- [x] Wire `SubPhaseDialog.handleSubmit` → `actions/subphase.ts` `createSubPhase()`/`updateSubPhase()` ✅ 2026-04-02
+
+---
+
 ## Milestone 6: Project Management & Phases
 
-**Status:** `[ ] NOT STARTED`
-**Depends on:** Milestone 5 (clients exist for project linking)
+**Status:** `[/] IN PROGRESS`
+**Depends on:** Milestone 5 (clients exist for project linking), Milestone 5.5 (infrastructure)
 **Goal:** Project CRUD, team management, phase/sub-phase management with all business rules.
 
 ### 6.1 — Project List
 
-- [ ] Create `app/(dashboard)/unite/[unitId]/projects/page.tsx` (PROJ-08, PROJ-09):
-  - Table/card list: name, code, client, status, montantTTC, progress, ODS date
-  - Filter by: status, client | OWNER also filters by unit
-  - Sort by: date, montantTTC
-  - OWNER sees all projects across units; ADMIN sees unit projects; USER sees assigned only
+- [x] Create `app/(dashboard)/unite/[unitId]/projects/page.tsx` (PROJ-08, PROJ-09): ✅ 2026-04-01
+  - [x] Table/card list: name, code, client, status, montantTTC, progress, ODS date
+  - [ ] Filter by: status, client | OWNER also filters by unit
+  - [ ] Sort by: date, montantTTC
+  - [ ] OWNER sees all projects across units; ADMIN sees unit projects; USER sees assigned only
 
 ### 6.2 — Project Create/Edit
 
-- [ ] Create project creation form (PROJ-01, PROJ-02):
-  - Fields: name, code (unique within unit), type, montantHT, montantTTC, ODS date, delaiMonths, delaiDays, status, signe (boolean), clientId (dropdown)
-  - **CRITICAL** Check `Plan.maxProjects` before INSERT (PROJ-12, BR-05)
-- [ ] Auto-create empty Team on project creation (PROJ-07)
+- [x] Create project creation form (PROJ-01, PROJ-02): ✅ 2026-04-01
+  - [x] Fields: name, code (unique within unit), type, montantHT, montantTTC, ODS date, delaiMonths, delaiDays, status, signe (boolean), clientId (dropdown)
+  - [x] **CRITICAL** Check `Plan.maxProjects` before INSERT (PROJ-12, BR-05)
+- [x] Auto-create empty Team on project creation (PROJ-07) ✅ 2026-04-01
 
 ### 6.3 — Project Detail Page
 
@@ -362,43 +409,43 @@
 
 ### 6.4 — Project Overview Tab
 
-- [ ] Build Overview tab content (PROJ-05):
-  - Financial card: montantHT, montantTTC, TVA amount (`TTC - HT`), TVA % (`((TTC-HT)/HT)*100`)
-  - Progress bar: weighted average of phase progress by montantHT (BR-17)
-  - Team members list with role labels
-  - Client info card
-  - ODS date + Delai display (`X mois Y jours`) (BR-18)
-  - All monetary amounts in Algerian format: `1 234 567,89 DA`
+- [x] Build Overview tab content (PROJ-05): ✅ 2026-04-01
+  - [x] Financial card: montantHT, montantTTC, TVA amount (`TTC - HT`), TVA % (`((TTC-HT)/HT)*100`)
+  - [x] Progress bar: weighted average of phase progress by montantHT (BR-17)
+  - [x] Team members list with role labels
+  - [x] Client info card
+  - [x] ODS date + Delai display (`X mois Y jours`) (BR-18)
+  - [x] All monetary amounts in Algerian format: `1 234 567,89 DA`
 
 ### 6.5 — Team Management
 
-- [ ] Build team management section within project:
-  - Add team member (dropdown from unit members) — creates TeamMember record
-  - Remove team member
-  - Role label assignment per team member
-- [ ] Create `actions/team.ts`: `addTeamMember()`, `removeTeamMember()`
+- [x] Build team management section within project: ✅ 2026-04-01
+  - [x] Add team member (dropdown from unit members) — creates TeamMember record
+  - [x] Remove team member
+  - [x] Role label assignment per team member
+- [x] Create `actions/team.ts`: `addTeamMember()`, `removeTeamMember()` ✅ 2026-04-01
 
 ### 6.6 — Phase CRUD
 
-- [ ] Create Phase creation/edit form (PH-01, PH-02):
-  - Fields: name, code, montantHT, startDate, endDate, status, observations, progress (0-100)
-  - `duration` auto-calculated as `(endDate - startDate)` in calendar days (PH-04)
-  - **CRITICAL** `Phase.startDate >= Project.ods` — hard block on save (PH-03, BR-11)
-  - **CRITICAL** Sum of all `Phase.montantHT` <= `Project.montantHT` — hard block with remaining budget shown (PH-05, BR-10)
-- [ ] Create `actions/phase.ts`: `createPhase()`, `updatePhase()`, `deletePhase()`
+- [x] Create Phase creation/edit form (PH-01, PH-02): ✅ 2026-04-01
+  - [x] Fields: name, code, montantHT, startDate, endDate, status, observations, progress (0-100)
+  - [x] `duration` auto-calculated as `(endDate - startDate)` in calendar days (PH-04)
+  - [/] **CRITICAL** `Phase.startDate >= Project.ods` — hard block on save (PH-03, BR-11) — form built but submit is stub
+  - [/] **CRITICAL** Sum of all `Phase.montantHT` <= `Project.montantHT` — hard block shown but submit is stub (PH-05, BR-10)
+- [x] Create `actions/phase.ts`: `createPhase()`, `updatePhase()`, `deletePhase()` ✅ 2026-04-01
 
 ### 6.7 — SubPhase CRUD
 
-- [ ] Create SubPhase creation/edit form (PH-06, PH-07):
-  - Fields: name, code, status (TODO/COMPLETED), progress (0-100), startDate, endDate
-  - **CRITICAL** SubPhase dates must be within parent Phase date range (PH-08, BR-12)
+- [x] Create SubPhase creation/edit form (PH-06, PH-07): ✅ 2026-04-01
+  - [x] Fields: name, code, status (TODO/COMPLETED), progress (0-100), startDate, endDate
+  - [/] **CRITICAL** SubPhase dates must be within parent Phase date range (PH-08, BR-12) — form built but submit is stub
 - [ ] Auto-calculate Phase.progress as average of SubPhase.progress when SubPhases exist (PH-09)
-- [ ] Create `actions/subphase.ts`: `createSubPhase()`, `updateSubPhase()`, `deleteSubPhase()`
+- [x] Create `actions/subphase.ts`: `createSubPhase()`, `updateSubPhase()`, `deleteSubPhase()` ✅ 2026-04-01
 
 ### 6.8 — GanttMarker CRUD
 
 - [ ] Create GanttMarker form (PH-10): label, date, optional className
-- [ ] Create `actions/gantt-marker.ts`: `createGanttMarker()`, `updateGanttMarker()`, `deleteGanttMarker()`
+- [x] Create `actions/gantt-marker.ts`: `createGanttMarker()`, `updateGanttMarker()`, `deleteGanttMarker()` ✅ 2026-04-01
 
 ### 6.9 — Documents Tab
 
@@ -409,11 +456,11 @@
 
 ### 6.10 — Project Server Actions
 
-- [ ] Create `actions/project.ts`:
-  - `createProject()` — with plan limit check, auto-create team (PROJ-01, PROJ-07, PROJ-12)
-  - `updateProject()` — validate status lifecycle (PROJ-03)
-  - `archiveProject()` — soft delete (PROJ-11)
-  - All queries scoped by `companyId` (BR-01)
+- [x] Create `actions/project.ts`: ✅ 2026-04-01
+  - [x] `createProject()` — with plan limit check, auto-create team (PROJ-01, PROJ-07, PROJ-12)
+  - [x] `updateProject()` — validate status lifecycle (PROJ-03)
+  - [x] `archiveProject()` — soft delete (PROJ-11)
+  - [x] All queries scoped by `companyId` (BR-01)
 
 ---
 
@@ -691,14 +738,15 @@
 | 2         | Layout & Navigation                       | 13      | `[x]`  |
 | 3         | Onboarding & Auth Flow                    | 9       | `[x]`  |
 | 4         | Company & Unit Management                 | 16      | `[x]`  |
-| 5         | Client CRM                                | 7       | `[ ]`  |
-| 6         | Project Management & Phases               | 17      | `[ ]`  |
+| 5         | Client CRM                                | 7       | `[x]`  |
+| 5.5       | PRD v3.2.0 Infrastructure                 | 21      | `[x]`  |
+| 6         | Project Management & Phases               | 17      | `[/]`  |
 | 7         | Gantt Chart                               | 8       | `[ ]`  |
 | 8         | Kanban Board & Tasks                      | 21      | `[ ]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **152** | 4/10   |
+| **TOTAL** |                                           | **173** | 6/11   |
 
 ---
 
-_End of Tasks Document — PMA v3.0.0_
+_End of Tasks Document — PMA v3.2.0_

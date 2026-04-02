@@ -1,17 +1,26 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import { getCurrentUser } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { getAllUnits } from "@/lib/queries"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Skeleton } from "@/components/ui/skeleton"
 import { DynamicSidebar } from "@/components/sidebar/dynamic-sidebar"
 import type { WorkspaceItem } from "@/components/sidebar/company-unit-switcher"
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function SidebarSkeleton() {
+  return (
+    <div className="w-64 border-r bg-card p-4">
+      <Skeleton className="h-8 w-full mb-4" />
+      <Skeleton className="h-6 w-3/4 mb-2" />
+      <Skeleton className="h-6 w-1/2 mb-2" />
+      <Skeleton className="h-6 w-2/3" />
+    </div>
+  )
+}
+
+async function DashboardShell({ children }: { children: React.ReactNode }) {
   const { userId } = await auth()
   if (!userId) {
     redirect("/company/sign-in")
@@ -34,12 +43,9 @@ export default async function DashboardLayout({
     })
 
     if (user.role === "OWNER") {
-      const units = await prisma.unit.findMany({
-        where: { companyId: user.company.id },
-        select: { id: true, name: true },
-      })
+      const units = await getAllUnits(user.company.id)
 
-      units.forEach((unit: { id: string; name: string }) => {
+      units.forEach((unit) => {
         workspaces.push({
           id: unit.id,
           name: unit.name,
@@ -69,12 +75,26 @@ export default async function DashboardLayout({
   }
 
   return (
+    <>
+      <DynamicSidebar userData={userData} workspaces={workspaces} />
+      <SidebarInset className="flex h-full min-h-screen flex-1 flex-col bg-background">
+        {children}
+      </SidebarInset>
+    </>
+  )
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
     <TooltipProvider>
       <SidebarProvider>
-        <DynamicSidebar userData={userData} workspaces={workspaces} />
-        <SidebarInset className="flex h-full min-h-screen flex-1 flex-col bg-background">
-          {children}
-        </SidebarInset>
+        <Suspense fallback={<SidebarSkeleton />}>
+          <DashboardShell>{children}</DashboardShell>
+        </Suspense>
       </SidebarProvider>
     </TooltipProvider>
   )

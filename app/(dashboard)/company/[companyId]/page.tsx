@@ -9,7 +9,7 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { auth } from "@clerk/nextjs/server"
-import { prisma } from "@/lib/prisma"
+import { getCompanyDashboard } from "@/lib/queries"
 import { formatCurrency } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/shared/page-header"
@@ -110,30 +110,7 @@ export default async function CompanyDashboardPage({
     redirect("/company/sign-in")
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    include: {
-      units: {
-        include: {
-          admin: true,
-          projects: true,
-          members: true,
-        },
-      },
-      Project: {
-        select: {
-          id: true,
-          montantTTC: true,
-          status: true,
-        },
-      },
-      users: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  })
+  const company = await getCompanyDashboard(companyId)
 
   if (!company) {
     redirect("/onboarding")

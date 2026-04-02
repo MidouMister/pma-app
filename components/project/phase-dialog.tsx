@@ -3,17 +3,10 @@
 import { useState, useTransition } from "react"
 import { format } from "date-fns"
 import { toast } from "sonner"
+import { createPhase, updatePhase } from "@/actions/phase"
+import type { Status } from "@prisma/client"
 
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -30,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { FormModal } from "@/components/shared/form-modal"
 
 interface PhaseDialogProps {
   projectId: string
@@ -51,7 +45,7 @@ interface PhaseDialogProps {
 }
 
 export function PhaseDialog({
-  projectId: _projectId,
+  projectId,
   projectODS: _projectODS,
   projectMontantHT,
   currentPhasesSum,
@@ -85,198 +79,197 @@ export function PhaseDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      toast.success(phase ? "Phase mise à jour" : "Phase créée")
-      setOpen(false)
-      onSuccess?.()
+      const data = {
+        name: formData.name,
+        code: formData.code,
+        montantHT: Number(formData.montantHT),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        status: formData.status as Status,
+        obs: formData.obs || null,
+        progress: Number(formData.progress),
+        projectId,
+      }
+
+      let result
+      if (phase) {
+        result = await updatePhase({ id: phase.id, ...data })
+      } else {
+        result = await createPhase(data)
+      }
+
+      if (result.success) {
+        toast.success(phase ? "Phase mise à jour" : "Phase créée avec succès")
+        setOpen(false)
+        onSuccess?.()
+      } else {
+        toast.error(result.error ?? "Une erreur est survenue")
+      }
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>{phase ? "Modifier" : "Ajouter une phase"}</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>
-              {phase ? "Modifier la phase" : "Ajouter une phase"}
-            </DialogTitle>
-            <DialogDescription>
-              {phase
-                ? "Modifiez les informations de la phase."
-                : "Ajoutez une nouvelle phase au projet."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom de la phase *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="code">Code *</Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="montantHT">Montant HT (DA) *</Label>
-              <Input
-                id="montantHT"
-                type="number"
-                value={formData.montantHT}
-                onChange={(e) =>
-                  setFormData({ ...formData, montantHT: e.target.value })
-                }
-                required
-                min="0"
-                step="0.01"
-              />
-              <p className="text-xs text-muted-foreground">
-                Budget restant disponible:{" "}
-                {formatCurrency(
-                  remainingBudget - Number(formData.montantHT || 0)
-                )}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Date de début</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      {formData.startDate
-                        ? format(formData.startDate, "dd MMM yyyy")
-                        : "Sélectionner"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.startDate ?? undefined}
-                      onSelect={(date) =>
-                        setFormData({ ...formData, startDate: date ?? null })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label>Date de fin</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      {formData.endDate
-                        ? format(formData.endDate, "dd MMM yyyy")
-                        : "Sélectionner"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.endDate ?? undefined}
-                      onSelect={(date) =>
-                        setFormData({ ...formData, endDate: date ?? null })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            {duration !== null && (
-              <p className="text-xs text-muted-foreground">
-                Durée: {duration} jours
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Statut</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      status: value as
-                        | "New"
-                        | "InProgress"
-                        | "Pause"
-                        | "Complete",
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="New">Nouveau</SelectItem>
-                    <SelectItem value="InProgress">En cours</SelectItem>
-                    <SelectItem value="Pause">En pause</SelectItem>
-                    <SelectItem value="Complete">Terminé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="progress">Progression (%)</Label>
-                <Input
-                  id="progress"
-                  type="number"
-                  value={formData.progress}
-                  onChange={(e) =>
-                    setFormData({ ...formData, progress: e.target.value })
-                  }
-                  min="0"
-                  max="100"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="obs">Observations</Label>
-              <Textarea
-                id="obs"
-                value={formData.obs}
-                onChange={(e) =>
-                  setFormData({ ...formData, obs: e.target.value })
-                }
-                placeholder="Observations optionnelles..."
-              />
-            </div>
+    <FormModal
+      open={open}
+      onOpenChange={setOpen}
+      title={phase ? "Modifier la phase" : "Ajouter une phase"}
+      description={
+        phase
+          ? "Modifiez les informations de la phase."
+          : "Ajoutez une nouvelle phase au projet."
+      }
+      trigger={<Button>{phase ? "Modifier" : "Ajouter une phase"}</Button>}
+      size="md"
+      isPending={isPending}
+      onSubmit={handleSubmit}
+      submitLabel={phase ? "Enregistrer" : "Créer"}
+      submitPendingLabel="En cours..."
+    >
+      <div className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nom de la phase *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
+            />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="code">Code *</Label>
+            <Input
+              id="code"
+              value={formData.code}
+              onChange={(e) =>
+                setFormData({ ...formData, code: e.target.value })
+              }
+              required
+            />
+          </div>
+        </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
+        <div className="space-y-2">
+          <Label htmlFor="montantHT">Montant HT (DA) *</Label>
+          <Input
+            id="montantHT"
+            type="number"
+            value={formData.montantHT}
+            onChange={(e) =>
+              setFormData({ ...formData, montantHT: e.target.value })
+            }
+            required
+            min="0"
+            step="0.01"
+          />
+          <p className="text-xs text-muted-foreground">
+            Budget restant disponible:{" "}
+            {formatCurrency(remainingBudget - Number(formData.montantHT || 0))}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Date de début</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  {formData.startDate
+                    ? format(formData.startDate, "dd MMM yyyy")
+                    : "Sélectionner"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.startDate ?? undefined}
+                  onSelect={(date) =>
+                    setFormData({ ...formData, startDate: date ?? null })
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="space-y-2">
+            <Label>Date de fin</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  {formData.endDate
+                    ? format(formData.endDate, "dd MMM yyyy")
+                    : "Sélectionner"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.endDate ?? undefined}
+                  onSelect={(date) =>
+                    setFormData({ ...formData, endDate: date ?? null })
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {duration !== null && (
+          <p className="text-xs text-muted-foreground">
+            Durée: {duration} jours
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="status">Statut</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  status: value as "New" | "InProgress" | "Pause" | "Complete",
+                })
+              }
             >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "En cours..." : phase ? "Enregistrer" : "Créer"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="New">Nouveau</SelectItem>
+                <SelectItem value="InProgress">En cours</SelectItem>
+                <SelectItem value="Pause">En pause</SelectItem>
+                <SelectItem value="Complete">Terminé</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="progress">Progression (%)</Label>
+            <Input
+              id="progress"
+              type="number"
+              value={formData.progress}
+              onChange={(e) =>
+                setFormData({ ...formData, progress: e.target.value })
+              }
+              min="0"
+              max="100"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="obs">Observations</Label>
+          <Textarea
+            id="obs"
+            value={formData.obs}
+            onChange={(e) => setFormData({ ...formData, obs: e.target.value })}
+            placeholder="Observations optionnelles..."
+          />
+        </div>
+      </div>
+    </FormModal>
   )
 }
 

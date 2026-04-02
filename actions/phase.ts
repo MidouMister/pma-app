@@ -2,11 +2,12 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { formatCurrency } from "@/lib/format"
 import { phaseSchema, updatePhaseSchema } from "@/lib/validators"
+import { projectPhasesTag, projectGanttTag, projectTag } from "@/lib/cache"
 
 async function recalculatePhaseProgress(phaseId: string) {
   const subPhases = await prisma.subPhase.findMany({ where: { phaseId } })
@@ -132,7 +133,9 @@ export async function createPhase(data: unknown) {
       },
     })
 
-    revalidatePath(`/unite/${project.unitId}/projects/${project.id}`)
+    revalidateTag(projectPhasesTag(project.id), 'max')
+    revalidateTag(projectGanttTag(project.id), 'max')
+    revalidateTag(projectTag(project.id), 'max')
 
     return { success: true }
   } catch (error) {
@@ -261,9 +264,9 @@ export async function updatePhase(data: unknown) {
 
     await recalculatePhaseProgress(phase.id)
 
-    revalidatePath(
-      `/unite/${phase.Project.unitId}/projects/${phase.Project.id}`
-    )
+    revalidateTag(projectPhasesTag(phase.Project.id), 'max')
+    revalidateTag(projectGanttTag(phase.Project.id), 'max')
+    revalidateTag(projectTag(phase.Project.id), 'max')
 
     return { success: true }
   } catch (error) {
@@ -332,9 +335,8 @@ export async function deletePhase(phaseId: string) {
       where: { id: phaseId },
     })
 
-    revalidatePath(
-      `/unite/${phase.Project.unitId}/projects/${phase.Project.id}`
-    )
+    revalidateTag(projectPhasesTag(phase.Project.id), 'max')
+    revalidateTag(projectGanttTag(phase.Project.id), 'max')
 
     return { success: true }
   } catch (error) {

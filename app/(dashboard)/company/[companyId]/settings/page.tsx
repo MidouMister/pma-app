@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { notFound, redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { getCurrentUser } from "@/lib/auth"
+import { getCompanyById } from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import { CompanySettingsForm } from "./company-settings-form"
 
@@ -16,20 +17,13 @@ export default async function CompanySettingsPage({
     redirect("/company/sign-in")
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    include: {
-      company: { include: { subscription: { include: { Plan: true } } } },
-    },
-  })
+  const user = await getCurrentUser()
 
   if (!user || user.role !== "OWNER") {
     redirect("/dashboard")
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-  })
+  const company = await getCompanyById(companyId)
 
   if (!company) {
     notFound()

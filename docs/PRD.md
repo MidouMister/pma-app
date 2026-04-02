@@ -1,5 +1,6 @@
 # PMA — Product Requirements Document
-### Version 3.0.0 — AI-Implementable Edition
+
+### Version 3.2.0 — AI-Implementable Edition
 
 ---
 
@@ -7,20 +8,23 @@
 
 1. [Executive Summary](#1-executive-summary)
 2. [Tech Stack](#2-tech-stack)
-3. [Problem Statement](#3-problem-statement)
-4. [Goals & Success Metrics](#4-goals--success-metrics)
-5. [User Personas](#5-user-personas)
-6. [System Architecture Overview](#6-system-architecture-overview)
-7. [Functional Requirements](#7-functional-requirements)
-8. [Non-Functional Requirements](#8-non-functional-requirements)
-9. [Role-Based Access Control](#9-role-based-access-control)
-10. [Business Rules & Constraints](#10-business-rules--constraints)
-11. [Data Models Summary](#11-data-models-summary)
-12. [Page & Route Inventory](#12-page--route-inventory)
-13. [Navigation Structure](#13-navigation-structure)
-14. [UI Component Library](#14-ui-component-library)
-15. [Out of Scope](#15-out-of-scope)
-16. [Glossary](#16-glossary)
+3. [Code Architecture](#3-code-architecture)
+4. [Caching Strategy](#4-caching-strategy)
+5. [Deployment & Git Workflow](#5-deployment--git-workflow)
+6. [Problem Statement](#6-problem-statement)
+7. [Goals & Success Metrics](#7-goals--success-metrics)
+8. [User Personas](#8-user-personas)
+9. [System Architecture Overview](#9-system-architecture-overview)
+10. [Functional Requirements](#10-functional-requirements)
+11. [Non-Functional Requirements](#11-non-functional-requirements)
+12. [Role-Based Access Control](#12-role-based-access-control)
+13. [Business Rules & Constraints](#13-business-rules--constraints)
+14. [Data Models Summary](#14-data-models-summary)
+15. [Page & Route Inventory](#15-page--route-inventory)
+16. [Navigation Structure](#16-navigation-structure)
+17. [UI Component Library](#17-ui-component-library)
+18. [Out of Scope](#18-out-of-scope)
+19. [Glossary](#19-glossary)
 
 ---
 
@@ -29,6 +33,7 @@
 **PMA** (Project Management App) is a multi-tenant, enterprise-grade web application targeting construction, engineering, and public works companies in Algeria.
 
 The platform is structured around a **Company → Units → Projects** hierarchy:
+
 - A single **Company Owner (OWNER)** bootstraps the account and has company-wide visibility with no unit assignment.
 - A Company contains one or more **Units**, each managed by an **Admin (ADMIN)**.
 - Each Unit operates semi-independently with its own members, clients, projects, and Kanban board.
@@ -42,23 +47,23 @@ PMA replaces fragmented spreadsheet workflows with a single, role-enforced platf
 
 > **This section is the authoritative reference for every implementation decision. Do not deviate from these choices.**
 
-| Layer | Technology | Version | Notes |
-|---|---|---|---|
-| Framework | Next.js | 16 | App Router, Server Actions, Server Components |
-| UI Library | React | 19 | |
-| Styling | Tailwind CSS | 4 | |
-| Component Library | shadcn/ui | v4 | Already initialized — do NOT re-run init |
-| Sidebar Foundation | shadcn `sidebar-07` block | — | Base for all sidebar layouts |
-| Navigation Source of Truth | `src/lib/nav.ts` | — | Single file defining all role-based nav items |
-| Database ORM | Prisma | 7 | |
-| Database | Supabase (PostgreSQL) | — | DB only — no Supabase Storage, no Supabase Auth |
-| Auth | Clerk | — | Email/password + OAuth; webhooks for user sync |
-| File Uploads | Uploadthing | — | Logos, project documents, all file uploads |
-| State Management | Jotai | — | Client-side global state |
-| Gantt Component | kibo-ui Gantt | — | `npx kibo-ui add gantt` |
-| Kanban Component | kibo-ui Kanban | — | `npx kibo-ui add kanban` |
-| Package Manager | pnpm | — | Do not use npm or yarn |
-| Drag & Drop | dnd-kit | — | Bundled with kibo-ui components |
+| Layer                      | Technology                | Version | Notes                                           |
+| -------------------------- | ------------------------- | ------- | ----------------------------------------------- |
+| Framework                  | Next.js                   | 16      | App Router, Server Actions, Server Components   |
+| UI Library                 | React                     | 19      |                                                 |
+| Styling                    | Tailwind CSS              | 4       |                                                 |
+| Component Library          | shadcn/ui                 | v4      | Already initialized — do NOT re-run init        |
+| Sidebar Foundation         | shadcn `sidebar-07` block | —       | Base for all sidebar layouts                    |
+| Navigation Source of Truth | `src/lib/nav.ts`          | —       | Single file defining all role-based nav items   |
+| Database ORM               | Prisma                    | 7       |                                                 |
+| Database                   | Supabase (PostgreSQL)     | —       | DB only — no Supabase Storage, no Supabase Auth |
+| Auth                       | Clerk                     | —       | Email/password + OAuth; webhooks for user sync  |
+| File Uploads               | Uploadthing               | —       | Logos, project documents, all file uploads      |
+| State Management           | Jotai                     | —       | Client-side global state (`store/` directory)   |
+| Gantt Component            | kibo-ui Gantt             | —       | `npx kibo-ui add gantt`                         |
+| Kanban Component           | kibo-ui Kanban            | —       | `npx kibo-ui add kanban`                        |
+| Package Manager            | pnpm                      | —       | Do not use npm or yarn                          |
+| Drag & Drop                | dnd-kit                   | —       | Bundled with kibo-ui components                 |
 
 ### Key Architecture Decisions
 
@@ -67,85 +72,506 @@ PMA replaces fragmented spreadsheet workflows with a single, role-enforced platf
 - **Supabase is used as a PostgreSQL database only** — accessed via Prisma, not via Supabase client SDK or Supabase Auth.
 - **Clerk handles all authentication** — user sessions, OAuth, invitation flows, and webhooks.
 - **Uploadthing handles all file uploads** — company logos, unit logos, project documents.
-- **No Supabase Realtime** — notification count is polled every 30 seconds via a Client Component using `setInterval` + Server Action.
+- **No Supabase Realtime** — notification count polled every 30 seconds via Client Component `setInterval` + Server Action.
+- **Next.js 16 uses `proxy.ts` for middleware** — NOT `middleware.ts`. Critical naming difference.
 
 ---
 
-## 3. Problem Statement
+## 3. Code Architecture
 
-| Pain Point | Description |
-|---|---|
-| Fragmented planning tools | Gantt charts in Excel, tasks in another app, financials elsewhere — no single project health view |
-| No production accountability | Planned vs. actual production tracked manually (if at all) — underperformance detected too late |
-| Weak access control | Spreadsheet sharing exposes sensitive financial data to all roles indiscriminately |
-| Multi-unit chaos | No structured way to manage multiple regional branches under one organizational roof |
-| Subscription scalability | Small teams need a lightweight entry point; enterprises need no hard limits |
+> **This section defines the canonical file and directory structure. Every agent must follow this exactly. Do not create files outside these locations.**
+
+### 3.1 Directory Structure
+
+```
+src/
+├── app/
+│   ├── (auth)/
+│   │   ├── company/sign-in/[[...sign-in]]/page.tsx
+│   │   ├── company/sign-up/[[...sign-up]]/page.tsx
+│   │   └── layout.tsx
+│   ├── (dashboard)/
+│   │   ├── layout.tsx                    # Auth guard + SidebarProvider
+│   │   ├── dashboard/page.tsx            # Pure redirect hub
+│   │   ├── onboarding/page.tsx
+│   │   ├── company/[companyId]/          # OWNER routes
+│   │   ├── unite/[unitId]/               # ADMIN + OWNER routes
+│   │   └── user/[userId]/               # USER workspace routes
+│   ├── api/
+│   │   ├── uploadthing/                  # Uploadthing route handler
+│   │   └── webhooks/clerk/               # Clerk webhook
+│   ├── layout.tsx                        # Root layout with ClerkProvider
+│   └── site/page.tsx                     # Marketing landing page
+│
+├── components/
+│   ├── ui/                               # shadcn/ui primitives (do not modify)
+│   ├── global/                           # App-wide components
+│   │   ├── app-header.tsx                # Top header with notification bell + user menu
+│   │   ├── breadcrumb.tsx                # Dynamic breadcrumb navigation
+│   │   ├── theme-toggle.tsx              # Dark/light mode switch
+│   │   ├── subscription-banner.tsx       # Persistent upgrade banner (grace period)
+│   │   └── read-only-guard.tsx           # Blocks mutations when READONLY
+│   ├── forms/                            # Reusable form field components
+│   │   ├── wilaya-select.tsx             # Dropdown of 48 Algerian wilayas
+│   │   ├── currency-input.tsx            # Numeric input formatted as DA
+│   │   ├── date-picker.tsx               # Date picker with French locale
+│   │   ├── logo-uploader.tsx             # Uploadthing logo upload + preview
+│   │   ├── role-select.tsx               # Role picker (ADMIN / USER)
+│   │   ├── status-select.tsx             # Project/Phase status picker
+│   │   └── user-combobox.tsx             # Searchable user picker from unit members
+│   ├── sidebar/
+│   │   ├── app-sidebar.tsx
+│   │   ├── company-unit-switcher.tsx     # OWNER context switcher
+│   │   ├── nav-main.tsx
+│   │   └── nav-user.tsx
+│   ├── shared/                           # Reusable UI blocks
+│   │   ├── page-header.tsx
+│   │   ├── data-table.tsx
+│   │   ├── empty-state.tsx
+│   │   └── loading-skeleton.tsx
+│   ├── onboarding/                       # Onboarding wizard steps
+│   ├── project/                          # Project-specific components
+│   ├── gantt/                            # Gantt chart components
+│   ├── kanban/                           # Kanban board components
+│   └── notifications/                    # Notification bell, dropdown, list
+│
+├── actions/                              # Server Actions — ALL mutations live here
+│   ├── onboarding.ts
+│   ├── company.ts
+│   ├── unit.ts
+│   ├── invitation.ts
+│   ├── client.ts
+│   ├── project.ts
+│   ├── phase.ts
+│   ├── subphase.ts
+│   ├── gantt-marker.ts
+│   ├── task.ts
+│   ├── lane.ts
+│   ├── tag.ts
+│   ├── comment.ts
+│   ├── production.ts
+│   ├── time-entry.ts
+│   ├── notification.ts
+│   ├── activity-log.ts
+│   └── team.ts
+│
+├── lib/
+│   ├── prisma.ts                         # Prisma client singleton
+│   ├── auth.ts                           # getCurrentUser(), requireRole(), requireCompanyScope()
+│   ├── cache.ts                          # ALL cacheTag() constants + cacheLife() profiles
+│   ├── queries.ts                        # ALL data-fetching functions with 'use cache'
+│   ├── types.ts                          # ALL TypeScript interfaces, types, and enums
+│   ├── format.ts                         # formatCurrency(), formatDate(), formatDelai()
+│   ├── validators.ts                     # Zod schemas for all entities
+│   ├── constants.ts                      # Plan tiers, wilayas, notification types
+│   ├── subscription.ts                   # Subscription status computation
+│   ├── nav.ts                            # Navigation items — single source of truth
+│   └── utils.ts                          # cn(), calcProgress(), other utilities
+│
+├── hooks/
+│   ├── use-timer.ts                      # Live timer for time entries
+│   └── use-notifications.ts             # Notification polling
+│
+├── store/                                # Jotai atoms
+│   ├── sidebar.ts                        # Sidebar state (active unit, collapsed)
+│   └── theme.ts                          # Theme atom
+│
+├── prisma/
+│   ├── schema.prisma
+│   └── seed.ts
+│
+└── proxy.ts                              # Next.js 16 Middleware (NOT middleware.ts)
+```
+
+### 3.2 `lib/queries.ts` — Data Fetching Source of Truth
+
+All database **read** operations live in `lib/queries.ts`. These are async server functions with the `'use cache'` directive. No raw Prisma queries belong in page components.
+
+```typescript
+// lib/queries.ts
+import { prisma } from './prisma'
+import { cacheTag, cacheLife, unstable_noStore } from 'next/cache'
+import { companyTag, unitTasksTag } from './cache'
+
+export async function getCompanyById(companyId: string) {
+  'use cache'
+  cacheTag(companyTag(companyId))
+  cacheLife('days')
+  return prisma.company.findUnique({ where: { id: companyId } })
+}
+
+export async function getUnitTasks(unitId: string) {
+  'use cache'
+  cacheTag(unitTasksTag(unitId))
+  cacheLife('seconds')
+  return prisma.task.findMany({ where: { unitId } })
+}
+
+// Never cached — always fresh
+export async function getUnreadCount(userId: string) {
+  unstable_noStore()
+  return prisma.notification.count({ where: { userId, read: false } })
+}
+```
+
+### 3.3 `lib/types.ts` — TypeScript Source of Truth
+
+All shared TypeScript interfaces and complex return types live here. Do not define types inline in components or actions.
+
+```typescript
+// lib/types.ts
+export interface ProjectWithPhases {
+  id: string
+  name: string
+  montantHT: number
+  phases: Phase[]
+}
+
+export interface UserWithRole {
+  id: string
+  clerkId: string
+  role: Role
+  companyId: string
+  unitId: string | null
+  jobTitle?: string
+  avatarUrl?: string
+}
+```
+
+### 3.4 Server Action Pattern
+
+All Server Actions in `actions/` follow this exact sequence:
+
+```typescript
+'use server'
+
+import { auth } from '@clerk/nextjs/server'
+import { prisma } from '@/lib/prisma'
+import { revalidateTag } from 'next/cache'
+import { unitProjectsTag } from '@/lib/cache'
+
+export async function createProject(data: CreateProjectInput) {
+  // 1. Authenticate
+  const { userId } = await auth()
+  if (!userId) throw new Error('Unauthorized')
+
+  // 2. Get user + validate company/unit scope
+  const user = await prisma.user.findUnique({ where: { clerkId: userId } })
+  if (!user?.companyId) throw new Error('No company')
+
+  // 3. Check subscription status (block READONLY)
+  // 4. Check RBAC permissions
+  // 5. Check plan limits
+  // 6. Validate business rules
+  // 7. Execute mutation
+  // 8. Create ActivityLog
+  // 9. Create Notifications
+  // 10. Revalidate cache tags
+  revalidateTag(unitProjectsTag(user.unitId!))
+}
+```
 
 ---
 
-## 4. Goals & Success Metrics
+## 4. Caching Strategy
+
+> **PMA uses the Next.js 16 `use cache` directive system.** All cache configuration lives in `src/lib/cache.ts` as the single source of truth.
+
+### 4.1 Caching Primitives
+
+| Primitive            | Purpose                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `'use cache'`        | Marks an async server function as cacheable                              |
+| `cacheTag(tag)`      | Associates cache entry with named tags for targeted invalidation         |
+| `cacheLife(profile)` | Sets TTL using named profiles                                            |
+| `revalidateTag(tag)` | Called in Server Actions after mutations to purge specific cache entries |
+| `unstable_noStore()` | Opts a function fully out of caching — for real-time data                |
+
+### 4.2 Cache Life Profiles
+
+| Profile              | Stale  | Revalidate | Expire | Used For                                      |
+| -------------------- | ------ | ---------- | ------ | --------------------------------------------- |
+| `"static"`           | ∞      | ∞          | ∞      | Plan definitions — never change at runtime    |
+| `"days"`             | 1 day  | 1 day      | 7 days | Company profile, Unit profile                 |
+| `"hours"`            | 1 hour | 1 hour     | 1 day  | Project list, Client list, Team members       |
+| `"minutes"`          | 1 min  | 1 min      | 5 min  | Project detail, Phase list, Production charts |
+| `"seconds"` (custom) | 30 sec | 30 sec     | 2 min  | Kanban lanes & tasks — high interactivity     |
+| `noStore`            | —      | —          | —      | Notifications, Activity logs — always fresh   |
+
+### 4.3 Cache Tag Taxonomy (`src/lib/cache.ts`)
+
+```typescript
+// src/lib/cache.ts
+
+export const PLANS_TAG = 'plans'
+
+// Company
+export const companyTag = (id: string) => `company:${id}`
+export const companyTeamTag = (id: string) => `company:${id}:team`
+
+// Subscription
+export const subscriptionTag = (companyId: string) => `subscription:${companyId}`
+
+// Unit
+export const unitTag = (id: string) => `unit:${id}`
+export const unitMembersTag = (id: string) => `unit:${id}:members`
+export const unitProjectsTag = (id: string) => `unit:${id}:projects`
+export const unitClientsTag = (id: string) => `unit:${id}:clients`
+export const unitLanesTag = (id: string) => `unit:${id}:lanes`
+export const unitTasksTag = (id: string) => `unit:${id}:tasks`
+export const unitTagsTag = (id: string) => `unit:${id}:tags`
+export const unitProductionsTag = (id: string) => `unit:${id}:productions`
+
+// Project
+export const projectTag = (id: string) => `project:${id}`
+export const projectPhasesTag = (id: string) => `project:${id}:phases`
+export const projectGanttTag = (id: string) => `project:${id}:gantt`
+export const projectTeamTag = (id: string) => `project:${id}:team`
+export const projectTimeTag = (id: string) => `project:${id}:time`
+
+// Phase
+export const phaseTag = (id: string) => `phase:${id}`
+export const phaseProductionTag = (id: string) => `phase:${id}:production`
+
+// User
+export const userTag = (id: string) => `user:${id}`
+export const userTasksTag = (id: string) => `user:${id}:tasks`
+export const userProjectsTag = (id: string) => `user:${id}:projects`
+export const userAnalyticsTag = (id: string) => `user:${id}:analytics`
+```
+
+### 4.4 Caching Decision Map
+
+#### Company Domain
+
+| Function            | Cache Strategy        | Tags                         |
+| ------------------- | --------------------- | ---------------------------- |
+| `getCompanyById()`  | `cacheLife("days")`   | `companyTag(id)`             |
+| `getCompanyKPIs()`  | `cacheLife("hours")`  | `companyTag(id)`             |
+| `getAllUnits()`     | `cacheLife("hours")`  | `companyTag(id)`             |
+| `getCompanyTeam()`  | `cacheLife("hours")`  | `companyTeamTag(id)`         |
+| `getSubscription()` | `cacheLife("hours")`  | `subscriptionTag(companyId)` |
+| `getPlans()`        | `cacheLife("static")` | `PLANS_TAG`                  |
+
+#### Unit Domain
+
+| Function               | Cache Strategy         | Tags                     |
+| ---------------------- | ---------------------- | ------------------------ |
+| `getUnitById()`        | `cacheLife("days")`    | `unitTag(id)`            |
+| `getUnitMembers()`     | `cacheLife("hours")`   | `unitMembersTag(id)`     |
+| `getUnitProjects()`    | `cacheLife("hours")`   | `unitProjectsTag(id)`    |
+| `getUnitClients()`     | `cacheLife("hours")`   | `unitClientsTag(id)`     |
+| `getUnitLanes()`       | `cacheLife("seconds")` | `unitLanesTag(id)`       |
+| `getUnitTasks()`       | `cacheLife("seconds")` | `unitTasksTag(id)`       |
+| `getUnitTags()`        | `cacheLife("hours")`   | `unitTagsTag(id)`        |
+| `getUnitProductions()` | `cacheLife("minutes")` | `unitProductionsTag(id)` |
+
+#### Project Domain
+
+| Function               | Cache Strategy         | Tags                     |
+| ---------------------- | ---------------------- | ------------------------ |
+| `getProjectById()`     | `cacheLife("minutes")` | `projectTag(id)`         |
+| `getProjectPhases()`   | `cacheLife("minutes")` | `projectPhasesTag(id)`   |
+| `getGanttData()`       | `cacheLife("minutes")` | `projectGanttTag(id)`    |
+| `getProjectTeam()`     | `cacheLife("hours")`   | `projectTeamTag(id)`     |
+| `getTimeEntries()`     | `cacheLife("minutes")` | `projectTimeTag(id)`     |
+| `getPhaseProduction()` | `cacheLife("minutes")` | `phaseProductionTag(id)` |
+
+#### User Domain
+
+| Function             | Cache Strategy         | Tags                   |
+| -------------------- | ---------------------- | ---------------------- |
+| `getUserById()`      | `cacheLife("days")`    | `userTag(id)`          |
+| `getUserTasks()`     | `cacheLife("seconds")` | `userTasksTag(id)`     |
+| `getUserProjects()`  | `cacheLife("hours")`   | `userProjectsTag(id)`  |
+| `getUserAnalytics()` | `cacheLife("minutes")` | `userAnalyticsTag(id)` |
+
+#### Never Cached
+
+| Function                | Strategy             | Reason                                     |
+| ----------------------- | -------------------- | ------------------------------------------ |
+| `getNotifications()`    | `unstable_noStore()` | Must always reflect real-time unread state |
+| `getActivityLogs()`     | `unstable_noStore()` | Audit trail must be exactly current        |
+| `getUnreadCount()`      | `unstable_noStore()` | Bell badge must be accurate                |
+| `getInvitationStatus()` | `unstable_noStore()` | Changes externally via Clerk               |
+
+### 4.5 Cache Invalidation — Server Actions
+
+| Server Action          | Tags Invalidated                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `createUnit()`         | `companyTag(companyId)`                                                              |
+| `updateUnit()`         | `unitTag(unitId)`                                                                    |
+| `deleteUnit()`         | `companyTag(companyId)`, `unitTag(unitId)`                                           |
+| `createProject()`      | `unitProjectsTag(unitId)`                                                            |
+| `updateProject()`      | `projectTag(projectId)`, `unitProjectsTag(unitId)`                                   |
+| `deleteProject()`      | `unitProjectsTag(unitId)`, `projectTag(projectId)`                                   |
+| `createPhase()`        | `projectPhasesTag(projectId)`, `projectGanttTag(projectId)`, `projectTag(projectId)` |
+| `updatePhase()`        | `projectPhasesTag(projectId)`, `projectGanttTag(projectId)`, `projectTag(projectId)` |
+| `deletePhase()`        | `projectPhasesTag(projectId)`, `projectGanttTag(projectId)`                          |
+| `createProduction()`   | `phaseProductionTag(phaseId)`, `unitProductionsTag(unitId)`                          |
+| `updateProduction()`   | `phaseProductionTag(phaseId)`, `unitProductionsTag(unitId)`                          |
+| `createTask()`         | `unitTasksTag(unitId)`, `userTasksTag(assignedUserId)`                               |
+| `updateTask()`         | `unitTasksTag(unitId)`, `userTasksTag(assignedUserId)`                               |
+| `moveTask()`           | `unitTasksTag(unitId)`, `unitLanesTag(unitId)`                                       |
+| `deleteTask()`         | `unitTasksTag(unitId)`, `userTasksTag(assignedUserId)`                               |
+| `createLane()`         | `unitLanesTag(unitId)`                                                               |
+| `updateLane()`         | `unitLanesTag(unitId)`                                                               |
+| `deleteLane()`         | `unitLanesTag(unitId)`, `unitTasksTag(unitId)`                                       |
+| `createClient()`       | `unitClientsTag(unitId)`                                                             |
+| `updateClient()`       | `unitClientsTag(unitId)`                                                             |
+| `deleteClient()`       | `unitClientsTag(unitId)`                                                             |
+| `addTeamMember()`      | `projectTeamTag(projectId)`, `userProjectsTag(userId)`, `companyTeamTag(companyId)`  |
+| `removeTeamMember()`   | `projectTeamTag(projectId)`, `userProjectsTag(userId)`, `companyTeamTag(companyId)`  |
+| `createTimeEntry()`    | `projectTimeTag(projectId)`, `userAnalyticsTag(userId)`                              |
+| `updateTimeEntry()`    | `projectTimeTag(projectId)`, `userAnalyticsTag(userId)`                              |
+| `updateSubscription()` | `subscriptionTag(companyId)`                                                         |
+| `updateCompany()`      | `companyTag(companyId)`                                                              |
+| `updateUser()`         | `userTag(userId)`                                                                    |
+| `acceptInvitation()`   | `unitMembersTag(unitId)`, `companyTeamTag(companyId)`                                |
+
+### 4.6 Caching Requirements
+
+| ID       | Requirement                                                                                | Priority  |
+| -------- | ------------------------------------------------------------------------------------------ | --------- |
+| CACHE-01 | All data-fetching functions in `queries.ts` must use `'use cache'` directive               | Must Have |
+| CACHE-02 | All cache tags defined as typed constants in `lib/cache.ts` — no inline string literals    | Must Have |
+| CACHE-03 | Every Server Action mutation calls `revalidateTag()` for the minimum set of tags           | Must Have |
+| CACHE-04 | Notifications, activity logs, unread count, invitation status use `unstable_noStore()`     | Must Have |
+| CACHE-05 | `cacheLife("static")` on `getPlans()` — Plan data never changes at runtime                 | Must Have |
+| CACHE-06 | Kanban lanes and tasks use `cacheLife("seconds")`                                          | Must Have |
+| CACHE-07 | Cache tags scoped to entity ID — never global broad tags                                   | Must Have |
+| CACHE-08 | `use cache` only in Server Components and async server functions — never Client Components | Must Have |
+| CACHE-09 | Phase progress update must also invalidate `projectTag(projectId)`                         | Must Have |
+| CACHE-10 | Subscription activation by operator invalidates `subscriptionTag(companyId)` immediately   | Must Have |
+
+---
+
+## 5. Deployment & Git Workflow
+
+> **These rules apply to every agent on every task. Read before touching any file.**
+
+### 5.1 Two Environments
+
+| Environment | Branch    | URL                      | Purpose                      |
+| ----------- | --------- | ------------------------ | ---------------------------- |
+| Production  | `main`    | `pma.yourdomain.com`     | Live app — real users        |
+| Staging     | `staging` | `staging-pma.vercel.app` | All development happens here |
+
+Fully isolated — separate Clerk apps, separate Supabase projects, separate Uploadthing apps.
+
+### 5.2 Branch Structure
+
+```
+main          ← production only. Never commit here directly.
+└── staging   ← all development lands here via PRs.
+      └── feature/your-task-name
+```
+
+### 5.3 Three Non-Negotiable Rules
+
+**Rule 1 — `main` is protected.** Never commit directly. If on `main`, stop and branch.
+
+**Rule 2 — Always on a feature branch.**
+
+```bash
+git checkout staging && git pull origin staging
+git checkout -b feature/task-name
+```
+
+**Rule 3 — Atomic commits.** One logical change. Conventional Commits format:
+
+```
+feat: add phase budget validation hard block
+fix: correct subscription grace period logic
+chore: create lib/cache.ts with tag constants
+```
+
+### 5.4 PR Rules
+
+- Every PR targets `staging` — never `main`.
+- Before opening: `git rebase staging`, `pnpm typecheck`, `pnpm lint`.
+
+### 5.5 Merging to Production
+
+```bash
+git checkout main && git merge staging && git push origin main
+```
+
+---
+
+## 6. Problem Statement
+
+| Pain Point                   | Description                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| Fragmented planning tools    | Gantt in Excel, tasks elsewhere, financials separate — no unified project view |
+| No production accountability | Planned vs. actual tracked manually — underperformance detected too late       |
+| Weak access control          | Spreadsheets expose financial data to all roles indiscriminately               |
+| Multi-unit chaos             | No structured way to manage regional branches under one roof                   |
+| Subscription scalability     | Small teams need lightweight entry; enterprises need no hard limits            |
+
+---
+
+## 7. Goals & Success Metrics
 
 ### Product Goals
 
-| # | Goal | Description |
-|---|---|---|
-| G1 | Unified project view | Every project's financial, planning, and production data accessible from one screen |
-| G2 | Role-enforced data access | Users see only what their role permits — no over-exposure of sensitive data |
-| G3 | Production variance detection | Automated alerts when actual production falls below planned thresholds |
-| G4 | Structured multi-tenancy | Companies manage multiple independent units under one account |
-| G5 | Scalable monetization | Tiered plans that grow with the customer without requiring code changes |
+| #   | Goal                          | Description                                                     |
+| --- | ----------------------------- | --------------------------------------------------------------- |
+| G1  | Unified project view          | Financial, planning, production data accessible from one screen |
+| G2  | Role-enforced data access     | Users see only what their role permits                          |
+| G3  | Production variance detection | Automated alerts when actual production falls below threshold   |
+| G4  | Structured multi-tenancy      | Companies manage multiple independent units under one account   |
+| G5  | Scalable monetization         | Tiered plans that grow without code changes                     |
 
-### Key Metrics (KPIs — 6 months post-launch)
+### KPIs (6 months post-launch)
 
-| Metric | Target |
-|---|---|
-| User activation rate (onboarding completed) | > 75% of signups |
-| Weekly Active Users (WAU) | > 60% of registered users |
-| Average projects per active unit | ≥ 3 |
-| Trial-to-paid conversion within 2 months | > 25% |
-| Support tickets related to permissions | < 5% of active users/month |
+| Metric                                   | Target                     |
+| ---------------------------------------- | -------------------------- |
+| User activation rate                     | > 75% of signups           |
+| Weekly Active Users (WAU)                | > 60% of registered users  |
+| Average projects per active unit         | ≥ 3                        |
+| Notification open rate                   | > 40%                      |
+| Trial-to-paid conversion within 2 months | > 25%                      |
+| Support tickets related to permissions   | < 5% of active users/month |
 
 ---
 
-## 5. User Personas
+## 8. User Personas
 
 ### Persona 1 — The Company Owner (OWNER)
 
-> *"I need a 10,000-foot view of every project in every unit at any time."*
+> _"I need a 10,000-foot view of every project in every unit at any time."_
 
 - **Who:** Founder or CEO of a construction/engineering firm
-- **Goals:** Track overall financial performance, manage subscriptions, ensure units are staffed
-- **Pain points:** Calls unit managers for updates; no real-time financial visibility across projects
-- **Key features:** Company dashboard KPIs, company settings, billing, cross-unit overview, all notifications
-- **unitId:** Always `null` — OWNER is company-wide, not assigned to any unit
+- **Tech comfort:** Moderate
+- **Goals:** Track financial performance, manage subscriptions, ensure units are staffed
+- **unitId:** Always `null` — company-wide, not assigned to any unit
 
 ---
 
 ### Persona 2 — The Unit Administrator (ADMIN)
 
-> *"I run my unit. I need to create projects, assign work, and monitor delivery."*
+> _"I run my unit. I need to create projects, assign work, and monitor delivery."_
 
 - **Who:** Branch manager, project director, or site supervisor
-- **Goals:** Create and track projects end-to-end, manage their team, record production progress
-- **Pain points:** Gantt in Excel; no automatic variance alerts; no structured task assignment
-- **Key features:** Project creation, Gantt planning, phase management, production recording, Kanban, client CRM, invitations
+- **Tech comfort:** Moderate to high
+- **Goals:** Create and track projects end-to-end, manage team, record production
 - **unitId:** Set to their assigned unit
 
 ---
 
 ### Persona 3 — The Regular Member (USER)
 
-> *"Tell me what I need to do today and let me log my work."*
+> _"Tell me what I need to do today and let me log my work."_
 
 - **Who:** Engineer, technician, field worker, or analyst
+- **Tech comfort:** Low to moderate
 - **Goals:** See assigned tasks, update progress, log working hours
-- **Pain points:** Instructions via WhatsApp; no structured place to report progress
-- **Key features:** Personal dashboard, assigned tasks (Kanban view), time tracking, notifications
 - **unitId:** Set to their assigned unit
 
 ---
 
-## 6. System Architecture Overview
+## 9. System Architecture Overview
 
 ```
 Company (1 OWNER · 1 Subscription · 1 Plan)
@@ -162,720 +588,792 @@ Company (1 OWNER · 1 Subscription · 1 Plan)
 
 ### Hierarchy Rules
 
-- One Company is owned by exactly **one User** (the OWNER — bootstrapped at onboarding).
-- A Company contains **one or more Units** (count limited by Plan).
-- Each Unit has **one ADMIN** and **zero or more Members**.
-- Projects belong to a Unit; Members access only projects where they are a **TeamMember**.
-- The OWNER has **no unitId** — they access all units through the company/unit switcher in the sidebar.
-- All entities are isolated by `companyId` at the data layer. **Every database query must be scoped by `companyId`. No exceptions.**
+- One Company → exactly one OWNER (bootstrapped at onboarding).
+- OWNER has `unitId = null` — accesses all units via the sidebar switcher.
+- Each Unit has one ADMIN and zero or more Members.
+- Members access only projects where they are a TeamMember.
+- **Every database query must be scoped by `companyId`. No exceptions.**
 
 ---
 
-## 7. Functional Requirements
+## 10. Functional Requirements
 
-### 7.1 Authentication & Onboarding
+### 10.1 Authentication & Onboarding
 
-**Auth Provider:** Clerk (email/password + OAuth)
+**Auth Provider:** Clerk — **Middleware file: `src/proxy.ts`** (not `middleware.ts`)
 
-| ID | Requirement | Priority |
-|---|---|---|
-| AUTH-01 | Users register and log in via Clerk (email/password or OAuth) | Must Have |
-| AUTH-02 | On first login with no associated Company and no pending invite, redirect to `/onboarding` | Must Have |
-| AUTH-03 | Onboarding wizard collects: Company name, email, address, phone, logo, NIF, legal form, state (wilaya), sector | Must Have |
-| AUTH-04 | Completing onboarding creates: Company record, assigns OWNER role to that user (`unitId = null`), auto-creates a 2-month Starter trial subscription, creates the first Unit. No operator action required. | Must Have |
-| AUTH-05 | Users arriving via invitation link skip onboarding entirely and are assigned to their Unit directly after Clerk authentication | Must Have |
-| AUTH-06 | All dashboard routes are protected; unauthenticated users redirect to sign-in | Must Have |
-| AUTH-07 | Clerk webhook `user.created` fires when a new user is created. At this point, the webhook payload includes the user's email. The server checks if a pending Invitation exists for that email: if yes, the user is immediately assigned to the Unit with the invited role; if no, the user record is created without a Company or Unit (triggering onboarding on next page load). | Must Have |
+| ID      | Requirement                                                                                                                                           | Priority  |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| AUTH-01 | Users register and log in via Clerk (email/password or OAuth)                                                                                         | Must Have |
+| AUTH-02 | First login with no Company and no pending invite → redirect to `/onboarding`                                                                         | Must Have |
+| AUTH-03 | Onboarding collects: Company name, email, address, phone, logo, NIF, formJur, wilaya, sector                                                          | Must Have |
+| AUTH-04 | Completing onboarding: creates Company, assigns OWNER (`unitId = null`), creates Starter trial, creates first Unit                                    | Must Have |
+| AUTH-05 | Invited users skip onboarding. After auth: ADMIN → `/unite/[unitId]`, USER → `/user/[userId]`                                                         | Must Have |
+| AUTH-06 | All dashboard routes protected; unauthenticated → `/company/sign-in`                                                                                  | Must Have |
+| AUTH-07 | Clerk `user.created` webhook: check pending Invitation for email. If found → assign role. If not → create User without Company (triggers onboarding). | Must Have |
+
+#### `src/proxy.ts` Responsibilities
+
+| Responsibility      | Detail                                                                             |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Route Protection    | `auth.protect()` gates `/company/*`, `/unite/*`, `/user/*`                         |
+| Invitation Handling | Detects `__clerk_ticket` param → routes to `/company/sign-up`                      |
+| URL Normalization   | `/sign-in` → `/company/sign-in`                                                    |
+| Path Masking        | Rewrites `/` to serve `/site` — browser URL stays clean                            |
+| Role Redirect       | OWNER → `/company/[companyId]`, ADMIN → `/unite/[unitId]`, USER → `/user/[userId]` |
+| Unrecognized role   | Redirect to `/unauthorized`                                                        |
 
 #### Onboarding Steps
 
-**Step 1 — Company Profile**
-Fields: Company name, logo (Uploadthing upload), legal form (`formJur`), NIF, sector, wilaya (Algerian state), address, phone, email.
+**Step 1 — Company Profile:** Name, logo (Uploadthing), `formJur`, NIF, sector, wilaya, address, phone, email.
 
-**Step 2 — First Unit**
-Fields: Unit name, address, phone, email.
-This Unit is auto-created on submission. The OWNER does NOT become a member of this unit (`unitId` remains `null`).
+**Step 2 — First Unit:** Name, address, phone, email. OWNER's `unitId` remains `null`.
 
-**Step 3 — Invite Team (optional, skippable)**
-Fields: Email + role picker (ADMIN or USER). Can be skipped entirely. Invitations are sent via email with a unique token.
+**Step 3 — Invite Team (optional, skippable):** Email + role picker (ADMIN/USER).
 
 ---
 
-### 7.2 Company Management
+### 10.2 Company Management
 
-| ID | Requirement | Priority |
-|---|---|---|
-| COMP-01 | OWNER can edit all Company fields (name, logo, address, legal info) | Must Have |
-| COMP-02 | Company logo uploaded via Uploadthing, stored as URL in the database | Must Have |
-| COMP-03 | OWNER is the only user with `Role.OWNER`; it cannot be granted via invitation. OWNER role is assigned only during onboarding. | Must Have |
-| COMP-04 | `Company.ownerId` is unique and immutable after creation | Must Have |
-| COMP-05 | OWNER can view aggregated data across all units (projects, members, financials) | Must Have |
-| COMP-06 | OWNER can delete the Company — cascades deletion of all related data | Should Have |
+| ID      | Requirement                                                       | Priority    |
+| ------- | ----------------------------------------------------------------- | ----------- |
+| COMP-01 | OWNER can edit all Company fields                                 | Must Have   |
+| COMP-02 | Company logo uploaded via Uploadthing, stored as URL              | Must Have   |
+| COMP-03 | OWNER is the only `Role.OWNER` — cannot be granted via invitation | Must Have   |
+| COMP-04 | `Company.ownerId` is unique and immutable                         | Must Have   |
+| COMP-05 | OWNER can view aggregated data across all units                   | Must Have   |
+| COMP-06 | OWNER can delete Company — cascades all data                      | Should Have |
 
 ---
 
-### 7.3 Subscription & Plans
+### 10.3 Subscription & Plans
 
-#### Algerian Payment Context
+#### Payment Methods (Algeria)
 
-All commercial transactions use offline methods: physical cheques and bank wire transfers (virement bancaire). **There is no payment gateway integrated into PMA.** The PMA platform operator activates, renews, or suspends subscriptions manually after confirming payment receipt via an operator panel. The operator panel is **out of scope for v1** and will be defined in a future PRD.
+| Method             | FR Term               | Flow                                                     |
+| ------------------ | --------------------- | -------------------------------------------------------- |
+| Bank Wire Transfer | Virement Bancaire     | Company sends transfer; operator confirms and activates  |
+| Business Cheque    | Chèque                | Company hands over cheque; operator cashes and activates |
+| Service Contract   | Contrat de Prestation | Signed contract defines plan, duration, and price        |
 
 #### Plan Tiers
 
-| Feature | Starter (Trial) | Pro | Premium |
-|---|---|---|---|
-| Duration | 2 months free | Annual (paid) | Annual (paid) |
-| Price (DA HT) | 0 DA | Paid | Paid |
-| Max Units | 1 | 5 | Unlimited (`null`) |
-| Max Projects | 5 | 30 | Unlimited (`null`) |
-| Max Tasks / Project | 20 | 200 | Unlimited (`null`) |
-| Max Members | 10 | 50 | Unlimited (`null`) |
-| Support | None | Email | Dedicated |
+| Feature             | Starter (Trial) | Pro           | Premium            |
+| ------------------- | --------------- | ------------- | ------------------ |
+| Duration            | 2 months free   | Annual (paid) | Annual (paid)      |
+| Max Units           | 1               | 5             | `null` (unlimited) |
+| Max Projects        | **3**           | 30            | `null` (unlimited) |
+| Max Tasks / Project | 20              | 200           | `null` (unlimited) |
+| Max Members         | 10              | 50            | `null` (unlimited) |
+| Contract Required   | No              | Yes           | Yes                |
+| Support             | None            | Email         | Dedicated          |
 
-> A `null` value in any limit field means unlimited — the server-side check is skipped entirely for that limit.
-
-#### Starter Trial Lifecycle
+#### Trial Lifecycle
 
 ```
-Day 0   → Trial starts automatically at onboarding (startAt = now, endAt = now + 2 months)
-Day 30  → GENERAL notification sent to OWNER: "Your trial expires in 30 days"
-Day 53  → GENERAL notification sent to OWNER: "Your trial expires in 7 days"
-Day 57  → GENERAL notification sent to OWNER: "Your trial ends in 3 days"
-Day 60  → Trial ends: persistent upgrade banner shown across all pages, 7-day grace period begins
-Day 67  → Account enters READ-ONLY mode: all create/update/delete Server Actions are blocked, data preserved
+Day 0   → Trial starts (startAt = now, endAt = now + 2 months)
+Day 30  → GENERAL notification: "Your trial expires in 30 days"
+Day 53  → GENERAL notification: "Your trial expires in 7 days"
+Day 57  → GENERAL notification: "Your trial ends in 3 days"
+Day 60  → Trial ends: persistent upgrade banner, 7-day grace period begins
+Day 67  → READ-ONLY mode: all mutations blocked, data preserved
 ```
 
-After trial expiry, downgrade back to Starter is not permitted.
+After trial: downgrade back to Starter not permitted.
 
-#### Subscription Requirements
+#### Renewal & Suspension (Pro / Premium)
 
-| ID | Requirement | Priority |
-|---|---|---|
-| SUB-01 | Starter trial automatically activates at onboarding completion with no operator action | Must Have |
-| SUB-02 | After trial ends (day 60), a 7-day grace period allows continued full access with a persistent upgrade banner | Must Have |
-| SUB-03 | After grace period (day 67+), account enters read-only mode — all mutations are blocked and user is redirected to the billing page | Must Have |
-| SUB-04 | OWNER can submit an upgrade request (plan selection, preferred payment method, contact info) | Must Have |
-| SUB-05 | PMA operator manually activates paid subscriptions via a separate operator panel (out of scope for v1) | Must Have |
-| SUB-06 | On activation, `Subscription.status` changes to `ACTIVE`, `startAt` and `endAt` are set by the operator | Must Have |
-| SUB-07 | All plan limits are enforced server-side in Server Actions before any INSERT operation | Must Have |
-| SUB-08 | Billing page shows: current plan, usage vs limits for each limit field, trial countdown (if applicable), upgrade CTA | Must Have |
+- Paid subscriptions have `startAt` and `endAt` set by PMA operator.
+- 30 days before expiry: OWNER receives GENERAL notification to renew.
+- After `endAt`: same grace period → read-only flow applies.
 
----
-
-### 7.4 Unit Management
-
-| ID | Requirement | Priority |
-|---|---|---|
-| UNIT-01 | OWNER can create Units (limited by `Plan.maxUnits`) | Must Have |
-| UNIT-02 | Unit fields: name, address, phone, email, logo (Uploadthing URL) | Must Have |
-| UNIT-03 | Each Unit has exactly one ADMIN, assigned at creation or via promotion | Must Have |
-| UNIT-04 | OWNER can reassign the ADMIN role of a Unit to another member of that unit | Must Have |
-| UNIT-05 | OWNER sees all units on the company dashboard | Must Have |
-| UNIT-06 | Deleting a Unit requires explicit confirmation and cascades to all projects, tasks, clients, and members | Should Have |
+| ID     | Requirement                                                               | Priority  |
+| ------ | ------------------------------------------------------------------------- | --------- |
+| SUB-01 | Starter trial auto-activates at onboarding                                | Must Have |
+| SUB-02 | After day 60: 7-day grace period with persistent upgrade banner           | Must Have |
+| SUB-03 | After day 67: read-only mode — mutations blocked, redirect to billing     | Must Have |
+| SUB-04 | OWNER can submit upgrade request (plan, payment method, contact info)     | Must Have |
+| SUB-05 | Operator manually activates subscriptions (out of scope v1)               | Must Have |
+| SUB-06 | On activation: `status = ACTIVE`, `startAt`/`endAt` set by operator       | Must Have |
+| SUB-07 | All plan limits checked server-side before INSERT                         | Must Have |
+| SUB-08 | Billing page: current plan, usage vs limits, trial countdown, upgrade CTA | Must Have |
 
 ---
 
-### 7.5 Team & Invitations
+### 10.4 Unit Management
 
-| ID | Requirement | Priority |
-|---|---|---|
-| INV-01 | ADMIN or OWNER can invite users to a Unit by email, specifying a role (ADMIN or USER) | Must Have |
-| INV-02 | Invitation creates a pending `Invitation` record with a unique token; an email containing the invite link is sent to the invitee | Must Have |
-| INV-03 | Invitee clicks link → authenticates via Clerk → Clerk `user.created` webhook fires → server detects pending Invitation for that email → user is assigned to the Unit with the specified role | Must Have |
-| INV-04 | Duplicate invitations to the same email within the same unit are rejected with a user-facing error | Must Have |
-| INV-05 | Invitations expire after 7 days (`Invitation.expiresAt`) | Should Have |
-| INV-06 | ADMIN or OWNER can revoke a pending invitation (sets `status = EXPIRED`) | Must Have |
-| INV-07 | ADMIN or OWNER can remove a member from a Unit — tasks and time entries are retained, unit membership is deleted, access is revoked | Must Have |
-| INV-08 | A Unit cannot exceed `Plan.maxMembers`; invite is rejected if limit would be breached | Must Have |
-| INV-09 | Company-level team page (OWNER only) shows all members across all units | Must Have |
+| ID      | Requirement                                                      | Priority    |
+| ------- | ---------------------------------------------------------------- | ----------- |
+| UNIT-01 | OWNER can create Units (limited by `Plan.maxUnits`)              | Must Have   |
+| UNIT-02 | Unit fields: name, address, phone, email, logo (Uploadthing URL) | Must Have   |
+| UNIT-03 | Each Unit has exactly one ADMIN                                  | Must Have   |
+| UNIT-04 | OWNER can reassign ADMIN role within a unit                      | Must Have   |
+| UNIT-05 | OWNER sees all units on company dashboard                        | Must Have   |
+| UNIT-06 | Delete Unit: confirmation required, cascades all data            | Should Have |
 
 ---
 
-### 7.6 Client CRM
+### 10.5 Team & Invitations
 
-| ID | Requirement | Priority |
-|---|---|---|
-| CLT-01 | Clients are **Unit-scoped** — each Unit manages its own independent client list. A client in Unit A is invisible to Unit B, even within the same Company. | Must Have |
-| CLT-02 | ADMIN or OWNER can create, edit, and delete Clients | Must Have |
-| CLT-03 | Client fields: name (unique within unit), wilaya, phone, email (unique within unit) | Must Have |
-| CLT-04 | Client profile page shows: contact details, all linked projects, total TTC contract value across all projects | Must Have |
-| CLT-05 | USERs can view client info (read-only) only for clients linked to their assigned projects | Must Have |
-| CLT-06 | Client list supports search by name and sort by name / total contract value | Must Have |
-| CLT-07 | A Client cannot be deleted if they have at least one project with status `InProgress` | Should Have |
+| ID     | Requirement                                                               | Priority    |
+| ------ | ------------------------------------------------------------------------- | ----------- |
+| INV-01 | ADMIN or OWNER can invite users by email with role (ADMIN/USER)           | Must Have   |
+| INV-02 | Creates pending Invitation record with unique token; email sent           | Must Have   |
+| INV-03 | Invite click → Clerk auth → webhook → user assigned to Unit               | Must Have   |
+| INV-04 | Duplicate invitations to same email in same unit rejected                 | Must Have   |
+| INV-05 | Invitations expire after 7 days                                           | Should Have |
+| INV-06 | ADMIN/OWNER can revoke pending invitation (`status = EXPIRED`)            | Must Have   |
+| INV-07 | Remove member: tasks/entries retained, membership deleted, access revoked | Must Have   |
+| INV-08 | Unit cannot exceed `Plan.maxMembers`                                      | Must Have   |
+| INV-09 | Company team page (OWNER): all members across all units                   | Must Have   |
 
 ---
 
-### 7.7 Project Management
+### 10.6 Client CRM
 
-| ID | Requirement | Priority |
-|---|---|---|
-| PROJ-01 | ADMIN or OWNER can create a Project within their Unit | Must Have |
-| PROJ-02 | Project fields: name, code (unique within unit), type, montantHT, montantTTC, ODS date, delaiMonths, delaiDays, status, signe, clientId | Must Have |
-| PROJ-03 | Project status lifecycle: `New → InProgress → Pause → Complete` | Must Have |
-| PROJ-04 | `signe` is a boolean flag indicating whether the contract is signed. It is **display-only** — no feature is blocked or unlocked based on its value. | Must Have |
-| PROJ-05 | Project overview shows: financials (HT, TTC, TVA amount, TVA %), progress (weighted average of Phase progress by montantHT), team members, client, ODS date, délai | Must Have |
-| PROJ-06 | Project detail page has tabs: Overview, Gantt, Production, Tasks, Time Tracking, Documents | Must Have |
-| PROJ-07 | A Project automatically creates an empty Team record on creation | Must Have |
-| PROJ-08 | OWNER sees all projects across all units; ADMIN sees only their unit's projects; USER sees only projects where they are a TeamMember | Must Have |
-| PROJ-09 | Project list supports filter by status, unit (OWNER only), client, and sort by date / montantTTC | Must Have |
-| PROJ-10 | Documents tab supports file uploads via Uploadthing (PDFs, images, drawings) | Should Have |
-| PROJ-11 | ADMIN can soft-delete (archive) a project | Should Have |
-| PROJ-12 | Project creation checks `Plan.maxProjects` before INSERT; returns user-facing error if limit reached | Must Have |
+| ID     | Requirement                                                    | Priority    |
+| ------ | -------------------------------------------------------------- | ----------- |
+| CLT-01 | Clients are Unit-scoped — Unit A's clients invisible to Unit B | Must Have   |
+| CLT-02 | ADMIN/OWNER can create, edit, delete Clients                   | Must Have   |
+| CLT-03 | Fields: name (unique/unit), wilaya, phone, email (unique/unit) | Must Have   |
+| CLT-04 | Client profile: contact details, linked projects, total TTC    | Must Have   |
+| CLT-05 | USERs view client info only for assigned projects (read-only)  | Must Have   |
+| CLT-06 | Client list: search by name, sort by name / total TTC          | Must Have   |
+| CLT-07 | Client with any `InProgress` project cannot be deleted         | Should Have |
+
+---
+
+### 10.7 Project Management
+
+| ID      | Requirement                                                                                                         | Priority    |
+| ------- | ------------------------------------------------------------------------------------------------------------------- | ----------- |
+| PROJ-01 | ADMIN/OWNER can create Projects within their Unit                                                                   | Must Have   |
+| PROJ-02 | Fields: name, code (unique/unit), type, montantHT, montantTTC, ODS, delaiMonths, delaiDays, status, signe, clientId | Must Have   |
+| PROJ-03 | Status lifecycle: `New → InProgress → Pause → Complete`                                                             | Must Have   |
+| PROJ-04 | `signe` is boolean, display-only — no features gated by it                                                          | Must Have   |
+| PROJ-05 | Overview: financials (HT, TTC, TVA, TVA%), progress, team, client, ODS, délai                                       | Must Have   |
+| PROJ-06 | Tabs: Overview, Gantt, Production, Tasks, Time Tracking, Documents                                                  | Must Have   |
+| PROJ-07 | Project auto-creates empty Team on creation                                                                         | Must Have   |
+| PROJ-08 | OWNER sees all; ADMIN sees unit; USER sees assigned only                                                            | Must Have   |
+| PROJ-09 | Filter: status, unit (OWNER), client; Sort: date, montantTTC                                                        | Must Have   |
+| PROJ-10 | Documents tab: Uploadthing upload (PDF, images, drawings)                                                           | Should Have |
+| PROJ-11 | ADMIN can soft-delete (archive) a project                                                                           | Should Have |
+| PROJ-12 | `Plan.maxProjects` checked before INSERT                                                                            | Must Have   |
 
 #### Financial Formulas
 
-| Formula | Expression |
-|---|---|
-| TVA Amount | `montantTTC - montantHT` |
-| TVA % | `((montantTTC - montantHT) / montantHT) × 100` |
-| Project Progress | `Σ(Phase.progress × Phase.montantHT) / Σ(Phase.montantHT)` (weighted average) |
-| Délai Display | `"{delaiMonths} mois {delaiDays} jours"` |
-
-All monetary amounts display in Algerian format: `1 234 567,89 DA`
+| Formula          | Expression                                                 |
+| ---------------- | ---------------------------------------------------------- |
+| TVA Amount       | `montantTTC - montantHT`                                   |
+| TVA %            | `((montantTTC - montantHT) / montantHT) × 100`             |
+| Project Progress | `Σ(Phase.progress × Phase.montantHT) / Σ(Phase.montantHT)` |
+| Délai Display    | `"{delaiMonths} mois {delaiDays} jours"`                   |
 
 ---
 
-### 7.8 Phase & Gantt Planning
+### 10.8 Phase & Gantt Planning
 
-#### Phase Requirements
+| ID    | Requirement                                                                                                | Priority    |
+| ----- | ---------------------------------------------------------------------------------------------------------- | ----------- |
+| PH-01 | ADMIN/OWNER can create Phases                                                                              | Must Have   |
+| PH-02 | Fields: name, code, montantHT, startDate, endDate, status, observations, progress (0–100), duration (auto) | Must Have   |
+| PH-03 | `Phase.startDate` ≥ `Project.ods` — **hard block**                                                         | Must Have   |
+| PH-04 | `Phase.duration` auto-calculated `(endDate - startDate)` in days                                           | Must Have   |
+| PH-05 | Sum of `Phase.montantHT` ≤ `Project.montantHT` — **hard block, show remaining budget**                     | Must Have   |
+| PH-06 | Each Phase can have multiple SubPhases                                                                     | Must Have   |
+| PH-07 | SubPhase fields: name, code, status (`TODO`/`COMPLETED`), progress (0–100), startDate, endDate             | Must Have   |
+| PH-08 | SubPhase dates within parent Phase range — **hard block**                                                  | Must Have   |
+| PH-09 | When SubPhases exist: `Phase.progress = avg(SubPhase.progress)` auto-calculated                            | Should Have |
+| PH-10 | ADMIN/OWNER can add GanttMarkers: label, date, optional CSS class                                          | Must Have   |
+| PH-11 | Overlapping phases → visual warning on Gantt                                                               | Should Have |
 
-| ID | Requirement | Priority |
-|---|---|---|
-| PH-01 | ADMIN or OWNER can create Phases for a Project | Must Have |
-| PH-02 | Phase fields: name, code, montantHT, startDate, endDate, status, observations, progress (0–100 integer), duration (auto-calculated in days) | Must Have |
-| PH-03 | `Phase.startDate` must be ≥ `Project.ods`. **Block the save and return an error if violated.** | Must Have |
-| PH-04 | `Phase.duration` is auto-calculated as `(endDate - startDate)` in calendar days on every save. It is never set manually. | Must Have |
-| PH-05 | The sum of `montantHT` across all Phases of a Project must never exceed `Project.montantHT`. This is checked on every `createPhase()` and `updatePhase()`. **If the sum would exceed the project total: block the save and return an error.** The error message must show the remaining available budget: `(Project.montantHT - currentPhasesSum)`. | Must Have |
-| PH-06 | Each Phase can have multiple SubPhases | Must Have |
-| PH-07 | SubPhase fields: name, code, status (`TODO` / `COMPLETED`), progress (0–100), startDate, endDate | Must Have |
-| PH-08 | SubPhase `startDate` and `endDate` must fall within the parent Phase's date range. **Block the save and return an error if violated.** | Must Have |
-| PH-09 | When a Phase has SubPhases, `Phase.progress` auto-calculates as the average of all `SubPhase.progress` values. When no SubPhases exist, `Phase.progress` is set manually. | Should Have |
-| PH-10 | ADMIN/OWNER can add GanttMarkers to a Project: label, date, optional CSS class name | Must Have |
-| PH-11 | Overlapping phases within the same project trigger a visual warning indicator on the Gantt chart | Should Have |
+#### Gantt UI (kibo-ui)
 
-#### Gantt Chart UI (uses kibo-ui Gantt component)
-
-| ID | Requirement | Priority | kibo-ui Native? |
-|---|---|---|---|
-| GNT-01 | Phases displayed as horizontal bars on a timeline, color-coded by status | Must Have | ✅ Yes |
-| GNT-02 | SubPhases display as nested, indented bars beneath their parent Phase (using kibo-ui grouping) | Must Have | ✅ Yes (grouping) |
-| GNT-03 | GanttMarkers render as vertical dashed lines with a diamond icon and label (using kibo-ui Markers feature) | Must Have | ✅ Yes |
-| GNT-04 | Each phase bar shows a progress fill overlay representing `Phase.progress %` | Must Have | 🔧 Custom render |
-| GNT-05 | Timeline header supports Month / Week / Day zoom levels | Must Have | 🔧 Custom wiring |
-| GNT-06 | ADMIN/OWNER can drag phase bars to reschedule (updates startDate, endDate, duration) — USERs see read-only version | Should Have | ✅ Yes (draggable) |
-| GNT-07 | Clicking a phase bar opens a Phase detail side sheet | Must Have | 🔧 Custom handler |
-| GNT-TODAY | A "Today" marker is shown as a vertical line on the timeline | Must Have | ✅ Yes (built-in) |
-
-**Installation:** `npx kibo-ui add gantt`
-**Dependencies bundled:** dnd-kit, date-fns, lodash, lucide-react, jotai
+| ID        | Requirement                                               | kibo-ui Native? |
+| --------- | --------------------------------------------------------- | --------------- |
+| GNT-01    | Phase bars color-coded by status                          | ✅              |
+| GNT-02    | SubPhases as nested indented bars                         | ✅ (grouping)   |
+| GNT-03    | GanttMarkers as vertical dashed lines + diamond + label   | ✅              |
+| GNT-04    | Progress fill overlay on bars                             | 🔧 Custom       |
+| GNT-05    | Month/Week/Day zoom toggle                                | 🔧 Custom       |
+| GNT-06    | Drag bars to reschedule (ADMIN/OWNER); read-only for USER | ✅              |
+| GNT-07    | Phase bar click → Phase detail side sheet                 | 🔧 Custom       |
+| GNT-TODAY | Today marker                                              | ✅ Built-in     |
 
 ---
 
-### 7.9 Production Monitoring
+### 10.9 Production Monitoring
 
-The production module tracks planned vs. actual output per Phase.
-
-- **Product** — the planned baseline for a Phase (one per phase): planned `taux` (%), planned `montantProd`, reference `date`
-- **Production** — individual actual output records logged against a Product: actual `taux`, computed `mntProd`, `date`
-
-| ID | Requirement | Priority |
-|---|---|---|
-| PROD-01 | Each Phase can have **at most one** Product (planned baseline). Attempting to create a second Product for a Phase returns an error. | Must Have |
-| PROD-02 | ADMIN/OWNER creates the Product first, defining the planned `taux` and `montantProd` | Must Have |
-| PROD-03 | ADMIN/OWNER records individual Production entries (actual results) against the Product | Must Have |
-| PROD-04 | `Production.mntProd = Phase.montantHT × (Production.taux / 100)` — **auto-calculated on every save, never user-editable** | Must Have |
-| PROD-05 | Production tab shows two charts: (1) Planned vs Actual production rate — line chart, (2) Planned vs Actual amount — grouped bar chart | Must Have |
-| PROD-06 | Data table below charts shows rows: date, planned taux, actual taux, variance (actual - planned), variance %. Rows are colored red if actual < planned. | Must Have |
-| PROD-07 | If `Production.taux < (Product.taux × Company.productionAlertThreshold / 100)`, immediately create a `PRODUCTION` notification targeting OWNER on save | Must Have |
-| PROD-08 | When a Phase is marked Complete and its production milestone is reached, create a `PRODUCTION` notification | Must Have |
-| PROD-09 | `Company.productionAlertThreshold` defaults to `80` (percent). Range: 1–100. Configurable by OWNER only. | Must Have |
+| ID      | Requirement                                                                                       | Priority  |
+| ------- | ------------------------------------------------------------------------------------------------- | --------- |
+| PROD-01 | Each Phase has at most one Product (planned baseline)                                             | Must Have |
+| PROD-02 | ADMIN creates Product: planned taux, montantProd                                                  | Must Have |
+| PROD-03 | ADMIN records Production entries (actual taux)                                                    | Must Have |
+| PROD-04 | `Production.mntProd = Phase.montantHT × (taux / 100)` — auto-calculated, never editable           | Must Have |
+| PROD-05 | Two charts: (1) Planned vs Actual rate — line, (2) Planned vs Actual amount — grouped bar         | Must Have |
+| PROD-06 | Data table: date, planned taux, actual taux, variance, variance %; red rows when actual < planned | Must Have |
+| PROD-07 | `actual taux < (Product.taux × alertThreshold / 100)` → PRODUCTION notification to OWNER          | Must Have |
+| PROD-08 | Phase Complete + milestone reached → PRODUCTION notification                                      | Must Have |
+| PROD-09 | `Company.productionAlertThreshold` default 80, range 1–100, OWNER configurable                    | Must Have |
 
 ---
 
-### 7.10 Task & Kanban Board
+### 10.10 Task & Kanban Board
 
 #### Lane Requirements
 
-| ID | Requirement | Priority |
-|---|---|---|
-| LANE-01 | Lanes are **Unit-scoped** — shared across all projects within a unit | Must Have |
-| LANE-02 | ADMIN or OWNER can create, rename, reorder, change color of, and delete Lanes | Must Have |
-| LANE-03 | Lanes have an `order` integer field; displayed in ascending order | Must Have |
-| LANE-04 | Deleting a Lane that contains tasks prompts confirmation; if confirmed, tasks are unassigned from the lane (`laneId = null`) | Must Have |
+| ID      | Requirement                                                                | Priority  |
+| ------- | -------------------------------------------------------------------------- | --------- |
+| LANE-01 | Lanes are Unit-scoped (shared across all projects in unit)                 | Must Have |
+| LANE-02 | ADMIN/OWNER: create, rename, reorder, change color, delete Lanes           | Must Have |
+| LANE-03 | `order` integer field; displayed ascending                                 | Must Have |
+| LANE-04 | Delete lane with tasks → confirmation → tasks unassigned (`laneId = null`) | Must Have |
 
 #### Task Requirements
 
-| ID | Requirement | Priority |
-|---|---|---|
-| TASK-01 | ADMIN or OWNER can create Tasks within a Lane, scoped to a Unit | Must Have |
-| TASK-02 | Task fields: title, description, startDate, dueDate, endDate, complete (boolean), assignedUserId, laneId, order (integer), tags[], phaseId (required), subPhaseId (optional) | Must Have |
-| TASK-03 | `projectId` on Task is always derived server-side from `Phase.projectId` on save — **never set independently by the client** | Must Have |
-| TASK-04 | `assignedUserId` must be a TeamMember of the task's linked Project — **enforced in Server Action, not just UI** | Must Have |
-| TASK-05 | `subPhaseId` must be a child of `phaseId` — **enforced in Server Action** | Must Have |
-| TASK-06 | Task creation checks `Plan.maxTasksPerProject` before INSERT; returns user-facing error if limit reached | Must Have |
-| TASK-07 | Assigning a task to a user sends them a `TASK` notification | Must Have |
-| TASK-08 | Tasks displayed as cards on the Kanban board, ordered by `Task.order` within each lane | Must Have |
-| TASK-09 | ADMIN/OWNER can drag tasks between lanes (updates `laneId` and `order`) | Must Have |
-| TASK-10 | USER can drag only their own assigned tasks between lanes | Must Have |
-| TASK-11 | A task is **overdue** if `dueDate < NOW` and `complete = false` — display a red overdue badge on the task card | Must Have |
-| TASK-12 | Clicking a task card opens a **Task Detail Side Sheet** (480px slide-over panel from the right) | Must Have |
-| TASK-13 | Task Detail Sheet shows: title, description, status, current lane, assignee picker, due date picker, tags, time entries, activity log, and a **Project → Phase → SubPhase context section** | Must Have |
-| TASK-14 | Phase and SubPhase context is **NOT shown on the task card** — only visible inside the Task Detail Sheet | Must Have |
-| TASK-15 | Any unit member can mark a task complete if assigned to them; ADMIN/OWNER can mark any task complete | Must Have |
-| TASK-16 | Task completion does **NOT** automatically update `SubPhase.progress` — SubPhase progress is updated manually | Must Have |
-| TASK-17 | Tags are Unit-scoped, have a name and a color, and can be applied to multiple tasks | Must Have |
-| TASK-18 | Kanban filter bar has 3 cascading dropdowns: **Project → Phase → SubPhase**. Selecting a Project immediately filters the visible tasks to only that project's tasks AND narrows the Phase dropdown to that project's phases. Selecting a Phase further filters tasks to that phase AND narrows SubPhase dropdown. | Must Have |
+| ID      | Requirement                                                                                                                                         | Priority  |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| TASK-01 | ADMIN/OWNER can create Tasks within a Lane                                                                                                          | Must Have |
+| TASK-02 | Fields: title, description, startDate, dueDate, endDate, complete, assignedUserId, laneId, order, tags[], phaseId (required), subPhaseId (optional) | Must Have |
+| TASK-03 | `projectId` derived server-side from `Phase.projectId` — never set by client                                                                        | Must Have |
+| TASK-04 | `assignedUserId` must be TeamMember of task's project — Server Action enforced                                                                      | Must Have |
+| TASK-05 | `subPhaseId` must be child of `phaseId` — Server Action enforced                                                                                    | Must Have |
+| TASK-06 | `Plan.maxTasksPerProject` checked before INSERT                                                                                                     | Must Have |
+| TASK-07 | Assigning a task sends TASK notification to assigned user                                                                                           | Must Have |
+| TASK-08 | Cards ordered by `Task.order` within each lane                                                                                                      | Must Have |
+| TASK-09 | ADMIN/OWNER can drag tasks between lanes                                                                                                            | Must Have |
+| TASK-10 | USER can drag only their own assigned tasks                                                                                                         | Must Have |
+| TASK-11 | Overdue: `dueDate < NOW && !complete` → red badge on card                                                                                           | Must Have |
+| TASK-12 | Clicking card opens Task Detail Side Sheet (480px)                                                                                                  | Must Have |
+| TASK-13 | Sheet: title, description, status, lane, assignee picker, due date, tags, time entries, Project→Phase→SubPhase context                              | Must Have |
+| TASK-14 | Phase/SubPhase context NOT on task card — only in Task Detail Sheet                                                                                 | Must Have |
+| TASK-15 | USER completes own tasks; ADMIN/OWNER complete any task                                                                                             | Must Have |
+| TASK-16 | Task completion does NOT auto-update `SubPhase.progress`                                                                                            | Must Have |
+| TASK-17 | Tags: Unit-scoped, name + color                                                                                                                     | Must Have |
+| TASK-18 | Kanban filter: Project → Phase → SubPhase cascading dropdowns. Selecting Project immediately filters visible tasks.                                 | Must Have |
 
 #### Task Comments
 
-| ID | Requirement | Priority |
-|---|---|---|
-| TASK-19 | Any TeamMember of the task's project, plus the ADMIN and OWNER of the unit, can post comments on a task | Must Have |
-| TASK-20 | Comment fields: body (plain text), authorId, timestamp (`createdAt`), `edited` boolean | Must Have |
-| TASK-21 | Comment author can edit or delete their own comment | Must Have |
-| TASK-22 | ADMIN and OWNER can delete any comment within their unit | Must Have |
-| TASK-23 | Edited comments show an "edited" label displayed next to the timestamp | Must Have |
-| TASK-24 | Comments are displayed in the Task Detail Sheet under a "Comments" tab, ordered by `createdAt` ascending | Must Have |
-| TASK-25 | Comments are **never cached** — always fetched fresh from the database on every open | Must Have |
-| TASK-26 | Comment body supports `@mention` syntax — typing `@` triggers an autocomplete dropdown of eligible users | Must Have |
-| TASK-27 | The `@mention` autocomplete shows only users eligible to be mentioned: TeamMembers of the task's project + ADMIN + OWNER of the unit. The comment author is excluded (cannot mention themselves). | Must Have |
-| TASK-28 | On comment save, the server parses all `@username` patterns, resolves them to `userId`, creates one `TaskMention` record per unique mentioned user, and sends one `TASK` notification per mentioned user | Must Have |
-| TASK-29 | Duplicate mentions of the same user in one comment → only one `TaskMention` record and one notification (enforced by `@@unique([commentId, mentionedUserId])` at the DB level) | Must Have |
-| TASK-30 | Mentioned usernames are rendered as highlighted chips in the displayed comment — not as raw `@username` text | Must Have |
-
-**Kanban Installation:** `npx kibo-ui add kanban`
-**Dependencies bundled:** dnd-kit
+| ID      | Requirement                                                                                        | Priority  |
+| ------- | -------------------------------------------------------------------------------------------------- | --------- |
+| TASK-19 | TeamMembers + ADMIN + OWNER of unit can post comments                                              | Must Have |
+| TASK-20 | Fields: body (plain text), authorId, createdAt, edited (boolean)                                   | Must Have |
+| TASK-21 | Author can edit/delete own comment                                                                 | Must Have |
+| TASK-22 | ADMIN/OWNER can delete any comment in their unit                                                   | Must Have |
+| TASK-23 | Edited comments show "edited" label next to timestamp                                              | Must Have |
+| TASK-24 | Comments ordered by `createdAt` ascending in Task Detail Sheet                                     | Must Have |
+| TASK-25 | Comments **never cached** — always fetched fresh                                                   | Must Have |
+| TASK-26 | Typing `@` triggers autocomplete of eligible users                                                 | Must Have |
+| TASK-27 | Autocomplete: TeamMembers + ADMIN + OWNER, excluding comment author                                | Must Have |
+| TASK-28 | On save: parse `@username`, create TaskMention records, send TASK notifications                    | Must Have |
+| TASK-29 | Duplicate mentions → one TaskMention + one notification (`@@unique([commentId, mentionedUserId])`) | Must Have |
+| TASK-30 | Mentioned usernames render as highlighted chips — not raw `@username`                              | Must Have |
 
 ---
 
-### 7.11 Time Tracking
+### 10.11 Time Tracking
 
-| ID | Requirement | Priority |
-|---|---|---|
-| TIME-01 | Any user (OWNER, ADMIN, USER) can log time entries | Must Have |
-| TIME-02 | A TimeEntry can be linked to a Task, a Project, or both (`taskId` is nullable) | Must Have |
-| TIME-03 | Fields: description, startTime, endTime, duration (minutes, auto-calculated as `endTime - startTime`) | Must Have |
-| TIME-04 | Users can start a live timer on a task; stopping it auto-fills `endTime` and calculates `duration` | Must Have |
-| TIME-05 | Manual entry form allows direct input of startTime, endTime, and description | Must Have |
-| TIME-06 | Users can only edit or delete their own time entries; OWNER and ADMIN can edit/delete any time entry within their scope | Must Have |
-| TIME-07 | USERs can only log time on projects where they are a TeamMember | Must Have |
-| TIME-08 | Project Time Tracking tab shows: entries grouped by user, total duration per user per week, grand total | Must Have |
-| TIME-09 | Task Detail Sheet shows all time entries for that task with user, duration, and description | Must Have |
+| ID      | Requirement                                                                      | Priority  |
+| ------- | -------------------------------------------------------------------------------- | --------- |
+| TIME-01 | Any user can log time entries                                                    | Must Have |
+| TIME-02 | TimeEntry linked to Task, Project, or both (`taskId` nullable)                   | Must Have |
+| TIME-03 | Fields: description, startTime, endTime, duration (minutes, auto-calculated)     | Must Have |
+| TIME-04 | Live timer: start → stop auto-fills endTime and calculates duration              | Must Have |
+| TIME-05 | Manual entry: direct input of startTime, endTime, description                    | Must Have |
+| TIME-06 | Users edit/delete own entries; OWNER/ADMIN edit/delete any in scope              | Must Have |
+| TIME-07 | USERs only log time on assigned projects                                         | Must Have |
+| TIME-08 | Project Time Tracking tab: grouped by user, total per user per week, grand total | Must Have |
+| TIME-09 | Task Detail Sheet shows all time entries for that task                           | Must Have |
 
 ---
 
-### 7.12 Notifications
+### 10.12 Notifications
 
 #### Notification Types by Role
 
-| Type | OWNER | ADMIN | USER | Trigger |
-|---|---|---|---|---|
-| `INVITATION` | ✓ | ✓ | ✓ | Invite accepted or rejected |
-| `PROJECT` | ✓ | ✓ | Assigned only | Project status change |
-| `TASK` | ✓ | ✓ | ✓ (assigned or mentioned) | Task assigned or @mentioned |
-| `TEAM` | ✓ | ✓ | ✓ | Added to / removed from project team |
-| `PHASE` | ✓ | ✓ | — | Phase status change |
-| `CLIENT` | ✓ | ✓ | — | Client added or updated |
-| `PRODUCTION` | ✓ | — | — | Production underperformance or milestone |
-| `LANE` | ✓ | ✓ | — | Lane created or deleted |
-| `TAG` | ✓ | ✓ | — | Tag created or deleted |
-| `GENERAL` | ✓ | ✓ | ✓ | System-wide, trial warnings |
+| Type         | OWNER | ADMIN | USER                   | Trigger                              |
+| ------------ | ----- | ----- | ---------------------- | ------------------------------------ |
+| `INVITATION` | ✓     | ✓     | ❌                     | Invite accepted or rejected          |
+| `PROJECT`    | ✓     | ✓     | Assigned only          | Project status change                |
+| `TASK`       | ✓     | ✓     | ✓ (assigned/mentioned) | Task assigned or @mentioned          |
+| `TEAM`       | ✓     | ✓     | ✓                      | Added to / removed from project team |
+| `PHASE`      | ✓     | ✓     | —                      | Phase status change                  |
+| `CLIENT`     | ✓     | ✓     | —                      | Client added or updated              |
+| `PRODUCTION` | ✓     | —     | —                      | Underperformance or milestone        |
+| `LANE`       | ✓     | ✓     | —                      | Lane created or deleted              |
+| `TAG`        | ✓     | ✓     | —                      | Tag created or deleted               |
+| `GENERAL`    | ✓     | ✓     | ✓                      | System-wide, trial warnings          |
 
-#### Notification Requirements
-
-| ID | Requirement | Priority |
-|---|---|---|
-| NOTIF-01 | Notifications stored in DB with: userId, companyId, unitId, type, message, read (boolean), targetRole, targetUserId | Must Have |
-| NOTIF-02 | Bell icon in the app header shows an unread count badge | Must Have |
-| NOTIF-03 | Bell dropdown shows the latest 5 unread notifications with type icon, message, and timestamp | Must Have |
-| NOTIF-04 | Full notifications page at `/dashboard/notifications` with filter tabs: All / Unread / by Type | Must Have |
-| NOTIF-05 | "Mark all as read" action on the notifications page | Must Have |
-| NOTIF-06 | Role-targeted notifications (`targetRole: OWNER`) are delivered only to the single OWNER user of that company | Must Have |
-| NOTIF-07 | USER receives `PROJECT` notifications only for projects where they are a TeamMember | Must Have |
-| NOTIF-08 | The unread notification **count** (bell badge) is refreshed via **polling every 30 seconds** — no Supabase Realtime | Must Have |
-| NOTIF-09 | Polling is implemented as a **Client Component** using `setInterval` + a Server Action call — not a `useEffect` fetch to an API route | Must Have |
-| NOTIF-10 | Only the unread **count** is polled — the full notification list is fetched on demand when the user opens the bell dropdown | Must Have |
-| NOTIF-11 | A `@mention` in a task comment sends a `TASK` notification to the mentioned user with message format: `"[Author] vous a mentionné dans [Task title]"` | Must Have |
-| NOTIF-12 | A user can only be @mentioned if they are a TeamMember of the task's project, or an ADMIN/OWNER of the unit | Must Have |
+| ID       | Requirement                                                                                 | Priority  |
+| -------- | ------------------------------------------------------------------------------------------- | --------- |
+| NOTIF-01 | Stored: userId, companyId, unitId, type, message, read, targetRole, targetUserId            | Must Have |
+| NOTIF-02 | Bell icon shows unread count badge                                                          | Must Have |
+| NOTIF-03 | Bell dropdown: latest 5 unread with type icon, message, timestamp                           | Must Have |
+| NOTIF-04 | Full page at `/notifications`: filter tabs All / Unread / by Type                           | Must Have |
+| NOTIF-05 | "Mark all as read" on notifications page                                                    | Must Have |
+| NOTIF-06 | `targetRole: OWNER` → delivers to single OWNER only                                         | Must Have |
+| NOTIF-07 | USER receives PROJECT notifications only for assigned projects                              | Must Have |
+| NOTIF-08 | Unread count polled every 30 seconds via Client Component `setInterval` + Server Action     | Must Have |
+| NOTIF-09 | Polling: Client Component with `setInterval` + Server Action — not `useEffect` fetch to API | Must Have |
+| NOTIF-10 | Only count polled — full list fetched on demand when bell opened                            | Must Have |
+| NOTIF-11 | `@mention` → TASK notification: `"[Author] vous a mentionné dans [Task title]"`             | Must Have |
+| NOTIF-12 | ADMIN notifications fan out to all ADMIN users within the relevant unit                     | Must Have |
 
 ---
 
-### 7.13 Activity Logs
+### 10.13 Activity Logs
 
-| ID | Requirement | Priority |
-|---|---|---|
-| ACT-01 | Key actions generate an ActivityLog entry: create/edit/delete for Projects, Phases, Tasks, Clients, Members | Must Have |
-| ACT-02 | ActivityLog fields: companyId, unitId, userId, action (string), entityType (string), entityId, metadata (JSON), createdAt | Must Have |
-| ACT-03 | OWNER can view all activity logs company-wide | Must Have |
-| ACT-04 | ADMIN can view activity logs for their unit only | Must Have |
-| ACT-05 | USER can view activity logs scoped to their assigned projects only | Must Have |
-| ACT-06 | Activity log supports filter by: date range, entityType, user | Should Have |
-
----
-
-### 7.14 User Dashboard
-
-**Route:** `/user/[userId]`
-**Access:** USER role only (OWNER and ADMIN are redirected to their own dashboards)
-
-This is the personal workspace for a USER. It is a dashboard page, not a redirect. It contains:
-
-| Section | Description |
-|---|---|
-| Assigned Tasks | A personal view of all tasks assigned to this user, displayed as a simplified Kanban or list view |
-| My Time Entries | All time entries logged by this user, grouped by week |
-| Notifications | Recent unread notifications for this user |
-| Assigned Projects | List of all projects where this user is a TeamMember, with status and progress |
-| Personal Profile / Settings | User's name, avatar, notification preferences |
+| ID     | Requirement                                                                                        | Priority    |
+| ------ | -------------------------------------------------------------------------------------------------- | ----------- |
+| ACT-01 | Key actions generate ActivityLog: create/edit/delete for Projects, Phases, Tasks, Clients, Members | Must Have   |
+| ACT-02 | Fields: companyId, unitId, userId, action, entityType, entityId, metadata (JSON), createdAt        | Must Have   |
+| ACT-03 | OWNER views all logs company-wide                                                                  | Must Have   |
+| ACT-04 | ADMIN views logs for their unit                                                                    | Must Have   |
+| ACT-05 | USER views logs for assigned projects                                                              | Must Have   |
+| ACT-06 | Filter: date range, entityType, user                                                               | Should Have |
 
 ---
 
-## 8. Non-Functional Requirements
+### 10.14 User Personal Dashboard
+
+**Route:** `/user/[userId]` and sub-routes
+
+| Sub-route                  | Description                                                                        | Access                     |
+| -------------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
+| `/user/[userId]`           | Landing: today's tasks, active projects summary, unread count, recent time entries | USER (own) · OWNER · ADMIN |
+| `/user/[userId]/tasks`     | All tasks assigned to this user — filterable                                       | USER (own) · ADMIN         |
+| `/user/[userId]/projects`  | Projects where user is TeamMember — status, role, progress                         | USER (own) · ADMIN         |
+| `/user/[userId]/analytics` | Performance metrics: hours/week, tasks completed vs pending                        | USER (own) · OWNER · ADMIN |
+| `/user/[userId]/profile`   | Edit name, job title, avatar; notification preferences                             | USER (own)                 |
+
+---
+
+## 11. Non-Functional Requirements
 
 ### Performance
 
-| ID | Requirement |
-|---|---|
-| NFR-01 | Initial page load (LCP) < 2.5s on standard broadband |
-| NFR-02 | Server Actions (mutations) respond in < 500ms under normal load |
-| NFR-03 | Gantt chart renders up to 50 phases without visible lag |
-| NFR-04 | Kanban board renders up to 200 tasks across 10 lanes without degradation |
+| ID     | Requirement                                                        |
+| ------ | ------------------------------------------------------------------ |
+| NFR-01 | Initial page load (LCP) < 2.5s on standard broadband               |
+| NFR-02 | Server Actions respond in < 500ms under normal load                |
+| NFR-03 | Gantt renders up to 50 phases without visible lag                  |
+| NFR-04 | Kanban renders up to 200 tasks across 10 lanes without degradation |
 
 ### Security
 
-| ID | Requirement |
-|---|---|
-| SEC-01 | All database queries are scoped by `companyId` to enforce tenant isolation — no exceptions |
-| SEC-02 | Role checks are enforced at the Server Action level — not just in the UI |
-| SEC-03 | File uploads are validated for type and size before Uploadthing submission |
-| SEC-04 | No sensitive data (financial totals, full client records) is accessible to USER unless they are an assigned TeamMember |
+| ID     | Requirement                                                                          |
+| ------ | ------------------------------------------------------------------------------------ |
+| NFR-05 | All auth handled by Clerk — no passwords stored in PMA's database                    |
+| NFR-06 | All queries include `companyId` scope — tenant isolation enforced at DB level        |
+| NFR-07 | Role checks enforced in Server Actions on every mutation — never trusted from client |
+| NFR-08 | File uploads validated by Uploadthing (file type, max size)                          |
+| NFR-09 | Server Actions validate session and role before executing                            |
 
 ### Reliability
 
-| ID | Requirement |
-|---|---|
-| REL-01 | Data is never permanently deleted when a user is removed from a unit — only access is revoked |
-| REL-02 | All subscription state changes are logged in ActivityLog |
+| ID     | Requirement                                                             |
+| ------ | ----------------------------------------------------------------------- |
+| NFR-10 | System uptime target: 99.5% monthly                                     |
+| NFR-11 | Supabase automated daily backups                                        |
+| NFR-12 | Failed mutations surface a user-facing toast error — no silent failures |
+| NFR-13 | Data never permanently deleted on user removal — only access revoked    |
+| NFR-14 | All subscription state changes logged in ActivityLog                    |
+
+### Scalability
+
+| ID     | Requirement                                                              |
+| ------ | ------------------------------------------------------------------------ |
+| NFR-15 | New Plan tiers added without code changes (Plan is a DB entity)          |
+| NFR-16 | New notification types added to enum without breaking existing consumers |
+
+### Usability
+
+| ID     | Requirement                                           |
+| ------ | ----------------------------------------------------- |
+| NFR-17 | Desktop-first; responsive down to 768px (tablet)      |
+| NFR-18 | **Dark mode by default**; light mode toggle available |
+| NFR-19 | All monetary amounts: `1 234 567,89 DA`               |
+| NFR-20 | All dates: `DD MMM YYYY` (e.g. `15 Jan 2026`)         |
+| NFR-21 | Skeleton loaders on all data-fetching components      |
+| NFR-22 | Empty states: illustration + message + contextual CTA |
 
 ---
 
-## 9. Role-Based Access Control
+## 12. Role-Based Access Control
 
 ### Role Definitions
 
-| Role | Scope | `unitId` | Description |
-|---|---|---|---|
-| `OWNER` | Company-wide | `null` | Created at onboarding. One per Company. Full visibility across all units. Manages billing. |
-| `ADMIN` | Unit-scoped | Set to their unit | Manages a single Unit. Full operational control within their unit. |
-| `USER` | Project-scoped | Set to their unit | Access only to projects where they are a TeamMember. |
+| Role    | Scope          | `unitId` | How Assigned                                      |
+| ------- | -------------- | -------- | ------------------------------------------------- |
+| `OWNER` | Company-wide   | `null`   | Automatically at company creation only            |
+| `ADMIN` | Unit-scoped    | Set      | Via invitation `role: ADMIN` or promoted by OWNER |
+| `USER`  | Project-scoped | Set      | Via invitation `role: USER`                       |
 
 ### Permission Matrix
 
-| Action | OWNER | ADMIN | USER |
-|---|---|---|---|
-| View all units | ✅ | ❌ (own unit only) | ❌ |
-| Manage Company settings | ✅ | ❌ | ❌ |
-| Manage billing / subscription | ✅ | ❌ | ❌ |
-| Create / delete Units | ✅ | ❌ | ❌ |
-| Invite / remove members | ✅ | ✅ (own unit) | ❌ |
-| Create / edit Projects | ✅ | ✅ (own unit) | ❌ |
-| View Projects | ✅ (all) | ✅ (own unit) | ✅ (assigned only) |
-| Manage Phases & Gantt | ✅ | ✅ (own unit) | ❌ |
-| Record Production | ✅ | ✅ (own unit) | ❌ |
-| Manage Clients | ✅ | ✅ (own unit) | ❌ (view assigned only) |
-| Create / manage Lanes | ✅ | ✅ (own unit) | ❌ |
-| Create Tasks | ✅ | ✅ (own unit) | ❌ |
-| Drag any task | ✅ | ✅ | ❌ (own tasks only) |
-| Mark task complete | ✅ | ✅ (any task) | ✅ (own tasks only) |
-| Log time entries | ✅ (any project) | ✅ (own unit projects) | ✅ (assigned projects only) |
-| Edit/delete others' time entries | ✅ | ✅ (own unit) | ❌ |
-| View activity logs | ✅ (all) | ✅ (own unit) | ✅ (assigned projects) |
-| Post task comments | ✅ | ✅ | ✅ (if TeamMember) |
-| Delete others' comments | ✅ | ✅ (own unit) | ❌ |
+| Action                           | OWNER          | ADMIN             | USER                    |
+| -------------------------------- | -------------- | ----------------- | ----------------------- |
+| Create / delete Company          | ✅             | ❌                | ❌                      |
+| Manage billing                   | ✅             | ❌                | ❌                      |
+| Create / delete Units            | ✅             | ❌                | ❌                      |
+| Edit Unit profile                | ✅             | Own only          | ❌                      |
+| Invite / remove members          | ✅             | Own unit          | ❌                      |
+| Create / edit Projects           | ✅             | Own unit          | ❌                      |
+| View Projects                    | ✅ All         | Own unit          | Assigned only           |
+| Manage Phases & Gantt            | ✅             | Own unit          | ❌                      |
+| Record Production                | ✅             | Own unit          | ❌                      |
+| View Production charts           | ✅             | ✅                | Assigned only           |
+| Manage Clients                   | ✅             | Own unit          | ❌ (view assigned only) |
+| Create / manage Lanes            | ✅             | Own unit          | ❌                      |
+| Create Tasks                     | ✅             | Own unit          | ❌                      |
+| Drag any task                    | ✅             | ✅                | Own tasks only          |
+| Mark task complete               | ✅             | Any task          | Own tasks only          |
+| Log time entries                 | ✅ Any project | Own unit projects | Assigned projects only  |
+| Edit/delete others' time entries | ✅             | Own unit          | ❌                      |
+| Manage Tags                      | ✅             | Own unit          | ❌                      |
+| View activity logs               | ✅ All         | Own unit          | Assigned projects       |
+| Post task comments               | ✅             | ✅                | If TeamMember           |
+| Delete others' comments          | ✅             | Own unit          | ❌                      |
 
 ---
 
-## 10. Business Rules & Constraints
+## 13. Business Rules & Constraints
 
 ### Tenant Isolation
-- **BR-01:** Every database query involving user data must be scoped by `companyId`. No exceptions.
+
+- **BR-01:** Every query must be scoped by `companyId`. No exceptions.
 - **BR-02:** A User belongs to exactly one Company. Cross-company access is architecturally impossible.
 
 ### Onboarding
-- **BR-03:** The first User to complete onboarding for a Company is permanently assigned `Role.OWNER` with `unitId = null`.
-- **BR-04:** Only one OWNER exists per Company. OWNER role cannot be granted via invitation or promotion.
+
+- **BR-03:** First User to complete onboarding → `Role.OWNER` with `unitId = null`.
+- **BR-04:** One OWNER per Company. Cannot be granted via invitation or promotion.
 
 ### Subscription & Limits
-- **BR-05:** Plan limits (`maxUnits`, `maxProjects`, `maxTasksPerProject`, `maxMembers`) are checked server-side before every INSERT. Exceeding a limit returns a user-facing error message — not a raw database error.
-- **BR-06:** A `null` limit means unlimited — the server-side check is skipped entirely for that field.
-- **BR-07:** Trial expiry and grace period transitions are computed from `Subscription.endAt` on every page load. No background job is required for display. However, all mutation Server Actions must check `Subscription.status` before proceeding.
-- **BR-08:** After grace period ends (day 67+), all create/update/delete Server Actions return an error and redirect the user to the billing page.
-- **BR-09:** Once upgraded to Pro or Premium, downgrade back to Starter is not permitted.
+
+- **BR-05:** Plan limits checked server-side before every INSERT. User-facing error — not a DB error.
+- **BR-06:** `null` limit = unlimited — check is skipped entirely.
+- **BR-07:** Trial expiry computed from `Subscription.endAt` on every page load. Mutations also check status.
+- **BR-08:** After grace period (day 67+): all mutations blocked, redirect to billing.
+- **BR-09:** Once upgraded to Pro or Premium, downgrade to Starter not permitted.
 
 ### Financial Rules
-- **BR-10:** `Phase.montantHT` represents the contractual price of that phase. The sum of all `Phase.montantHT` values within a project must never exceed `Project.montantHT`. **This is a hard block — the save is rejected and an error is returned showing the remaining available budget.** (Note: this replaces and overrides any earlier "warn only" language — the save is always blocked.)
-- **BR-11:** `Phase.startDate` must be ≥ `Project.ods` date. **Block the save and return an error if violated.**
-- **BR-12:** SubPhase dates must be within the parent Phase date range. **Block the save and return an error if violated.**
-- **BR-13:** `Production.mntProd` is always system-calculated as `Phase.montantHT × (taux / 100)`. It is never directly editable by the user.
+
+- **BR-10:** Sum of `Phase.montantHT` must never exceed `Project.montantHT`. **Hard block — show remaining budget in error message.**
+- **BR-11:** `Phase.startDate` ≥ `Project.ods`. **Hard block.**
+- **BR-12:** SubPhase dates within parent Phase range. **Hard block.**
+- **BR-13:** `Production.mntProd = Phase.montantHT × (taux / 100)` — system-calculated only.
 
 ### Production Alerts
-- **BR-14:** If `Production.taux < (Product.taux × Company.productionAlertThreshold / 100)`, create a `PRODUCTION` notification targeting OWNER immediately on save.
-- **BR-15:** `Company.productionAlertThreshold` defaults to `80`. Range: 1–100. Configurable by OWNER only.
+
+- **BR-14:** `Production.taux < (Product.taux × alertThreshold / 100)` → PRODUCTION notification to OWNER on save.
+- **BR-15:** `productionAlertThreshold` default 80, range 1–100, OWNER configurable.
 
 ### User Removal
-- **BR-16:** When a User is removed from a Unit, their tasks and time entries are **retained**. Only their unit membership is deleted. Their `assignedUserId` on tasks remains but they lose access to the application.
+
+- **BR-16:** Removing a User from a Unit: tasks and time entries retained. Only membership deleted.
 
 ### Project Progress
-- **BR-17:** `Project.progress = Σ(Phase.progress × Phase.montantHT) / Σ(Phase.montantHT)`. Recalculated on every `Phase.progress` change.
+
+- **BR-17:** `Project.progress = Σ(Phase.progress × Phase.montantHT) / Σ(Phase.montantHT)`. Recalculated on every Phase.progress change.
 
 ### Délai Field
-- **BR-18:** Project deadline is stored as two integer fields: `delaiMonths` and `delaiDays`. Both default to 0. Always displayed as: `"{delaiMonths} mois {delaiDays} jours"`.
+
+- **BR-18:** `delaiMonths Int` + `delaiDays Int`, both default 0. Display: `"{delaiMonths} mois {delaiDays} jours"`.
 
 ### Clients
-- **BR-19:** Clients are Unit-scoped. A client in Unit A is invisible to Unit B, even within the same Company.
-- **BR-20:** A Client with at least one Project in `InProgress` status cannot be deleted.
+
+- **BR-19:** Clients Unit-scoped. Unit A's clients invisible to Unit B.
+- **BR-20:** Client with any `InProgress` project cannot be deleted.
 
 ### Kanban
-- **BR-21:** Lanes are Unit-scoped — shared across all projects within the unit. A task retains its Kanban lane (`laneId`) when it is reassigned between projects.
+
+- **BR-21:** Lanes Unit-scoped. Task retains `laneId` when reassigned between projects.
 
 ### Contract Flag
-- **BR-22:** The `signe` field on a Project is a boolean display flag only. It does not gate, unlock, or block any application feature or workflow.
+
+- **BR-22:** `signe` is boolean display flag only. No feature is gated by it.
+
+### Notification Fan-out
+
+- **BR-23:** `targetRole: OWNER` → delivers to the single OWNER. `targetRole: ADMIN` → fan-outs to all ADMINs in the relevant unit.
 
 ---
 
-## 11. Data Models Summary
+## 14. Data Models Summary
 
 ### Core Entities
 
-| Model | Key Fields | Relationships |
-|---|---|---|
-| `Plan` | id, name, maxUnits, maxProjects, maxTasksPerProject, maxMembers, priceDA | hasMany Subscriptions |
-| `Company` | id, name, ownerId, logo, NIF, formJur, sector, wilaya, address, phone, email, productionAlertThreshold | hasOne Subscription, hasMany Units, hasMany Users |
-| `Subscription` | id, companyId, planId, status (`TRIAL` / `ACTIVE` / `GRACE` / `READONLY` / `SUSPENDED`), startAt, endAt | belongsTo Company, belongsTo Plan |
-| `User` | id, clerkId, name, email, role (`OWNER` / `ADMIN` / `USER`), companyId, unitId (nullable — null for OWNER) | belongsTo Company, belongsTo Unit (nullable) |
-| `Unit` | id, companyId, adminId, name, address, phone, email, logo | belongsTo Company, hasMany Projects, Clients, Lanes, Invitations |
-| `Invitation` | id, companyId, unitId, email, role, token, status (`PENDING` / `ACCEPTED` / `REJECTED` / `EXPIRED`), expiresAt | belongsTo Company, Unit |
+| Model          | Key Fields                                                                                                    | Relationships                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `Plan`         | id, name, maxUnits, maxProjects, maxTasksPerProject, maxMembers, priceDA                                      | hasMany Subscriptions                                            |
+| `Company`      | id, name, ownerId, logo, NIF, formJur, sector, wilaya, address, phone, email, productionAlertThreshold        | hasOne Subscription, hasMany Units, Users                        |
+| `Subscription` | id, companyId, planId, status (`TRIAL`/`ACTIVE`/`GRACE`/`READONLY`/`SUSPENDED`), startAt, endAt               | belongsTo Company, Plan                                          |
+| `User`         | id, clerkId, name, email, **jobTitle (String?)**, **avatarUrl (String?)**, role, companyId, unitId (nullable) | belongsTo Company, Unit                                          |
+| `Unit`         | id, companyId, adminId, name, address, phone, email, logo                                                     | belongsTo Company, hasMany Projects, Clients, Lanes, Invitations |
+| `Invitation`   | id, companyId, unitId, email, role, token, status (`PENDING`/`ACCEPTED`/`REJECTED`/`EXPIRED`), expiresAt      | belongsTo Company, Unit                                          |
 
 ### Operational Entities
 
-| Model | Key Fields | Relationships |
-|---|---|---|
-| `Client` | id, unitId, companyId, name, wilaya, phone, email | belongsTo Unit, hasMany Projects |
-| `Project` | id, unitId, companyId, clientId, name, code, type, montantHT, montantTTC, ods, delaiMonths, delaiDays, status, signe (boolean) | belongsTo Unit, Client; hasMany Phases, TeamMembers, TimeEntries |
-| `Team` | id, projectId | belongsTo Project, hasMany TeamMembers |
-| `TeamMember` | id, teamId, userId, roleLabel | belongsTo Team, User |
-| `Phase` | id, projectId, name, code, montantHT, startDate, endDate, duration (auto), status, progress (0–100), observations | belongsTo Project; hasMany SubPhases, GanttMarkers; hasOne Product |
-| `SubPhase` | id, phaseId, name, code, status (`TODO` / `COMPLETED`), progress (0–100), startDate, endDate | belongsTo Phase |
-| `GanttMarker` | id, projectId, label, date, className | belongsTo Project |
-| `Product` | id, phaseId, taux, montantProd, date | belongsTo Phase, hasMany Productions |
-| `Production` | id, productId, phaseId, taux, mntProd (auto-calculated), date | belongsTo Product |
+| Model         | Key Fields                                                                                                                     | Relationships                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `Client`      | id, unitId, companyId, name, wilaya, phone, email                                                                              | belongsTo Unit, hasMany Projects                                   |
+| `Project`     | id, unitId, companyId, clientId, name, code, type, montantHT, montantTTC, ods, delaiMonths, delaiDays, status, signe (boolean) | belongsTo Unit, Client; hasMany Phases, TeamMembers, TimeEntries   |
+| `Team`        | id, projectId                                                                                                                  | belongsTo Project, hasMany TeamMembers                             |
+| `TeamMember`  | id, teamId, userId, roleLabel                                                                                                  | belongsTo Team, User                                               |
+| `Phase`       | id, projectId, name, code, montantHT, startDate, endDate, duration (auto), status, progress (0–100), observations              | belongsTo Project; hasMany SubPhases, GanttMarkers; hasOne Product |
+| `SubPhase`    | id, phaseId, name, code, status (`TODO`/`COMPLETED`), progress, startDate, endDate                                             | belongsTo Phase                                                    |
+| `GanttMarker` | id, projectId, label, date, className                                                                                          | belongsTo Project                                                  |
+| `Product`     | id, phaseId, taux, montantProd, date                                                                                           | belongsTo Phase, hasMany Productions                               |
+| `Production`  | id, productId, phaseId, taux, mntProd (auto-calculated), date                                                                  | belongsTo Product                                                  |
 
 ### Execution & Tracking
 
-| Model | Key Fields | Relationships |
-|---|---|---|
-| `Lane` | id, unitId, companyId, name, color, order | belongsTo Unit, hasMany Tasks |
-| `Task` | id, unitId, companyId, projectId (derived from phase), phaseId (required), subPhaseId (nullable), laneId, assignedUserId, title, description, startDate, dueDate, endDate, complete (boolean), order | belongsTo Unit, Lane, User, Project, Phase, SubPhase; hasManyThrough Tags |
-| `Tag` | id, unitId, name, color | belongsTo Unit |
-| `TaskComment` | id, taskId, authorId, companyId, body, edited (boolean), createdAt | belongsTo Task, User, Company; hasMany TaskMentions |
-| `TaskMention` | id, commentId, mentionedUserId, companyId | belongsTo TaskComment, User — unique constraint on `[commentId, mentionedUserId]` |
-| `TimeEntry` | id, companyId, userId, projectId, taskId (nullable), description, startTime, endTime, duration (minutes) | belongsTo User, Project, Task (nullable) |
-| `Notification` | id, companyId, unitId, userId, type, message, read (boolean), targetRole, targetUserId | belongsTo Company, Unit, User |
-| `ActivityLog` | id, companyId, unitId, userId, action, entityType, entityId, metadata (JSON), createdAt | belongsTo Company, Unit, User |
+| Model          | Key Fields                                                                                                                                                                      | Relationships                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `Lane`         | id, unitId, companyId, name, color, order                                                                                                                                       | belongsTo Unit, hasMany Tasks                        |
+| `Task`         | id, unitId, companyId, projectId (derived), phaseId (required), subPhaseId (nullable), laneId, assignedUserId, title, description, startDate, dueDate, endDate, complete, order | belongsTo Unit, Lane, User, Project, Phase, SubPhase |
+| `Tag`          | id, unitId, name, color                                                                                                                                                         | belongsTo Unit                                       |
+| `TaskComment`  | id, taskId, authorId, companyId, body, edited, createdAt                                                                                                                        | belongsTo Task, User; hasMany TaskMentions           |
+| `TaskMention`  | id, commentId, mentionedUserId, companyId                                                                                                                                       | `@@unique([commentId, mentionedUserId])`             |
+| `TimeEntry`    | id, companyId, userId, projectId, taskId (nullable), description, startTime, endTime, duration (minutes)                                                                        | belongsTo User, Project, Task                        |
+| `Notification` | id, companyId, unitId, userId, type, message, read, targetRole, targetUserId                                                                                                    | belongsTo Company, Unit, User                        |
+| `ActivityLog`  | id, companyId, unitId, userId, action, entityType, entityId, metadata (JSON), createdAt                                                                                         | belongsTo Company, Unit, User                        |
+
+> `User.jobTitle` and `User.avatarUrl` are optional (`String?`). Add via Prisma migration if not already in schema.
 
 ---
 
-## 12. Page & Route Inventory
+## 15. Page & Route Inventory
 
-### Public Routes
+### 15.1 Routing Middleware — `src/proxy.ts`
 
-| Route | Page | Notes |
-|---|---|---|
-| `/` | Landing page | Public |
-| `/company/sign-in/[[...sign-in]]` | Clerk Sign In | Clerk catch-all |
-| `/company/sign-up/[[...sign-up]]` | Clerk Sign Up | Clerk catch-all |
+| Responsibility      | Detail                                                                             |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Route Protection    | `auth.protect()` gates `/company/*`, `/unite/*`, `/user/*`                         |
+| Invitation Handling | Detects `__clerk_ticket` param → routes to `/company/sign-up`                      |
+| URL Normalization   | `/sign-in` → `/company/sign-in`                                                    |
+| Path Masking        | Rewrites `/` to `/site` — browser URL stays clean                                  |
+| Role Redirect       | OWNER → `/company/[companyId]`, ADMIN → `/unite/[unitId]`, USER → `/user/[userId]` |
 
-### Routing Hub
+| Scenario               | Behavior                                                         |
+| ---------------------- | ---------------------------------------------------------------- |
+| New Owner (no company) | Redirect to `/company` — onboarding launchpad                    |
+| Invited User           | `InvitationProcessor` assigns role before routing to destination |
+| No role / no companyId | Redirect to `/unauthorized`                                      |
 
-| Route | Behavior |
-|---|---|
-| `/dashboard` | Pure redirect hub — no UI of its own. OWNER → `/company/[companyId]`, ADMIN → `/unite/[unitId]`, USER → `/user/[userId]` |
+### 15.2 Public Routes
 
-### Onboarding
+| Route              | Description                                  |
+| ------------------ | -------------------------------------------- |
+| `/`                | Rewritten to `/site` — browser URL stays `/` |
+| `/site`            | Marketing landing page                       |
+| `/company/sign-in` | Clerk Sign In                                |
+| `/company/sign-up` | Clerk Sign Up — invitation links land here   |
 
-| Route | Page | Access |
-|---|---|---|
-| `/onboarding` | Multi-step onboarding wizard (3 steps) | Authenticated users with no Company |
+### 15.3 Routing Hub
 
-### Company Routes (OWNER only)
+| Route        | Behavior                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| `/dashboard` | Pure redirect: OWNER → `/company/[companyId]`, ADMIN → `/unite/[unitId]`, USER → `/user/[userId]` |
 
-| Route | Page |
-|---|---|
-| `/company/[companyId]` | Company Dashboard (KPIs, units overview, cross-unit financials) |
-| `/company/[companyId]/settings` | Company Settings (name, logo, legal info, production threshold) |
-| `/company/[companyId]/settings/billing` | Billing & Plans (current plan, limits usage, upgrade CTA) |
-| `/company/[companyId]/units` | Units Management (list, create, delete) |
-| `/company/[companyId]/users` | Company-wide members & Invitations |
+### 15.4 Onboarding
 
-### Unit Routes (ADMIN + OWNER)
+| Route         | Description                                               |
+| ------------- | --------------------------------------------------------- |
+| `/onboarding` | Multi-step wizard — authenticated users with no Company   |
+| `/company`    | Onboarding launchpad for new owners before company exists |
 
-| Route | Page |
-|---|---|
-| `/unite/[unitId]` | Unit Dashboard |
-| `/unite/[unitId]/members` | Unit Members Management |
-| `/unite/[unitId]/clients` | Client List |
-| `/unite/[unitId]/clients/[clientId]` | Client Profile |
-| `/unite/[unitId]/projects` | Project List |
-| `/unite/[unitId]/projects/[projectId]` | Project Detail (tabbed: Overview, Gantt, Production, Tasks, Time Tracking, Documents) |
-| `/unite/[unitId]/kanban` | Kanban Board |
-| `/unite/[unitId]/settings` | Unit Settings |
+### 15.5 Company Routes (OWNER only)
 
-### User Workspace Routes
+| Route                                   | Page                                                                  |
+| --------------------------------------- | --------------------------------------------------------------------- |
+| `/company/[companyId]`                  | Company Dashboard — KPIs, all units, financial summary, activity feed |
+| `/company/[companyId]/units`            | Units Management — list, create, delete, assign admins                |
+| `/company/[companyId]/users`            | Company Team — all members, roles, pending invitations                |
+| `/company/[companyId]/settings`         | Company Settings — metadata, logo, legal info                         |
+| `/company/[companyId]/settings/billing` | Billing — plan, usage, Request Upgrade form, renewal                  |
 
-| Route | Page | Access |
-|---|---|---|
-| `/user/[userId]` | USER Personal Dashboard (tasks, time entries, notifications, assigned projects, profile) | USER only |
-| `/dashboard/notifications` | Full Notifications Page | All roles |
+### 15.6 Unit Routes (ADMIN + OWNER)
 
----
+| Route                                  | Access                          | Description                            |
+| -------------------------------------- | ------------------------------- | -------------------------------------- |
+| `/unite`                               | ADMIN                           | Unit selection page                    |
+| `/unite/[unitId]`                      | OWNER · ADMIN                   | Unit Dashboard — KPIs, activity        |
+| `/unite/[unitId]/projects`             | OWNER · ADMIN                   | Project list, create new               |
+| `/unite/[unitId]/projects/[projectId]` | OWNER · ADMIN · USER (assigned) | Project detail — tabbed                |
+| `/unite/[unitId]/tasks`                | OWNER · ADMIN                   | **Kanban board** — all lanes and tasks |
+| `/unite/[unitId]/clients`              | OWNER · ADMIN                   | Client CRM                             |
+| `/unite/[unitId]/clients/[clientId]`   | OWNER · ADMIN                   | Client Profile                         |
+| `/unite/[unitId]/productions`          | OWNER · ADMIN                   | Unit-wide production monitoring        |
+| `/unite/[unitId]/members`              | OWNER · ADMIN                   | Member directory, invitations          |
+| `/unite/[unitId]/settings`             | OWNER · ADMIN                   | Unit settings                          |
 
-## 13. Navigation Structure
+### 15.7 User Workspace Routes
 
-### OWNER Sidebar Behavior
+| Route                      | Access                     | Description                               |
+| -------------------------- | -------------------------- | ----------------------------------------- |
+| `/user/[userId]`           | USER (own) · OWNER · ADMIN | Personal dashboard                        |
+| `/user/[userId]/tasks`     | USER (own) · ADMIN         | Assigned tasks, filterable                |
+| `/user/[userId]/projects`  | USER (own) · ADMIN         | Assigned projects                         |
+| `/user/[userId]/analytics` | USER (own) · OWNER · ADMIN | Performance metrics                       |
+| `/user/[userId]/profile`   | USER (own)                 | Edit name, job title, avatar, preferences |
 
-The OWNER sidebar contains a **Company/Unit Switcher** at the top. This switcher lists the Company and all its Units. The OWNER selects one at a time:
+### 15.8 Shared / Utility Routes
 
-- Selecting **"Company"** → displays the Company navigation section
-- Selecting **a Unit** → displays that unit's Admin navigation (OWNER retains full permissions)
-
-The sidebar uses the `sidebar-07` shadcn block as its foundation. Navigation items are defined in `src/lib/nav.ts` as the single source of truth.
-
-### Sidebar Navigation by Role
-
-| Section | OWNER | ADMIN | USER |
-|---|---|---|---|
-| Company/Unit Switcher | ✅ (company + all units) | ❌ | ❌ |
-| Company Dashboard | ✅ | ❌ | ❌ |
-| Units Management | ✅ | ❌ | ❌ |
-| Company Team | ✅ | ❌ | ❌ |
-| Billing | ✅ | ❌ | ❌ |
-| Unit Dashboard | ✅ (when unit selected) | ✅ | ✅ |
-| Projects | ✅ | ✅ | ✅ (assigned only) |
-| Kanban | ✅ | ✅ | ❌ (tasks accessible via personal dashboard) |
-| Clients | ✅ | ✅ | ❌ |
-| Unit Members | ✅ | ✅ | ❌ |
-| Unit Settings | ✅ | ✅ | ❌ |
-| Notifications | ✅ | ✅ | ✅ |
-| Personal Dashboard | ❌ | ❌ | ✅ |
-
----
-
-## 14. UI Component Library
-
-### kibo-ui Gantt
-
-**Install:** `npx kibo-ui add gantt`
-
-**Bundled dependencies:** dnd-kit, date-fns, lodash (throttle), lucide-react, jotai
-
-| Feature | Status | Notes |
-|---|---|---|
-| Horizontal bars with grouping | ✅ Native | Use for Phase → SubPhase hierarchy |
-| Draggable & resizable bars | ✅ Native | Used for ADMIN/OWNER; disabled for USER |
-| Read-only mode | ✅ Native | Used for USER role |
-| Markers (vertical lines) | ✅ Native | Used for GanttMarkers |
-| Today marker | ✅ Native | Built-in |
-| Progress fill overlay on bar | 🔧 Custom | Render progress as a filled div inside each bar |
-| Month/Week/Day zoom toggle | 🔧 Custom | Wire to kibo-ui's timeline range props |
-| Phase bar click → side sheet | 🔧 Custom | Add onClick handler to each bar |
-| Overlap warning indicator | 🔧 Custom | Detect overlapping date ranges, add visual flag |
-
-### kibo-ui Kanban
-
-**Install:** `npx kibo-ui add kanban`
-
-**Bundled dependencies:** dnd-kit
-
-| Feature | Status | Notes |
-|---|---|---|
-| Drag & drop between columns | ✅ Native | Used for ADMIN/OWNER full drag; USER restricted to own tasks |
-| Customizable card contents | ✅ Native | Custom card: title, assignee avatar, due date, tags, overdue badge |
-| Overdue badge on card | 🔧 Custom | Add red badge when `dueDate < NOW && !complete` |
-| Cascading filter bar (Project → Phase → SubPhase) | 🔧 Custom | Build above the board; filters visible tasks and narrows dropdowns |
-| Task Detail Side Sheet (480px) | 🔧 Custom | shadcn Sheet component, opens on card click |
-
-### Other shadcn/ui Components Used
-
-The following shadcn/ui components are expected to be used throughout the app. They are already available after the initial shadcn setup — do not re-run `shadcn init`.
-
-- `Sheet` — Task Detail Side Sheet, Phase detail
-- `Dialog` — Confirmation modals (delete, remove member)
-- `Tabs` — Project detail page tabs
-- `Form` + `Input` + `Select` + `DatePicker` — All forms
-- `Badge` — Status labels, overdue indicators, unread count
-- `Avatar` — User avatars throughout
-- `DropdownMenu` — Context menus, bell notification dropdown
-- `Sidebar` (sidebar-07 block) — App sidebar for all roles
-- `Table` — Production data table, member lists, project lists
-- `Progress` — Phase and project progress bars
-- `Skeleton` — Loading states
+| Route            | Access                  | Description                                                |
+| ---------------- | ----------------------- | ---------------------------------------------------------- |
+| `/notifications` | All authenticated roles | Full notifications page — filter by type, mark all as read |
+| `/unauthorized`  | Any authenticated user  | Shown when role does not permit access                     |
 
 ---
 
-## 15. Out of Scope (v1.0)
+## 16. Navigation Structure
 
-| Feature | Reason Deferred |
-|---|---|
-| Operator Panel (subscription activation) | Not designed yet — will be a separate PRD |
-| Mobile native app (iOS / Android) | Desktop-first; mobile web sufficient for v1 |
-| Real-time collaborative editing (live cursors) | Complexity; polling + Server Actions sufficient |
-| Gantt task dependency arrows (FS, SS, FF, SF) | Schema enum defined for future use |
-| Advanced reporting & PDF export | Phase 2 |
-| Two-factor authentication (2FA) | Delegated to Clerk settings |
-| Custom domain / white-labeling | Enterprise tier, post-launch |
-| Offline mode / PWA | Out of scope for v1 |
-| External calendar sync | Phase 2 |
-| Public project share links | Phase 2 |
-| Comment character limits | Not defined — no limit enforced in v1 |
-| Comment file attachments | Phase 2 |
-| Comment markdown rendering | Plain text only in v1 |
+### 16.1 OWNER Sidebar Behavior
+
+Company/Unit Switcher at the top: selecting "Company" shows company nav; selecting a Unit shows admin nav for that unit (OWNER retains full permissions). Built on shadcn `sidebar-07`. All nav items in `src/lib/nav.ts`.
+
+### 16.2 Sidebar Menu — By Role & Context
+
+#### OWNER — Company Context
+
+| Menu (FR)       | Route                                   |
+| --------------- | --------------------------------------- |
+| Tableau de Bord | `/company/[companyId]`                  |
+| Unités          | `/company/[companyId]/units`            |
+| Équipe          | `/company/[companyId]/users`            |
+| Paiement        | `/company/[companyId]/settings/billing` |
+| Paramètres      | `/company/[companyId]/settings`         |
+| Notifications   | `/notifications`                        |
+
+#### OWNER (Unit selected) / ADMIN
+
+| Menu (FR)       | Route                         |
+| --------------- | ----------------------------- |
+| Tableau de Bord | `/unite/[unitId]`             |
+| Projets         | `/unite/[unitId]/projects`    |
+| Tâches          | `/unite/[unitId]/tasks`       |
+| Clients         | `/unite/[unitId]/clients`     |
+| Production      | `/unite/[unitId]/productions` |
+| Membres         | `/unite/[unitId]/members`     |
+| Paramètres      | `/unite/[unitId]/settings`    |
+| Notifications   | `/notifications`              |
+
+#### USER
+
+| Menu (FR)     | Route                      |
+| ------------- | -------------------------- |
+| Mon Espace    | `/user/[userId]`           |
+| Mes Tâches    | `/user/[userId]/tasks`     |
+| Mes Projets   | `/user/[userId]/projects`  |
+| Analytiques   | `/user/[userId]/analytics` |
+| Notifications | `/notifications`           |
+
+### 16.3 Sidebar Requirements
+
+| ID     | Requirement                                                                |
+| ------ | -------------------------------------------------------------------------- |
+| SDB-01 | Sidebar adapts based on User role AND current view context                 |
+| SDB-02 | OWNER sees Company/Unit Switcher — other roles do not                      |
+| SDB-03 | Active route highlighted                                                   |
+| SDB-04 | Sidebar collapsible to icon-only mode                                      |
+| SDB-05 | Unread count badge on Notifications menu item                              |
+| SDB-06 | All nav items defined in `src/lib/nav.ts` — no hardcoded nav in components |
+| SDB-07 | Sidebar footer: logged-in user name, role badge, avatar                    |
 
 ---
 
-## 16. Glossary
+## 17. UI Component Library
 
-| Term | Definition |
-|---|---|
-| **HT (Hors Taxe)** | Pre-tax amount (excluding VAT) |
-| **TTC (Toutes Taxes Comprises)** | Total amount including all taxes |
-| **TVA** | Taxe sur la Valeur Ajoutée — VAT in Algeria |
-| **ODS** | Ordre de Service — official project start order date |
-| **Délai** | Contractual deadline, stored as `delaiMonths` + `delaiDays` integers. Displayed as `"X mois Y jours"`. |
-| **Taux** | Production rate, expressed as a percentage (0–100) |
-| **montantProd** | Produced monetary amount = `Phase.montantHT × (taux / 100)` |
-| **montantHT** | Pre-tax monetary amount |
-| **montantTTC** | Tax-inclusive monetary amount |
-| **Phase** | Major deliverable block within a project, with its own budget (`montantHT`) and timeline |
-| **SubPhase** | Granular sub-task within a Phase |
-| **GanttMarker** | Vertical milestone line on the Gantt chart with a label, date, and optional CSS class |
-| **Product** | Planned production baseline for a Phase (one per phase) |
-| **Production** | Individual actual production record logged against a Product |
-| **Lane** | Kanban board column (e.g. "To Do", "In Progress") — Unit-scoped |
-| **TeamMember** | Junction record linking a User to a Project's Team |
-| **Multi-Tenant** | One app instance serves multiple isolated companies — all data isolated by `companyId` |
-| **RBAC** | Role-Based Access Control — permissions enforced server-side based on `User.role` |
-| **Onboarding** | First-run wizard that creates the Company, first Unit, and sets the OWNER |
-| **Virement Bancaire** | Bank wire transfer — primary offline payment method used in Algeria |
-| **Wilaya** | An Algerian administrative state/province |
-| **formJur** | Legal form of the company (e.g. SARL, SPA, EURL) |
-| **NIF** | Numéro d'Identification Fiscale — Algerian tax identification number |
-| **signe** | Boolean flag on Project indicating the contract is signed — display only, no feature gates |
-| **OWNER** | The company-wide role. `unitId = null`. Created only at onboarding. One per company. |
-| **ADMIN** | Unit-scoped role. Full control within their unit. `unitId` is set. |
-| **USER** | Project-scoped role. Accesses only assigned projects. `unitId` is set. |
-| **Server Action** | Next.js 16 server-side function used for all data mutations |
-| **kibo-ui** | shadcn-compatible component library providing Gantt and Kanban components |
+### kibo-ui Gantt — `npx kibo-ui add gantt`
+
+| Feature                       | Status    |
+| ----------------------------- | --------- |
+| Horizontal bars with grouping | ✅ Native |
+| Draggable & resizable bars    | ✅ Native |
+| Read-only mode                | ✅ Native |
+| Markers (vertical lines)      | ✅ Native |
+| Today marker                  | ✅ Native |
+| Progress fill overlay         | 🔧 Custom |
+| Month/Week/Day zoom           | 🔧 Custom |
+| Phase bar click → side sheet  | 🔧 Custom |
+| Overlap warning               | 🔧 Custom |
+
+### kibo-ui Kanban — `npx kibo-ui add kanban`
+
+| Feature                                           | Status    |
+| ------------------------------------------------- | --------- |
+| Drag & drop between columns                       | ✅ Native |
+| Customizable card contents                        | ✅ Native |
+| Overdue badge on card                             | 🔧 Custom |
+| Cascading filter bar (Project → Phase → SubPhase) | 🔧 Custom |
+| Task Detail Side Sheet (480px)                    | 🔧 Custom |
+
+### shadcn/ui Components
+
+`Sheet`, `Dialog`, `Tabs`, `Form`, `Input`, `Select`, `Badge`, `Avatar`, `DropdownMenu`, `Sidebar` (sidebar-07), `Table`, `Progress`, `Skeleton`, `Sonner`, `Card`, `Separator`, `Tooltip`, `Popover`, `Command`, `Calendar`, `Alert`, `Checkbox`, `Switch`, `ScrollArea`
 
 ---
 
-*End of Document — PMA PRD v3.0.0*
+## 18. Out of Scope (v1.0)
+
+| Feature                                  | Reason                               |
+| ---------------------------------------- | ------------------------------------ |
+| Operator Panel (subscription activation) | Not designed yet — separate PRD      |
+| Mobile native app                        | Desktop-first; mobile web sufficient |
+| Real-time collaborative editing          | Polling sufficient for v1            |
+| Gantt dependency arrows                  | Schema enum defined for future use   |
+| Advanced reporting & PDF export          | Phase 2                              |
+| Two-factor authentication                | Delegated to Clerk settings          |
+| Custom domain / white-labeling           | Enterprise tier, post-launch         |
+| Offline mode / PWA                       | Phase 2                              |
+| External calendar sync                   | Phase 2                              |
+| Public project share links               | Phase 2                              |
+| Comment character limits                 | No limit in v1                       |
+| Comment file attachments                 | Phase 2                              |
+| Comment markdown rendering               | Plain text only in v1                |
+
+---
+
+## 19. Glossary
+
+| Term                             | Definition                                                            |
+| -------------------------------- | --------------------------------------------------------------------- |
+| **HT (Hors Taxe)**               | Pre-tax amount (excluding VAT)                                        |
+| **TTC (Toutes Taxes Comprises)** | Total amount including all taxes                                      |
+| **TVA**                          | Taxe sur la Valeur Ajoutée — VAT in Algeria                           |
+| **ODS**                          | Ordre de Service — official project start order date                  |
+| **Délai**                        | `delaiMonths + delaiDays` integers. Display: `"X mois Y jours"`       |
+| **Taux**                         | Production rate as percentage (0–100)                                 |
+| **montantProd**                  | `Phase.montantHT × (taux / 100)`                                      |
+| **Phase**                        | Major deliverable block — own budget and timeline                     |
+| **SubPhase**                     | Granular sub-task within a Phase                                      |
+| **GanttMarker**                  | Vertical milestone line on Gantt — label, date, optional CSS class    |
+| **Product**                      | Planned production baseline for a Phase (one per phase)               |
+| **Production**                   | Actual production record logged against a Product                     |
+| **Lane**                         | Kanban column — Unit-scoped                                           |
+| **TeamMember**                   | Junction linking a User to a Project's Team                           |
+| **Multi-Tenant**                 | One app, multiple isolated companies — isolated by `companyId`        |
+| **RBAC**                         | Role-Based Access Control — enforced server-side                      |
+| **Onboarding**                   | First-run wizard — creates Company, first Unit, sets OWNER            |
+| **Virement Bancaire**            | Bank wire transfer — primary offline payment in Algeria               |
+| **Wilaya**                       | Algerian administrative province (48 total)                           |
+| **formJur**                      | Legal form of company (SARL, SPA, EURL, etc.)                         |
+| **NIF**                          | Numéro d'Identification Fiscale — Algerian tax ID                     |
+| **signe**                        | Boolean flag — contract signed indicator, display only                |
+| **OWNER**                        | Company-wide role. `unitId = null`. One per company. Onboarding only. |
+| **ADMIN**                        | Unit-scoped role. Full control within unit.                           |
+| **USER**                         | Project-scoped role. Accesses only assigned projects.                 |
+| **Server Action**                | Next.js 16 server-side function — all mutations                       |
+| **proxy.ts**                     | Next.js 16 middleware (NOT `middleware.ts`) — routing + auth          |
+| **kibo-ui**                      | shadcn-compatible library — Gantt and Kanban components               |
+| **`use cache`**                  | Next.js 16 directive marking a server function as cacheable           |
+| **cacheTag**                     | Associates cache entry with a named tag for invalidation              |
+| **cacheLife**                    | Sets the TTL profile for a cached function                            |
+| **queries.ts**                   | `lib/queries.ts` — all data-fetching with caching                     |
+| **cache.ts**                     | `lib/cache.ts` — all cache tag constants and profiles                 |
+
+---
+
+_End of Document — PMA PRD v3.2.0_

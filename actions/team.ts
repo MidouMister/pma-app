@@ -2,10 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { addTeamMemberSchema } from "@/lib/validators"
+import { projectTeamTag, userProjectsTag, companyTeamTag } from "@/lib/cache"
 
 export async function addTeamMember(data: unknown) {
   try {
@@ -98,7 +99,9 @@ export async function addTeamMember(data: unknown) {
       },
     })
 
-    revalidatePath(`/unite/${team.project.unitId}/projects/${team.project.id}`)
+    revalidateTag(projectTeamTag(team.project.id), 'max')
+    revalidateTag(userProjectsTag(validData.userId), 'max')
+    revalidateTag(companyTeamTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -167,9 +170,9 @@ export async function removeTeamMember(memberId: string) {
       where: { id: memberId },
     })
 
-    revalidatePath(
-      `/unite/${teamMember.team.project.unitId}/projects/${teamMember.team.project.id}`
-    )
+    revalidateTag(projectTeamTag(teamMember.team.project.id), 'max')
+    revalidateTag(userProjectsTag(teamMember.userId), 'max')
+    revalidateTag(companyTeamTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {

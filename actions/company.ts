@@ -2,10 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { updateCompanySchema } from "@/lib/validators"
+import { companyTag } from "@/lib/cache"
 
 export async function updateCompany(data: unknown) {
   try {
@@ -75,7 +76,7 @@ export async function updateCompany(data: unknown) {
         ...(validData.formJur !== undefined && { formJur: validData.formJur }),
         ...(validData.nif !== undefined && { nif: validData.nif }),
         ...(validData.secteur !== undefined && { secteur: validData.secteur }),
-        ...(validData.state !== undefined && { state: validData.state }),
+        ...(validData.wilaya !== undefined && { wilaya: validData.wilaya }),
         ...(validData.registre !== undefined && {
           registre: validData.registre,
         }),
@@ -86,7 +87,7 @@ export async function updateCompany(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/company/${user.companyId}/settings`)
+    revalidateTag(companyTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {

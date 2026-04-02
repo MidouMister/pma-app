@@ -65,7 +65,7 @@ export async function completeOnboarding(data: OnboardingInput) {
           companyEmail: companyData.companyEmail,
           companyAddress: companyData.companyAddress,
           companyPhone: companyData.companyPhone,
-          state: companyData.state,
+          wilaya: companyData.wilaya,
           formJur: companyData.formJur,
           registre: companyData.registre,
           nif: companyData.nif,

@@ -2,10 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { sendInvitationSchema } from "@/lib/validators"
+import { unitMembersTag, companyTeamTag } from "@/lib/cache"
 
 export async function sendInvitation(data: unknown) {
   try {
@@ -129,8 +130,8 @@ export async function sendInvitation(data: unknown) {
     })
 
     // 9. Revalidate
-    revalidatePath(`/unite/${validData.unitId}/settings`)
-    revalidatePath(`/unite/${validData.unitId}/team`)
+    revalidateTag(unitMembersTag(validData.unitId), 'max')
+    revalidateTag(companyTeamTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -189,8 +190,8 @@ export async function revokeInvitation(invitationId: string) {
     })
 
     // 5. Revalidate
-    revalidatePath(`/unite/${invitation.unitId}/settings`)
-    revalidatePath(`/unite/${invitation.unitId}/team`)
+    revalidateTag(unitMembersTag(invitation.unitId), 'max')
+    revalidateTag(companyTeamTag(user.companyId), 'max')
 
     return { success: true }
   } catch (error) {

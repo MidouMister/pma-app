@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
 import { getCurrentUser } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { getScopedProjects, getUnitById, getUnitClients } from "@/lib/queries"
 import { ProjectList } from "@/components/project/project-list"
 import { ProjectDialog } from "@/components/project/project-dialog"
 import { PageHeader } from "@/components/shared/page-header"
@@ -27,64 +27,21 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
     redirect("/onboarding")
   }
 
-  const unit = await prisma.unit.findFirst({
-    where: { id: unitId, companyId: user.companyId },
-  })
+  const [unit, projects, clients] = await Promise.all([
+    getUnitById(unitId),
+    getScopedProjects(user.companyId, unitId, user.id, user.role),
+    getUnitClients(unitId),
+  ])
 
-  if (!unit) {
+  if (!unit || unit.companyId !== user.companyId) {
     redirect("/dashboard")
   }
 
-  // RBAC filtering (PROJ-08)
-  let projectsWhere: {
-    companyId: string
-    archived: boolean
-    unitId?: string
-    team?: { members: { some: { userId: string } } }
-  } = {
-    companyId: user.companyId,
-    archived: false,
-  }
 
-  if (user.role === "ADMIN") {
-    projectsWhere.unitId = unitId
-  } else if (user.role === "USER") {
-    // USERs see only assigned projects
-    projectsWhere = {
-      ...projectsWhere,
-      unitId,
-      team: { members: { some: { userId: user.id } } },
-    }
-  }
-  // OWNER sees all projects in company (across all units)
-
-  const projects = await prisma.project.findMany({
-    where: projectsWhere,
-    orderBy: { createdAt: "desc" },
-  })
-
-  const clients = await prisma.client.findMany({
-    where: { unitId, companyId: user.companyId },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  })
-
-  const clientMap = new Map(clients.map((c) => [c.id, c]))
 
   const simpleProjects = projects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    code: p.code,
-    type: p.type,
-    montantHT: p.montantHT,
-    montantTTC: p.montantTTC,
-    ods: p.ods,
-    delaiMonths: p.delaiMonths,
-    delaiDays: p.delaiDays,
-    status: p.status,
-    signe: p.signe,
-    clientId: p.clientId,
-    client: clientMap.get(p.clientId),
+    ...p,
+    client: p.Client,
     phases: [] as Array<{ montantHT: number; progress: number }>,
   }))
 

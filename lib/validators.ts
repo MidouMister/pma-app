@@ -14,7 +14,7 @@ export const companySchema = z.object({
     .string()
     .min(8, "Le numéro de téléphone est invalide")
     .max(20),
-  state: z.string().min(1, "La wilaya est requise"),
+  wilaya: z.string().min(1, "La wilaya est requise"),
   formJur: z.string().min(1, "La forme juridique est requise"),
   registre: z.string().min(1, "Le numéro de registre est requis"),
   nif: z.string().min(1, "Le NIF est requis"),
@@ -119,7 +119,7 @@ export const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
   unitId: z.string().uuid("Unité invalide"),
   role: z.enum(["OWNER", "ADMIN", "USER"]).default("USER"),
-  jobeTilte: z.string().max(100).optional().nullable(),
+  jobTitle: z.string().max(100).optional().nullable(),
 })
 
 export const timeEntrySchema = z.object({

@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { Users, FolderKanban } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+import { getAllUnits } from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import {
@@ -25,23 +25,7 @@ import { CreateUnitDialog } from "./create-unit-dialog"
 import { DeleteUnitDialog } from "./delete-unit-dialog"
 import Link from "next/link"
 
-async function getUnits(companyId: string) {
-  return prisma.unit.findMany({
-    where: { companyId },
-    include: {
-      admin: {
-        select: { id: true, name: true },
-      },
-      _count: {
-        select: {
-          members: true,
-          projects: true,
-        },
-      },
-    },
-    orderBy: { name: "asc" },
-  })
-}
+
 
 function getInitials(name: string): string {
   return name
@@ -62,7 +46,7 @@ export default async function UnitsPage({
 
   const { companyId } = await params
 
-  const units = await getUnits(companyId)
+  const units = await getAllUnits(companyId)
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">

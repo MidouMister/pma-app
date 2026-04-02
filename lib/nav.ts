@@ -8,6 +8,7 @@ import {
   Kanban,
   Briefcase,
   Bell,
+  Factory,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,7 +45,7 @@ export function getNavigation(
         icon: Users,
       },
       {
-        title: "Facturation",
+        title: "Paiement",
         url: `/company/${companyId}/settings/billing`,
         icon: CreditCard,
       },
@@ -70,9 +71,14 @@ export function getNavigation(
         icon: FolderKanban,
       },
       {
-        title: "Kanban",
-        url: `/unite/${unitId}/kanban`,
+        title: "Tâches",
+        url: `/unite/${unitId}/tasks`,
         icon: Kanban,
+      },
+      {
+        title: "Production",
+        url: `/unite/${unitId}/productions`,
+        icon: Factory,
       },
       {
         title: "Clients",

@@ -1,7 +1,11 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
-import { getCurrentUser } from "@/lib/auth"
+import {
+  getUnitMembers,
+  getUnitPendingInvitations,
+  getUnitById,
+  getCurrentUser,
+} from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import {
   Table,
@@ -61,19 +65,7 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-async function getUnitMembers(unitId: string, companyId: string) {
-  return prisma.user.findMany({
-    where: { unitId, companyId },
-    orderBy: { name: "asc" },
-  })
-}
 
-async function getPendingInvitations(unitId: string, companyId: string) {
-  return prisma.invitation.findMany({
-    where: { unitId, companyId, status: "PENDING" },
-    orderBy: { createdAt: "desc" },
-  })
-}
 
 export default async function UnitMembersPage({
   params,
@@ -88,17 +80,16 @@ export default async function UnitMembersPage({
 
   const { unitId } = await params
 
-  // Verify unit belongs to user's company (BR-01)
-  const unit = await prisma.unit.findFirst({
-    where: { id: unitId, companyId: user.companyId },
-  })
-
-  if (!unit) redirect("/company/sign-in")
-
-  const [members, pendingInvitations] = await Promise.all([
-    getUnitMembers(unitId, user.companyId),
-    getPendingInvitations(unitId, user.companyId),
+  const [unit, members, pendingInvitations] = await Promise.all([
+    getUnitById(unitId),
+    getUnitMembers(unitId),
+    getUnitPendingInvitations(unitId, user.companyId),
   ])
+
+  // Verify unit belongs to user's company (BR-01)
+  if (!unit || unit.companyId !== user.companyId) {
+    redirect("/company/sign-in")
+  }
 
   const canRemoveMember = user.role === "OWNER" || user.role === "ADMIN"
   const canReassignAdmin = user.role === "OWNER"

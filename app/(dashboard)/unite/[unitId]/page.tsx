@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { FolderKanban, Users, Banknote, Activity } from "lucide-react"
 import { auth } from "@clerk/nextjs/server"
-import { prisma } from "@/lib/prisma"
+import { getUnitDashboard, getCurrentUser } from "@/lib/queries"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/shared/page-header"
@@ -90,47 +90,22 @@ export default async function UnitDashboardPage({
     redirect("/company/sign-in")
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
-
+  const user = await getCurrentUser()
   if (!user || !user.companyId) {
     redirect("/onboarding")
   }
 
-  const unit = await prisma.unit.findFirst({
-    where: { id: unitId, companyId: user.companyId },
-    include: {
-      _count: {
-        select: { projects: true, members: true },
-      },
-    },
-  })
+  const { unit, projects, kpiData } = await getUnitDashboard(
+    unitId,
+    user.companyId
+  )
 
   if (!unit) {
     redirect("/dashboard")
   }
 
-  const projects = await prisma.project.findMany({
-    where: { unitId: unit.id, companyId: user.companyId },
-    include: { Client: true },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  })
-
-  const allProjects = await prisma.project.findMany({
-    where: { unitId: unit.id, companyId: user.companyId },
-    select: { montantTTC: true, status: true },
-  })
-
-  const totalContractValue = allProjects.reduce(
-    (sum, p) => sum + p.montantTTC,
-    0
-  )
-
-  const activeProjects = allProjects.filter(
-    (p) => p.status === "InProgress"
-  ).length
+  const totalContractValue = kpiData.reduce((sum, p) => sum + p.montantTTC, 0)
+  const activeProjects = kpiData.filter((p) => p.status === "InProgress").length
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">

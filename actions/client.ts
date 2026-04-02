@@ -2,10 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { clientSchema, updateClientSchema } from "@/lib/validators"
+import { unitClientsTag, projectTag } from "@/lib/cache"
 
 export async function createClient(data: unknown) {
   try {
@@ -81,7 +82,7 @@ export async function createClient(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/unite/${validData.unitId}/clients`)
+    revalidateTag(unitClientsTag(validData.unitId), 'max')
 
     return { success: true }
   } catch (error) {
@@ -180,8 +181,8 @@ export async function updateClient(data: unknown) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/unite/${client.unitId}/clients`)
-    revalidatePath(`/unite/${client.unitId}/clients/${client.id}`)
+    revalidateTag(unitClientsTag(client.unitId), 'max')
+    revalidateTag(projectTag(client.id), 'max')
 
     return { success: true }
   } catch (error) {
@@ -277,7 +278,7 @@ export async function deleteClient(clientId: string) {
     })
 
     // 7. Revalidate
-    revalidatePath(`/unite/${client.unitId}/clients`)
+    revalidateTag(unitClientsTag(client.unitId), 'max')
 
     return { success: true }
   } catch (error) {

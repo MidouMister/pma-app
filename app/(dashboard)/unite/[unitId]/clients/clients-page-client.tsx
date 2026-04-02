@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EmptyState } from "@/components/shared/empty-state"
-import { CreateClientDialog } from "@/components/client/create-client-dialog"
+import { ClientDialog } from "@/components/client/client-dialog"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Search01Icon,
@@ -93,7 +93,7 @@ export function ClientsPageClient({
             className="pl-8"
           />
         </div>
-        {canCreate && <CreateClientDialog unitId={unitId} />}
+        {canCreate && <ClientDialog unitId={unitId} companyId="" />}
       </div>
 
       {/* Table */}

@@ -141,16 +141,16 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
           )}
         </Field>
 
-        <Field data-invalid={!!errors.state && touched.has("state")}>
+        <Field data-invalid={!!errors.wilaya && touched.has("wilaya")}>
           <FieldLabel htmlFor="company-wilaya">Wilaya</FieldLabel>
           <Select
-            value={data.state ?? ""}
-            onValueChange={(v) => updateField("state", v)}
+            value={data.wilaya ?? ""}
+            onValueChange={(v) => updateField("wilaya", v)}
           >
             <SelectTrigger
               id="company-wilaya"
               className={cn(
-                errors.state && touched.has("state") && "border-destructive"
+                errors.wilaya && touched.has("wilaya") && "border-destructive"
               )}
             >
               <SelectValue placeholder="Sélectionner une wilaya" />
@@ -163,8 +163,8 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
               ))}
             </SelectContent>
           </Select>
-          {errors.state && touched.has("state") && (
-            <FieldError>{errors.state}</FieldError>
+          {errors.wilaya && touched.has("wilaya") && (
+            <FieldError>{errors.wilaya}</FieldError>
           )}
         </Field>
 
