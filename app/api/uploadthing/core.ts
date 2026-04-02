@@ -14,16 +14,6 @@ export const uploadthingRouter = {
       return { url: file.url }
     }),
 
-  unitLogo: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
-    .middleware(async () => {
-      const { userId } = await auth()
-      if (!userId) throw new Error("Unauthorized")
-      return { userId }
-    })
-    .onUploadComplete(async ({ file }) => {
-      return { url: file.url }
-    }),
-
   projectDocument: f({
     image: { maxFileSize: "4MB", maxFileCount: 10 },
     pdf: { maxFileSize: "16MB", maxFileCount: 10 },

@@ -37,6 +37,22 @@ export default async function UnitSettingsPage({
     notFound()
   }
 
+  const company = await prisma.company.findUnique({
+    where: { id: user.companyId },
+    select: {
+      id: true,
+      name: true,
+      logo: true,
+      companyEmail: true,
+      companyPhone: true,
+      companyAddress: true,
+      wilaya: true,
+      nif: true,
+      registre: true,
+      secteur: true,
+    },
+  })
+
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader
@@ -44,7 +60,7 @@ export default async function UnitSettingsPage({
         description="Gérez les informations de votre unité"
       />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        <UnitSettingsForm unit={unit} />
+        <UnitSettingsForm unit={unit} company={company!} />
       </main>
     </div>
   )

@@ -123,7 +123,6 @@ model Company {
   Client        Client[]
   Task          Task[]
   TimeEntry     TimeEntry[]
-  Lane          Lane[]
 
   @@index([ownerId])
 }
@@ -182,7 +181,6 @@ model Unit {
   address   String
   phone     String
   email     String   @unique
-  logo      String?
   Company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId String
   admin     User?
@@ -255,6 +253,7 @@ model Project {
   GanttMarker GanttMarker[]
   TimeEntry   TimeEntry[]
   Task        Task[]
+  Documents   ProjectDocument[]
 
   @@index([unitId])
   @@index([companyId])
@@ -436,7 +435,6 @@ model Lane {
   updatedAt DateTime @updatedAt
   Unit      Unit     @relation(fields: [unitId], references: [id])
   unitId    String
-  Company   Company  @relation(fields: [companyId], references: [id])
   companyId String
   Tasks     Task[]
   order     Int      @default(0)
@@ -543,4 +541,20 @@ model ActivityLog {
   @@index([unitId])
   @@index([userId])
   @@index([entityType, entityId])
+}
+
+model ProjectDocument {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  size      Int
+  type      String
+  projectId String
+  Project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([companyId])
 }

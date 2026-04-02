@@ -4,9 +4,10 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import type { Unit } from "@prisma/client"
 import { toast } from "sonner"
+import Image from "next/image"
+import { Building2 } from "lucide-react"
 import { updateUnitSchema } from "@/lib/validators"
 import { updateUnit } from "@/actions/unit"
-import { UploadButton } from "@/utils/uploadthing"
 import {
   Card,
   CardContent,
@@ -23,16 +24,29 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+
+interface CompanyInfo {
+  id: string
+  name: string
+  logo: string | null
+  companyEmail: string
+  companyPhone: string
+  companyAddress: string
+  wilaya: string
+  nif: string
+  registre: string
+  secteur: string
+}
 
 interface UnitSettingsFormProps {
   unit: Unit
+  company: CompanyInfo
 }
 
-export function UnitSettingsForm({ unit }: UnitSettingsFormProps) {
+export function UnitSettingsForm({ unit, company }: UnitSettingsFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [logoUrl, setLogoUrl] = useState(unit.logo || "")
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const [formData, setFormData] = useState({
@@ -94,33 +108,56 @@ export function UnitSettingsForm({ unit }: UnitSettingsFormProps) {
       onSubmit={handleSubmit}
       className="mx-auto flex max-w-2xl flex-col gap-6"
     >
-      {/* Logo section */}
+      {/* Company info — read-only */}
       <Card>
         <CardHeader>
-          <CardTitle>Logo de l&apos;unité</CardTitle>
-          <CardDescription>Image PNG ou JPG, 4 Mo maximum</CardDescription>
+          <CardTitle>Entreprise</CardTitle>
+          <CardDescription>
+            Informations de votre entreprise
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <Avatar className="size-16">
-              <AvatarImage src={logoUrl || undefined} alt={unit.name} />
-              <AvatarFallback>
-                {unit.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <UploadButton
-              endpoint="companyLogo"
-              onClientUploadComplete={(res: { url: string }[]) => {
-                if (res?.[0]) {
-                  const url = res[0].url
-                  setLogoUrl(url)
-                  toast.success("Logo téléchargé avec succès")
-                }
-              }}
-              onUploadError={(error: Error) => {
-                toast.error(`Erreur : ${error.message}`)
-              }}
-            />
+            <div className="flex aspect-square size-16 items-center justify-center rounded-lg bg-muted overflow-hidden">
+              {company.logo ? (
+                <Image
+                  src={company.logo}
+                  alt={company.name}
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Building2 className="w-6 h-6 text-muted-foreground" />
+              )}
+            </div>
+            <div>
+              <p className="font-medium">{company.name}</p>
+              <p className="text-sm text-muted-foreground">{company.companyEmail}</p>
+            </div>
+          </div>
+          <Separator />
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-muted-foreground">Téléphone</span>
+              <p className="font-medium">{company.companyPhone}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Wilaya</span>
+              <p className="font-medium">{company.wilaya}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Secteur</span>
+              <p className="font-medium">{company.secteur}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">NIF</span>
+              <p className="font-medium">{company.nif}</p>
+            </div>
+            <div className="col-span-2">
+              <span className="text-muted-foreground">Adresse</span>
+              <p className="font-medium">{company.companyAddress}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
