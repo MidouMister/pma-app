@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  FieldGroup,
   Field,
   FieldLabel,
   FieldError,
@@ -107,7 +106,7 @@ export function CreateClientDialog({ unitId }: CreateClientDialogProps) {
           Créer un client
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Nouveau client</DialogTitle>
           <DialogDescription>
@@ -115,8 +114,8 @@ export function CreateClientDialog({ unitId }: CreateClientDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field data-invalid={!!errors.name}>
+          <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
+            <Field data-invalid={!!errors.name} className="md:col-span-2">
               <FieldLabel htmlFor="name">
                 Nom <span className="text-destructive">*</span>
               </FieldLabel>
@@ -126,6 +125,7 @@ export function CreateClientDialog({ unitId }: CreateClientDialogProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 aria-invalid={!!errors.name}
+                className="h-11"
                 required
               />
               {errors.name && <FieldError>{errors.name}</FieldError>}
@@ -134,7 +134,7 @@ export function CreateClientDialog({ unitId }: CreateClientDialogProps) {
             <Field>
               <FieldLabel htmlFor="wilaya">Wilaya</FieldLabel>
               <Select value={wilaya} onValueChange={setWilaya}>
-                <SelectTrigger id="wilaya">
+                <SelectTrigger id="wilaya" className="h-11">
                   <SelectValue placeholder="Sélectionner une wilaya" />
                 </SelectTrigger>
                 <SelectContent>
@@ -147,16 +147,6 @@ export function CreateClientDialog({ unitId }: CreateClientDialogProps) {
               </Select>
             </Field>
 
-            <Field>
-              <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
-              <Input
-                id="phone"
-                placeholder="Numéro de téléphone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </Field>
-
             <Field data-invalid={!!errors.email}>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
@@ -166,10 +156,22 @@ export function CreateClientDialog({ unitId }: CreateClientDialogProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 aria-invalid={!!errors.email}
+                className="h-11"
               />
               {errors.email && <FieldError>{errors.email}</FieldError>}
             </Field>
-          </FieldGroup>
+
+            <Field>
+              <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
+              <Input
+                id="phone"
+                placeholder="Numéro de téléphone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-11"
+              />
+            </Field>
+          </div>
 
           <DialogFooter className="mt-4">
             <Button

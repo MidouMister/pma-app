@@ -17,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  FieldGroup,
   Field,
   FieldLabel,
   FieldDescription,
@@ -137,7 +136,7 @@ export function ClientDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Modifier le client" : "Ajouter un client"}
@@ -148,15 +147,16 @@ export function ClientDialog({
               : "Créez un nouveau client pour cette unité."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <FieldGroup>
-            <Field data-invalid={!!errors.name}>
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
+            <Field data-invalid={!!errors.name} className="md:col-span-2">
               <FieldLabel htmlFor="name">Nom du client *</FieldLabel>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 aria-invalid={!!errors.name}
+                className="h-11"
                 placeholder="SARL Exemple"
               />
               {errors.name && (
@@ -171,6 +171,7 @@ export function ClientDialog({
                 value={formData.wilaya}
                 onChange={(e) => handleChange("wilaya", e.target.value)}
                 aria-invalid={!!errors.wilaya}
+                className="h-11"
                 placeholder="Ex: Alger"
               />
               {errors.wilaya && (
@@ -186,6 +187,7 @@ export function ClientDialog({
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 aria-invalid={!!errors.email}
+                className="h-11"
                 placeholder="contact@exemple.com"
               />
               {errors.email && (
@@ -201,13 +203,14 @@ export function ClientDialog({
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 aria-invalid={!!errors.phone}
+                className="h-11"
                 placeholder="0555 00 00 00"
               />
               {errors.phone && (
                 <FieldDescription>{errors.phone}</FieldDescription>
               )}
             </Field>
-          </FieldGroup>
+          </div>
 
           {errors.form && (
             <FieldDescription className="mt-2 text-destructive">
