@@ -25,7 +25,7 @@ import type { UploadthingRouter } from "@/app/api/uploadthing/core"
 import {
   Building01Icon,
   LocationIcon,
-  FileDocumentIcon,
+  LegalDocumentIcon,
   BriefcaseIcon,
   ImageAddIcon,
 } from "@hugeicons/core-free-icons"
@@ -248,7 +248,7 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
         <div className="flex items-center gap-3 mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
             <HugeiconsIcon
-              icon={FileDocumentIcon}
+              icon={LegalDocumentIcon}
               className="size-5 text-purple-600 dark:text-purple-400"
             />
           </div>
