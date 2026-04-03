@@ -393,7 +393,7 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
                       logo: "Erreur lors du téléchargement du logo",
                     }))
                   }}
-                  className="ut-button:rounded-md ut-button:bg-blue-600 ut-button:px-3 ut-button:py-1.5 ut-button:text-xs ut-button:font-medium ut-button:text-white ut-button:transition-all ut-button:hover:bg-blue-700 ut-button:hover:shadow-md ut-allowed-content:hidden"
+                  className="ut-button:inline-flex ut-button:items-center ut-button:justify-center ut-button:rounded-lg ut-button:bg-primary ut-button:px-4 ut-button:py-2 ut-button:text-xs ut-button:font-semibold ut-button:text-primary-foreground ut-button:transition-all ut-button:duration-200 ut-button:hover:bg-primary/90 ut-button:hover:shadow-lg ut-button:active:scale-95 ut-allowed-content:hidden"
                 />
                 {errors.logo && <FieldError>{errors.logo}</FieldError>}
               </Field>
