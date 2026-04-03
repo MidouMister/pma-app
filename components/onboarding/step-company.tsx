@@ -171,12 +171,12 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
       </div>
 
       {/* Section 2: Localisation */}
-      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-green-50/50 to-transparent p-6 dark:from-green-950/20">
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-blue-50/50 to-transparent p-6 dark:from-blue-950/20">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
             <HugeiconsIcon
               icon={LocationIcon}
-              className="size-5 text-green-600 dark:text-green-400"
+              className="size-5 text-blue-600 dark:text-blue-400"
             />
           </div>
           <div>
@@ -244,12 +244,12 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
       </div>
 
       {/* Section 3: Informations Juridiques */}
-      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-purple-50/50 to-transparent p-6 dark:from-purple-950/20">
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-blue-50/50 to-transparent p-6 dark:from-blue-950/20">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
             <HugeiconsIcon
               icon={LegalDocumentIcon}
-              className="size-5 text-purple-600 dark:text-purple-400"
+              className="size-5 text-blue-600 dark:text-blue-400"
             />
           </div>
           <div>
@@ -334,12 +334,12 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
       </div>
 
       {/* Section 4: Secteur et Branding */}
-      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-orange-50/50 to-transparent p-6 dark:from-orange-950/20">
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-blue-50/50 to-transparent p-6 dark:from-blue-950/20">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
             <HugeiconsIcon
               icon={BriefcaseIcon}
-              className="size-5 text-orange-600 dark:text-orange-400"
+              className="size-5 text-blue-600 dark:text-blue-400"
             />
           </div>
           <div>
@@ -370,21 +370,16 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
             )}
           </Field>
 
-          <div className="rounded-xl border-2 border-dashed border-border bg-gradient-to-br from-orange-50/30 to-transparent p-6 transition-all duration-200 hover:border-orange-400/50 hover:bg-orange-50/50 dark:hover:border-orange-600/50 dark:hover:from-orange-950/30">
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 transition-all duration-200 hover:border-blue-400/50 hover:bg-muted/40">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
                 <HugeiconsIcon
                   icon={ImageAddIcon}
-                  className="size-6 text-orange-600 dark:text-orange-400"
+                  className="size-4 text-blue-600 dark:text-blue-400"
                 />
               </div>
-              <Field>
-                <FieldLabel className="text-center">
-                  Logo de l&apos;entreprise
-                </FieldLabel>
-                <p className="text-xs text-muted-foreground text-center mb-3">
-                  Téléchargez votre logo pour la personnalisation
-                </p>
+              <Field className="flex-1">
+                <FieldLabel>Logo de l&apos;entreprise</FieldLabel>
                 <UploadButton<UploadthingRouter, "companyLogo">
                   endpoint="companyLogo"
                   onClientUploadComplete={(res) => {
@@ -398,7 +393,7 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
                       logo: "Erreur lors du téléchargement du logo",
                     }))
                   }}
-                  className="ut-button:w-full ut-button:rounded-lg ut-button:bg-gradient-to-r ut-button:from-orange-500 ut-button:to-orange-600 ut-button:px-4 ut-button:py-2.5 ut-button:text-xs ut-button:font-medium ut-button:text-white ut-button:transition-all ut-button:hover:shadow-lg ut-button:hover:scale-105 ut-allowed-content:text-xs ut-allowed-content:text-muted-foreground"
+                  className="ut-button:rounded-md ut-button:bg-blue-600 ut-button:px-3 ut-button:py-1.5 ut-button:text-xs ut-button:font-medium ut-button:text-white ut-button:transition-all ut-button:hover:bg-blue-700 ut-button:hover:shadow-md ut-allowed-content:hidden"
                 />
                 {errors.logo && <FieldError>{errors.logo}</FieldError>}
               </Field>
