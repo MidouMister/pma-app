@@ -24,6 +24,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { toast } from "sonner"
+import { JotaiProviderWrapper } from "@/components/providers/jotai-provider"
 
 const STEPS = [
   { label: "Entreprise", icon: "📋" },
@@ -31,7 +32,7 @@ const STEPS = [
   { label: "Équipe", icon: "👥" },
 ]
 
-export function OnboardingWizard() {
+function OnboardingWizardContent() {
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom)
   const [companyData] = useAtom(companyDataAtom)
   const [unitData] = useAtom(unitDataAtom)
@@ -241,5 +242,13 @@ export function OnboardingWizard() {
         </div>
       </div>
     </div>
+  )
+}
+
+export function OnboardingWizard() {
+  return (
+    <JotaiProviderWrapper>
+      <OnboardingWizardContent />
+    </JotaiProviderWrapper>
   )
 }
