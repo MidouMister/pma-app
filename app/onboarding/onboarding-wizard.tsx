@@ -25,7 +25,11 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import { toast } from "sonner"
 
-const STEPS = [{ label: "Entreprise" }, { label: "Unité" }, { label: "Équipe" }]
+const STEPS = [
+  { label: "Entreprise", icon: "📋" },
+  { label: "Unité", icon: "🏢" },
+  { label: "Équipe", icon: "👥" },
+]
 
 export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom)
@@ -84,108 +88,153 @@ export function OnboardingWizard() {
   const progress = ((currentStep + 1) / STEPS.length) * 100
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="flex w-full max-w-2xl flex-col gap-8 rounded-xl border bg-card p-8 shadow-sm">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <HugeiconsIcon
-              icon={CheckmarkCircle01Icon}
-              className="size-6 text-primary"
-            />
-            <h1 className="text-2xl font-bold">Bienvenue sur PMA</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="mb-12 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="inline-flex items-center justify-center rounded-full bg-primary/10 p-3">
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                className="size-6 text-primary"
+              />
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Configurons votre espace de travail en quelques étapes
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-foreground">
+            Bienvenue sur PMA
+          </h1>
+          <p className="mt-2 text-base text-muted-foreground">
+            Configurons votre espace de travail en quelques étapes simples
           </p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              Étape {currentStep + 1} sur {STEPS.length}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {STEPS[currentStep].label}
-            </span>
+        {/* Main Content Card */}
+        <div className="rounded-2xl border border-border bg-card shadow-lg backdrop-blur-sm">
+          {/* Progress Section */}
+          <div className="border-b border-border px-8 py-6">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Étape {currentStep + 1} de {STEPS.length}
+              </span>
+              <span className="text-xs font-medium text-primary">
+                {STEPS[currentStep].label}
+              </span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
           </div>
-          <Progress value={progress} className="h-1" />
-          <div className="flex gap-2">
-            {STEPS.map((step, index) => (
-              <div key={step.label} className="flex flex-1 items-center gap-2">
-                <div
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-medium ${
-                    index < currentStep
-                      ? "bg-primary text-primary-foreground"
-                      : index === currentStep
-                        ? "bg-primary/20 text-primary"
-                        : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {index < currentStep ? (
-                    <HugeiconsIcon
-                      icon={CheckmarkCircle01Icon}
-                      className="size-3"
+
+          {/* Step Indicators */}
+          <div className="border-b border-border px-8 py-6">
+            <div className="flex gap-3">
+              {STEPS.map((step, index) => (
+                <div key={step.label} className="flex flex-1 items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
+                      index < currentStep
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : index === currentStep
+                          ? "bg-primary/20 text-primary ring-2 ring-primary/30"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {index < currentStep ? (
+                      <HugeiconsIcon
+                        icon={CheckmarkCircle01Icon}
+                        className="size-5"
+                      />
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+                  </div>
+                  <span
+                    className={`hidden text-sm font-medium transition-colors duration-300 sm:block ${
+                      index === currentStep
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {index < STEPS.length - 1 && (
+                    <div
+                      className={`flex-1 border-t-2 transition-colors duration-300 ${
+                        index < currentStep
+                          ? "border-primary"
+                          : "border-muted"
+                      }`}
                     />
-                  ) : (
-                    index + 1
                   )}
                 </div>
-                <span
-                  className={`hidden text-xs sm:block ${
-                    index === currentStep
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
-                  }`}
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="min-h-[400px] px-8 py-8">
+            {currentStep === 0 && (
+              <StepCompany onComplete={handleStepComplete} />
+            )}
+            {currentStep === 1 && <StepUnit onComplete={handleStepComplete} />}
+            {currentStep === 2 && <StepInvite onSkip={handleSkipInvite} />}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="border-t border-border bg-muted/30 px-8 py-6">
+            <div className="flex items-center justify-between gap-3">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="min-w-32"
+              >
+                <HugeiconsIcon
+                  icon={ArrowLeft01Icon}
+                  className="mr-2 size-4"
+                />
+                Retour
+              </Button>
+
+              {currentStep === 2 ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="min-w-32"
                 >
-                  {step.label}
-                </span>
-                {index < STEPS.length - 1 && (
-                  <div className="flex-1 border-t border-dashed" />
-                )}
-              </div>
-            ))}
+                  {isSubmitting ? (
+                    <>
+                      <Spinner />
+                      Configuration...
+                    </>
+                  ) : (
+                    <>
+                      Terminer
+                      <HugeiconsIcon
+                        icon={CheckmarkCircle01Icon}
+                        className="ml-2 size-4"
+                      />
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={nextStep}
+                  disabled={!stepValid}
+                  className="min-w-32"
+                >
+                  Suivant
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="ml-2 size-4"
+                  />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="min-h-[300px]">
-          {currentStep === 0 && <StepCompany onComplete={handleStepComplete} />}
-          {currentStep === 1 && <StepUnit onComplete={handleStepComplete} />}
-          {currentStep === 2 && <StepInvite onSkip={handleSkipInvite} />}
-        </div>
-
-        <div className="flex items-center justify-between border-t pt-4">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} data-icon="inline-start" />
-            Retour
-          </Button>
-
-          {currentStep === 2 ? (
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Spinner />
-                  Configuration...
-                </>
-              ) : (
-                <>
-                  Terminer
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle01Icon}
-                    data-icon="inline-end"
-                  />
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button onClick={nextStep} disabled={!stepValid}>
-              Suivant
-              <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
-            </Button>
-          )}
+        {/* Progress indicator for mobile */}
+        <div className="mt-6 text-center text-xs text-muted-foreground">
+          Besoin d&apos;aide ? Visitez notre centre d&apos;aide
         </div>
       </div>
     </div>
