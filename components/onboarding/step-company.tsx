@@ -22,6 +22,14 @@ import {
 } from "@/components/ui/select"
 import { UploadButton } from "@uploadthing/react"
 import type { UploadthingRouter } from "@/app/api/uploadthing/core"
+import {
+  Building01Icon,
+  LocationIcon,
+  FileDocumentIcon,
+  BriefcaseIcon,
+  ImageAddIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
 type StepCompanyProps = {
   onComplete: (valid: boolean) => void
@@ -73,7 +81,26 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
         </p>
       </div>
 
-      <FieldGroup>
+      {/* Section 1: Information de Base */}
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-blue-50/50 to-transparent p-6 dark:from-blue-950/20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+            <HugeiconsIcon
+              icon={Building01Icon}
+              className="size-5 text-blue-600 dark:text-blue-400"
+            />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">
+              Informations de base
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Identité et contact principal
+            </p>
+          </div>
+        </div>
+
+        <FieldGroup>
         <Field data-invalid={!!errors.name && touched.has("name")}>
           <FieldLabel htmlFor="company-name">
             Nom de l&apos;entreprise <span className="text-destructive">*</span>
@@ -140,30 +167,50 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
           </Field>
         </div>
 
-        <Field
-          data-invalid={
-            !!errors.companyAddress && touched.has("companyAddress")
-          }
-        >
-          <FieldLabel htmlFor="company-address">
-            Adresse <span className="text-destructive">*</span>
-          </FieldLabel>
-          <Input
-            id="company-address"
-            value={data.companyAddress ?? ""}
-            onChange={(e) => updateField("companyAddress", e.target.value)}
-            aria-invalid={
+        </FieldGroup>
+      </div>
+
+      {/* Section 2: Localisation */}
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-green-50/50 to-transparent p-6 dark:from-green-950/20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
+            <HugeiconsIcon
+              icon={LocationIcon}
+              className="size-5 text-green-600 dark:text-green-400"
+            />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Localisation</h3>
+            <p className="text-xs text-muted-foreground">
+              Adresse et région d&apos;activité
+            </p>
+          </div>
+        </div>
+
+        <FieldGroup>
+          <Field
+            data-invalid={
               !!errors.companyAddress && touched.has("companyAddress")
             }
-            placeholder="Rue Didouche Mourad, Alger"
-            className="transition-all duration-200"
-          />
-          {errors.companyAddress && touched.has("companyAddress") && (
-            <FieldError>{errors.companyAddress}</FieldError>
-          )}
-        </Field>
+          >
+            <FieldLabel htmlFor="company-address">
+              Adresse <span className="text-destructive">*</span>
+            </FieldLabel>
+            <Input
+              id="company-address"
+              value={data.companyAddress ?? ""}
+              onChange={(e) => updateField("companyAddress", e.target.value)}
+              aria-invalid={
+                !!errors.companyAddress && touched.has("companyAddress")
+              }
+              placeholder="Rue Didouche Mourad, Alger"
+              className="transition-all duration-200"
+            />
+            {errors.companyAddress && touched.has("companyAddress") && (
+              <FieldError>{errors.companyAddress}</FieldError>
+            )}
+          </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
           <Field data-invalid={!!errors.wilaya && touched.has("wilaya")}>
             <FieldLabel htmlFor="company-wilaya">
               Wilaya <span className="text-destructive">*</span>
@@ -193,57 +240,79 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
               <FieldError>{errors.wilaya}</FieldError>
             )}
           </Field>
+        </FieldGroup>
+      </div>
 
-          <Field data-invalid={!!errors.formJur && touched.has("formJur")}>
-            <FieldLabel htmlFor="company-form">
-              Forme juridique <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Select
-              value={data.formJur ?? ""}
-              onValueChange={(v) => updateField("formJur", v)}
-            >
-              <SelectTrigger
-                id="company-form"
-                className={cn(
-                  "transition-all duration-200",
-                  errors.formJur &&
-                    touched.has("formJur") &&
-                    "border-destructive"
-                )}
-              >
-                <SelectValue placeholder="Sélectionner une forme" />
-              </SelectTrigger>
-              <SelectContent>
-                {LEGAL_FORMS.map((form) => (
-                  <SelectItem key={form} value={form}>
-                    {form}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.formJur && touched.has("formJur") && (
-              <FieldError>{errors.formJur}</FieldError>
-            )}
-          </Field>
+      {/* Section 3: Informations Juridiques */}
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-purple-50/50 to-transparent p-6 dark:from-purple-950/20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+            <HugeiconsIcon
+              icon={FileDocumentIcon}
+              className="size-5 text-purple-600 dark:text-purple-400"
+            />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">
+              Informations juridiques
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Détails légaux et fiscaux
+            </p>
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field data-invalid={!!errors.nif && touched.has("nif")}>
-            <FieldLabel htmlFor="company-nif">
-              NIF <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Input
-              id="company-nif"
-              value={data.nif ?? ""}
-              onChange={(e) => updateField("nif", e.target.value)}
-              aria-invalid={!!errors.nif && touched.has("nif")}
-              placeholder="Numéro d'identification fiscale"
-              className="transition-all duration-200"
-            />
-            {errors.nif && touched.has("nif") && (
-              <FieldError>{errors.nif}</FieldError>
-            )}
-          </Field>
+        <FieldGroup>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field data-invalid={!!errors.formJur && touched.has("formJur")}>
+              <FieldLabel htmlFor="company-form">
+                Forme juridique <span className="text-destructive">*</span>
+              </FieldLabel>
+              <Select
+                value={data.formJur ?? ""}
+                onValueChange={(v) => updateField("formJur", v)}
+              >
+                <SelectTrigger
+                  id="company-form"
+                  className={cn(
+                    "transition-all duration-200",
+                    errors.formJur &&
+                      touched.has("formJur") &&
+                      "border-destructive"
+                  )}
+                >
+                  <SelectValue placeholder="Sélectionner une forme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEGAL_FORMS.map((form) => (
+                    <SelectItem key={form} value={form}>
+                      {form}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.formJur && touched.has("formJur") && (
+                <FieldError>{errors.formJur}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.nif && touched.has("nif")}>
+              <FieldLabel htmlFor="company-nif">
+                NIF <span className="text-destructive">*</span>
+              </FieldLabel>
+              <Input
+                id="company-nif"
+                value={data.nif ?? ""}
+                onChange={(e) => updateField("nif", e.target.value)}
+                aria-invalid={!!errors.nif && touched.has("nif")}
+                placeholder="Numéro d'identification fiscale"
+                className="transition-all duration-200"
+              />
+              {errors.nif && touched.has("nif") && (
+                <FieldError>{errors.nif}</FieldError>
+              )}
+            </Field>
+          </div>
 
           <Field data-invalid={!!errors.registre && touched.has("registre")}>
             <FieldLabel htmlFor="company-registre">
@@ -261,49 +330,82 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
               <FieldError>{errors.registre}</FieldError>
             )}
           </Field>
-        </div>
+        </FieldGroup>
+      </div>
 
-        <Field data-invalid={!!errors.secteur && touched.has("secteur")}>
-          <FieldLabel htmlFor="company-secteur">
-            Secteur d&apos;activité <span className="text-destructive">*</span>
-          </FieldLabel>
-          <Input
-            id="company-secteur"
-            value={data.secteur ?? ""}
-            onChange={(e) => updateField("secteur", e.target.value)}
-            aria-invalid={!!errors.secteur && touched.has("secteur")}
-            placeholder="Ex: BTP, Informatique, Commerce..."
-            className="transition-all duration-200"
-          />
-          {errors.secteur && touched.has("secteur") && (
-            <FieldError>{errors.secteur}</FieldError>
-          )}
-        </Field>
-
-        <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 p-6 transition-all duration-200 hover:border-primary/50 hover:bg-muted/50">
-          <Field>
-            <FieldLabel className="mb-3 block">
-              Logo de l&apos;entreprise
-            </FieldLabel>
-            <UploadButton<UploadthingRouter, "companyLogo">
-              endpoint="companyLogo"
-              onClientUploadComplete={(res) => {
-                if (res?.[0]?.url) {
-                  updateField("logo", res[0].url)
-                }
-              }}
-              onUploadError={() => {
-                setErrors((prev) => ({
-                  ...prev,
-                  logo: "Erreur lors du téléchargement du logo",
-                }))
-              }}
-              className="ut-button:w-full ut-button:rounded-md ut-button:bg-primary ut-button:px-4 ut-button:py-2.5 ut-button:text-xs ut-button:font-medium ut-button:text-primary-foreground ut-button:transition-all ut-button:hover:bg-primary/90 ut-button:hover:shadow-md ut-allowed-content:text-xs ut-allowed-content:text-muted-foreground"
+      {/* Section 4: Secteur et Branding */}
+      <div className="space-y-4 rounded-xl border border-border bg-gradient-to-br from-orange-50/50 to-transparent p-6 dark:from-orange-950/20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+            <HugeiconsIcon
+              icon={BriefcaseIcon}
+              className="size-5 text-orange-600 dark:text-orange-400"
             />
-            {errors.logo && <FieldError>{errors.logo}</FieldError>}
-          </Field>
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">
+              Secteur et branding
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Type d&apos;activité et identité visuelle
+            </p>
+          </div>
         </div>
-      </FieldGroup>
+
+        <FieldGroup>
+          <Field data-invalid={!!errors.secteur && touched.has("secteur")}>
+            <FieldLabel htmlFor="company-secteur">
+              Secteur d&apos;activité <span className="text-destructive">*</span>
+            </FieldLabel>
+            <Input
+              id="company-secteur"
+              value={data.secteur ?? ""}
+              onChange={(e) => updateField("secteur", e.target.value)}
+              aria-invalid={!!errors.secteur && touched.has("secteur")}
+              placeholder="Ex: BTP, Informatique, Commerce..."
+              className="transition-all duration-200"
+            />
+            {errors.secteur && touched.has("secteur") && (
+              <FieldError>{errors.secteur}</FieldError>
+            )}
+          </Field>
+
+          <div className="rounded-xl border-2 border-dashed border-border bg-gradient-to-br from-orange-50/30 to-transparent p-6 transition-all duration-200 hover:border-orange-400/50 hover:bg-orange-50/50 dark:hover:border-orange-600/50 dark:hover:from-orange-950/30">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                <HugeiconsIcon
+                  icon={ImageAddIcon}
+                  className="size-6 text-orange-600 dark:text-orange-400"
+                />
+              </div>
+              <Field>
+                <FieldLabel className="text-center">
+                  Logo de l&apos;entreprise
+                </FieldLabel>
+                <p className="text-xs text-muted-foreground text-center mb-3">
+                  Téléchargez votre logo pour la personnalisation
+                </p>
+                <UploadButton<UploadthingRouter, "companyLogo">
+                  endpoint="companyLogo"
+                  onClientUploadComplete={(res) => {
+                    if (res?.[0]?.url) {
+                      updateField("logo", res[0].url)
+                    }
+                  }}
+                  onUploadError={() => {
+                    setErrors((prev) => ({
+                      ...prev,
+                      logo: "Erreur lors du téléchargement du logo",
+                    }))
+                  }}
+                  className="ut-button:w-full ut-button:rounded-lg ut-button:bg-gradient-to-r ut-button:from-orange-500 ut-button:to-orange-600 ut-button:px-4 ut-button:py-2.5 ut-button:text-xs ut-button:font-medium ut-button:text-white ut-button:transition-all ut-button:hover:shadow-lg ut-button:hover:scale-105 ut-allowed-content:text-xs ut-allowed-content:text-muted-foreground"
+                />
+                {errors.logo && <FieldError>{errors.logo}</FieldError>}
+              </Field>
+            </div>
+          </div>
+        </FieldGroup>
+      </div>
 
       <button
         type="button"

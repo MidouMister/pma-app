@@ -100,9 +100,12 @@ export function OnboardingWizard() {
               />
             </div>
           </div>
-          <h1 className="text-balance text-3xl font-bold tracking-tight text-foreground">
-            Bienvenue sur PMA
+          <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground">
+            Bienvenue sur <span className="bg-gradient-to-r from-primary via-blue-500 to-purple-600 bg-clip-text text-transparent">PMA</span>
           </h1>
+          <p className="mt-1 text-lg font-semibold text-muted-foreground">
+            Project Management App
+          </p>
           <p className="mt-2 text-base text-muted-foreground">
             Configurons votre espace de travail en quelques étapes simples
           </p>
