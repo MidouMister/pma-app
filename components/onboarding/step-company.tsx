@@ -370,16 +370,24 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
             )}
           </Field>
 
-          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 transition-all duration-200 hover:border-blue-400/50 hover:bg-muted/40">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
-                <HugeiconsIcon
-                  icon={ImageAddIcon}
-                  className="size-4 text-blue-600 dark:text-blue-400"
-                />
-              </div>
-              <Field className="flex-1">
-                <FieldLabel>Logo de l&apos;entreprise</FieldLabel>
+          <Field data-invalid={!!errors.logo}>
+            <FieldLabel htmlFor="logo">Logo de l&apos;entreprise</FieldLabel>
+            <div className="mt-3 rounded-lg border border-dashed border-border bg-muted/20 p-6 transition-all duration-200 hover:border-primary/50 hover:bg-muted/40">
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <HugeiconsIcon
+                    icon={ImageAddIcon}
+                    className="size-5 text-primary"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    Logo de l&apos;entreprise
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Cliquez pour sélectionner un fichier (6MB max)
+                  </p>
+                </div>
                 <UploadButton<UploadthingRouter, "companyLogo">
                   endpoint="companyLogo"
                   onClientUploadComplete={(res) => {
@@ -393,12 +401,12 @@ export function StepCompany({ onComplete }: StepCompanyProps) {
                       logo: "Erreur lors du téléchargement du logo",
                     }))
                   }}
-                  className="ut-button:inline-flex ut-button:items-center ut-button:justify-center ut-button:rounded-lg ut-button:bg-primary ut-button:px-4 ut-button:py-2 ut-button:text-xs ut-button:font-semibold ut-button:text-primary-foreground ut-button:transition-all ut-button:duration-200 ut-button:hover:bg-primary/90 ut-button:hover:shadow-lg ut-button:active:scale-95 ut-allowed-content:hidden"
+                  className="ut-button:bg-primary ut-button:hover:bg-primary/90 ut-button:text-primary-foreground ut-button:px-6 ut-button:py-2.5 ut-button:rounded-lg ut-button:font-semibold ut-button:text-sm ut-button:transition-all ut-button:duration-200 ut-button:shadow-md ut-button:hover:shadow-lg ut-allowed-content:hidden"
                 />
-                {errors.logo && <FieldError>{errors.logo}</FieldError>}
-              </Field>
+              </div>
+              {errors.logo && <FieldError>{errors.logo}</FieldError>}
             </div>
-          </div>
+          </Field>
         </FieldGroup>
       </div>
 
