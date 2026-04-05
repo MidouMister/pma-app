@@ -21,27 +21,27 @@ export default function SignInPage() {
         fallbackRedirectUrl="/dashboard"
         appearance={{
           elements: {
+            rootBox: "w-full",
+            card: "bg-transparent shadow-none border-none",
+            headerTitle: "text-2xl font-bold tracking-tight text-foreground",
+            headerSubtitle: "text-sm text-muted-foreground font-medium",
             formButtonPrimary:
-              "bg-primary text-primary-foreground hover:bg-primary/90 font-sans",
-            card: "shadow-none",
-            headerTitle: "text-foreground font-sans",
-            headerSubtitle: "text-muted-foreground font-sans",
-            socialButtonsBlockButtonText: "text-foreground font-sans",
+              "bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-3 font-semibold tracking-wide transition-all duration-300",
             socialButtonsBlockButton:
-              "border-input bg-background hover:bg-accent hover:text-accent-foreground font-sans",
-            formFieldLabel: "text-foreground font-sans",
+              "border border-input bg-card hover:bg-accent hover:text-accent-foreground rounded-xl py-3 transition-all duration-300",
+            socialButtonsBlockButtonText: "text-foreground font-medium",
+            formFieldLabel: "text-sm font-medium text-foreground",
             formFieldInput:
-              "border-input bg-background text-foreground font-sans",
-            footerActionLink: "text-primary hover:text-primary/90 font-sans",
-            identityPreviewText: "text-foreground font-sans",
-            identityPreviewEditButton: "text-primary font-sans",
-            formResendCodeLink: "text-primary font-sans",
+              "border border-input bg-card text-foreground rounded-xl py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300",
+            footerActionLink:
+              "text-primary hover:text-primary/80 font-medium transition-colors duration-300",
+            identityPreviewText: "text-foreground font-medium",
+            identityPreviewEditButton: "text-primary hover:text-primary/80 font-medium",
+            formResendCodeLink: "text-primary hover:text-primary/80 font-medium",
             dividerLine: "bg-border",
-            dividerText: "text-muted-foreground font-sans",
-            alertText: "text-destructive font-sans",
-          },
-          variables: {
-            fontFamily: "var(--font-sans)",
+            dividerText: "text-muted-foreground font-medium",
+            alertText: "text-destructive font-medium",
+            footer: "hidden",
           },
         }}
       />
