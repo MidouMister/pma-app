@@ -1,6 +1,6 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
+import { auth, clerkClient } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { companySchema, unitSchema, invitationSchema } from "@/lib/validators"
 import { revalidatePath } from "next/cache"
@@ -24,9 +24,32 @@ export async function completeOnboarding(data: OnboardingInput) {
       return { success: false, error: "Non autorisé" }
     }
 
-    const user = await prisma.user.findUnique({
+    // Fetch Clerk user data for fallback creation
+    const clerk = await clerkClient()
+    const clerkUser = await clerk.users.getUser(userId)
+    const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress
+    const firstName = clerkUser.firstName
+    const lastName = clerkUser.lastName
+    const imageUrl = clerkUser.imageUrl
+    const name =
+      [firstName, lastName].filter(Boolean).join(" ") || primaryEmail || ""
+
+    // Try to find existing user, or create one if webhook hasn't fired yet
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     })
+
+    if (!user && primaryEmail) {
+      // Webhook race condition fallback — create user inline
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          name,
+          email: primaryEmail,
+          avatarUrl: imageUrl,
+        },
+      })
+    }
 
     if (!user) {
       return { success: false, error: "Utilisateur non trouvé" }
