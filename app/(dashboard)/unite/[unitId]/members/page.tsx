@@ -90,7 +90,6 @@ export default async function UnitMembersPage({
   }
 
   const canRemoveMember = user.role === "OWNER" || user.role === "ADMIN"
-  const canReassignAdmin = user.role === "OWNER"
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
@@ -163,13 +162,6 @@ export default async function UnitMembersPage({
                               memberName={member.name}
                             />
                           )}
-                          {canReassignAdmin &&
-                            member.role !== "ADMIN" &&
-                            member.id !== user.id && (
-                              <Badge variant="outline" className="text-xs">
-                                Promouvoir possible
-                              </Badge>
-                            )}
                         </div>
                       </TableCell>
                     </TableRow>

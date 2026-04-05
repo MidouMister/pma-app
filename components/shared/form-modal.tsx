@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
+import { Separator } from "@/components/ui/separator"
 
 const SIZE_MAP = {
   sm: "sm:max-w-md",
@@ -51,6 +52,8 @@ interface FormModalProps {
   showCancel?: boolean
   /** Additional className for DialogContent */
   className?: string
+  /** Optional icon for the header */
+  icon?: ReactNode
   /** Form fields (children) */
   children: ReactNode
 }
@@ -70,6 +73,7 @@ export function FormModal({
   cancelLabel = "Annuler",
   showCancel = true,
   className,
+  icon,
   children,
 }: FormModalProps) {
   function handleOpenChange(nextOpen: boolean) {
@@ -85,32 +89,59 @@ export function FormModal({
       <DialogContent
         className={cn(
           SIZE_MAP[size],
-          "max-h-[90vh] overflow-y-auto",
+          "max-h-[90vh] overflow-y-auto p-0",
+          "gap-0",
           className
         )}
       >
-        <form onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            {description && (
-              <DialogDescription>{description}</DialogDescription>
+        {/* Header with gradient accent */}
+        <DialogHeader className="relative px-6 pt-6 pb-4">
+          <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl bg-gradient-to-r from-primary/80 via-primary to-primary/80" />
+          <div className="flex items-start gap-4">
+            {icon && (
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                {icon}
+              </div>
             )}
-          </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              <DialogTitle className="text-xl font-semibold tracking-tight">
+                {title}
+              </DialogTitle>
+              {description && (
+                <DialogDescription className="text-sm">
+                  {description}
+                </DialogDescription>
+              )}
+            </div>
+          </div>
+        </DialogHeader>
 
-          <div className="py-6">{children}</div>
+        <Separator />
 
-          <DialogFooter>
+        {/* Form content */}
+        <form onSubmit={onSubmit} className="flex flex-col">
+          <div className="px-6 py-6">{children}</div>
+
+          <Separator />
+
+          {/* Footer */}
+          <DialogFooter className="px-6 py-4">
             {showCancel && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={isPending}
+                className="min-w-[100px]"
               >
                 {cancelLabel}
               </Button>
             )}
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="min-w-[140px] shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
+            >
               {isPending && <Spinner />}
               {isPending ? submitPendingLabel : submitLabel}
             </Button>

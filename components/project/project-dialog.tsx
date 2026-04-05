@@ -4,6 +4,19 @@ import { useState, useTransition } from "react"
 import { format } from "date-fns"
 import { createProject, updateProject } from "@/actions/project"
 import { toast } from "sonner"
+import {
+  Building02Icon,
+  CodeIcon,
+  MapPinIcon,
+  User02Icon,
+  Note01Icon,
+  Calendar03Icon,
+  Timer01Icon,
+  StatusIcon,
+  CheckmarkCircle01Icon,
+  PercentIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -110,18 +123,31 @@ export function ProjectDialog({
           ? "Modifiez les informations du projet ci-dessous."
           : "Remplissez les informations pour créer un nouveau projet."
       }
-      trigger={<Button>{project ? "Modifier" : "Créer un projet"}</Button>}
+      trigger={
+        <Button className="gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30">
+          <HugeiconsIcon icon={Building02Icon} className="size-4" />
+          {project ? "Modifier" : "Créer un projet"}
+        </Button>
+      }
       size="xl"
       isPending={isPending}
       onSubmit={handleSubmit}
-      submitLabel={project ? "Enregistrer" : "Créer"}
+      submitLabel={project ? "Enregistrer" : "Créer le projet"}
       submitPendingLabel="En cours..."
+      icon={<HugeiconsIcon icon={Building02Icon} className="size-5" />}
     >
-      <div className="grid gap-10">
-        <FormSection number="01" title="Informations Générales">
-          <div className="space-y-2">
+      <div className="grid gap-8">
+        <FormSection
+          number="01"
+          title="Informations Générales"
+          description="Identité et classification du projet"
+          icon={
+            <HugeiconsIcon icon={CodeIcon} className="size-4 text-primary" />
+          }
+        >
+          <div className="space-y-1.5">
             <Label htmlFor="name" className="text-sm font-medium">
-              Nom du projet *
+              Nom du projet <span className="text-destructive">*</span>
             </Label>
             <Input
               id="name"
@@ -136,9 +162,9 @@ export function ProjectDialog({
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="code" className="text-sm font-medium">
-                Code du projet *
+                Code du projet <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="code"
@@ -146,14 +172,14 @@ export function ProjectDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, code: e.target.value })
                 }
-                className="h-11 font-mono text-lg uppercase"
+                className="h-11 font-mono text-sm tracking-wide uppercase"
                 placeholder="EX: PRJ-2024-001"
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="type" className="text-sm font-medium">
-                Type d&apos;ouvrage *
+                Type d&apos;ouvrage <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="type"
@@ -162,15 +188,16 @@ export function ProjectDialog({
                   setFormData({ ...formData, type: e.target.value })
                 }
                 className="h-11"
-                placeholder="Bâtiment, Travaux publics, Aménagement..."
+                placeholder="Bâtiment, Travaux publics..."
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="client" className="text-sm font-medium">
-              Client Maître de l&apos;Ouvrage *
+              Client Maître de l&apos;Ouvrage{" "}
+              <span className="text-destructive">*</span>
             </Label>
             <Select
               value={formData.clientId}
@@ -192,11 +219,18 @@ export function ProjectDialog({
           </div>
         </FormSection>
 
-        <FormSection number="02" title="Budget & Finances">
+        <FormSection
+          number="02"
+          title="Budget & Finances"
+          description="Montants et répartition fiscale"
+          icon={
+            <HugeiconsIcon icon={Note01Icon} className="size-4 text-primary" />
+          }
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="montantHT" className="text-sm font-medium">
-                Montant HT (DA) *
+                Montant HT (DA) <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Input
@@ -206,7 +240,7 @@ export function ProjectDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, montantHT: e.target.value })
                   }
-                  className="h-11 pr-12 pl-4 font-semibold"
+                  className="h-11 pr-12 font-semibold"
                   required
                   min="0"
                   step="0.01"
@@ -216,9 +250,9 @@ export function ProjectDialog({
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="montantTTC" className="text-sm font-medium">
-                Montant TTC (DA) *
+                Montant TTC (DA) <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Input
@@ -228,7 +262,7 @@ export function ProjectDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, montantTTC: e.target.value })
                   }
-                  className="h-11 pr-12 pl-4 font-semibold"
+                  className="h-11 pr-12 font-semibold"
                   required
                   min="0"
                   step="0.01"
@@ -238,7 +272,8 @@ export function ProjectDialog({
                 </div>
               </div>
               {formData.montantHT && formData.montantTTC && (
-                <div className="rounded-md bg-secondary/30 px-3 py-1.5 text-[11px] font-medium text-secondary-foreground">
+                <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-primary/5 px-3 py-2 text-xs font-medium text-primary">
+                  <HugeiconsIcon icon={PercentIcon} className="size-3.5" />
                   TVA: {tvaPercent.toFixed(2)}% (+{tvaAmount.toFixed(2)} DA)
                 </div>
               )}
@@ -246,17 +281,33 @@ export function ProjectDialog({
           </div>
         </FormSection>
 
-        <FormSection number="03" title="Planning & Statut">
+        <FormSection
+          number="03"
+          title="Planning & Statut"
+          description="Dates, délais et état d'avancement"
+          icon={
+            <HugeiconsIcon
+              icon={Calendar03Icon}
+              className="size-4 text-primary"
+            />
+          }
+        >
           <div className="grid gap-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Date ODS *</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  Date ODS <span className="text-destructive">*</span>
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className="h-11 w-full justify-start text-left font-normal"
                     >
+                      <HugeiconsIcon
+                        icon={Calendar03Icon}
+                        className="mr-2 size-4 text-muted-foreground"
+                      />
                       {formData.ods
                         ? format(formData.ods, "dd MMMM yyyy")
                         : "Choisir la date"}
@@ -274,7 +325,7 @@ export function ProjectDialog({
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="delaiMonths" className="text-sm font-medium">
                   Délai (mois)
                 </Label>
@@ -289,7 +340,7 @@ export function ProjectDialog({
                   min="0"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="delaiDays" className="text-sm font-medium">
                   Délai (jours)
                 </Label>
@@ -307,7 +358,7 @@ export function ProjectDialog({
             </div>
 
             <div className="grid grid-cols-1 items-end gap-6 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="status" className="text-sm font-medium">
                   État d&apos;avancement
                 </Label>
@@ -335,7 +386,7 @@ export function ProjectDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-3 pb-3">
+              <div className="flex items-center gap-3 rounded-lg border bg-card/50 p-4 transition-colors hover:bg-card">
                 <Switch
                   id="signe"
                   checked={formData.signe}
@@ -343,14 +394,14 @@ export function ProjectDialog({
                     setFormData({ ...formData, signe: checked })
                   }
                 />
-                <div className="grid gap-0.5 leading-none">
+                <div className="flex flex-col gap-0.5">
                   <Label
                     htmlFor="signe"
-                    className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-sm leading-none font-medium"
                   >
                     Contrat Signé
                   </Label>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Cocher si le contrat physique est reçu
                   </p>
                 </div>

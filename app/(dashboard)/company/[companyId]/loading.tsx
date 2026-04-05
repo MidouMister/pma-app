@@ -12,7 +12,15 @@ export default function CompanyDashboardLoading() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          <Card key={i} className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="size-9 rounded-lg" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-24" />
+            </CardContent>
+          </Card>
         ))}
       </div>
 
@@ -23,7 +31,17 @@ export default function CompanyDashboardLoading() {
         <CardContent>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-lg" />
+              <div key={i} className="rounded-lg border bg-card p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="size-4 rounded" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-3 w-32" />
+              </div>
             ))}
           </div>
         </CardContent>

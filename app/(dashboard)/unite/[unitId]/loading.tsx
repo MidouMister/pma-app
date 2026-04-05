@@ -13,7 +13,15 @@ export default function UnitDashboardLoading() {
       {/* KPI Skeleton Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          <Card key={i} className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="size-9 rounded-lg" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-24" />
+            </CardContent>
+          </Card>
         ))}
       </div>
 
@@ -24,10 +32,21 @@ export default function UnitDashboardLoading() {
           <Skeleton className="h-4 w-60" />
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-10 w-full" />
+          <div className="rounded-md border">
+            <div className="flex h-10 items-center border-b px-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-3 flex-1" />
+              ))}
+            </div>
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              <div key={i} className="flex h-14 items-center gap-4 border-b px-4 last:border-b-0">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-4 w-20 ml-auto" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             ))}
           </div>
         </CardContent>
@@ -38,8 +57,10 @@ export default function UnitDashboardLoading() {
         <CardHeader>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent>
-          <Skeleton className="h-32 w-full rounded-lg" />
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Skeleton className="mb-3 size-12 rounded-full" />
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="mt-2 h-3 w-64" />
         </CardContent>
       </Card>
     </div>

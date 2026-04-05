@@ -32,25 +32,33 @@ interface KpiCardProps {
 }
 
 function KpiCard({ label, value, icon, accent = "default" }: KpiCardProps) {
+  // Theme-aware accent colors using CSS variables — works in light and dark mode
   const accentClasses: Record<string, string> = {
-    default: "bg-muted/50",
-    primary: "bg-primary/5",
-    success: "bg-emerald-500/5",
-    warning: "bg-amber-500/5",
+    default: "bg-muted/50 text-muted-foreground",
+    primary: "bg-primary/10 text-primary",
+    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   }
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="group/card cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
         </CardTitle>
-        <div className={cn("rounded-lg p-2", accentClasses[accent])}>
+        <div
+          className={cn(
+            "rounded-lg p-2 transition-colors duration-200",
+            accentClasses[accent]
+          )}
+        >
           {icon}
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold tracking-tight">{value}</p>
+        <p className="text-2xl font-bold tracking-tight text-foreground">
+          {value}
+        </p>
       </CardContent>
     </Card>
   )
@@ -153,7 +161,11 @@ export default async function UnitDashboardPage({
           {projects.length === 0 ? (
             <EmptyState
               title="Aucun projet"
-              description="Créez votre premier projet pour commencer."
+              description="Créez votre premier projet pour commencer à suivre votre activité."
+              action={{
+                label: "Créer un projet",
+                href: `/unite/${unitId}/projects`,
+              }}
             />
           ) : (
             <div className="rounded-md border">
@@ -212,8 +224,8 @@ export default async function UnitDashboardPage({
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="rounded-full bg-muted p-3">
-              <Activity className="size-5 text-muted-foreground" />
+            <div className="rounded-full bg-primary/10 p-3">
+              <Activity className="size-5 text-primary" />
             </div>
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium">Bientôt disponible</p>

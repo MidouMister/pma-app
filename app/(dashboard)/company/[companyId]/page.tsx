@@ -25,25 +25,33 @@ interface KpiCardProps {
 }
 
 function KpiCard({ label, value, icon, accent = "default" }: KpiCardProps) {
+  // Theme-aware accent colors using CSS variables — works in light and dark mode
   const accentClasses: Record<string, string> = {
-    default: "bg-muted/50",
-    primary: "bg-primary/5",
-    success: "bg-emerald-500/5",
-    warning: "bg-amber-500/5",
+    default: "bg-muted/50 text-muted-foreground",
+    primary: "bg-primary/10 text-primary",
+    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   }
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="group/card cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
         </CardTitle>
-        <div className={cn("rounded-lg p-2", accentClasses[accent])}>
+        <div
+          className={cn(
+            "rounded-lg p-2 transition-colors duration-200",
+            accentClasses[accent]
+          )}
+        >
           {icon}
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold tracking-tight">{value}</p>
+        <p className="text-2xl font-bold tracking-tight text-foreground">
+          {value}
+        </p>
       </CardContent>
     </Card>
   )
@@ -63,13 +71,13 @@ function UnitCard({ unit }: UnitCardProps) {
   return (
     <Link
       href={`/unite/${unit.id}`}
-      className="group flex flex-col gap-3 rounded-lg border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-sm"
+      className="group/card flex flex-col gap-3 rounded-lg border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md cursor-pointer"
     >
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-foreground transition-colors group-hover:text-primary">
+        <h3 className="font-medium text-foreground transition-colors duration-200 group-hover/card:text-primary">
           {unit.name}
         </h3>
-        <ArrowRight className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+        <ArrowRight className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-100" />
       </div>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">
@@ -181,7 +189,11 @@ export default async function CompanyDashboardPage({
           {unitsOverview.length === 0 ? (
             <EmptyState
               title="Aucune unité"
-              description="Créez votre première unité depuis la page de gestion des unités."
+              description="Créez votre première unité pour commencer à organiser vos projets."
+              action={{
+                label: "Créer une unité",
+                href: `/company/${companyId}/units`,
+              }}
             />
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

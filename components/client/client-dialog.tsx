@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Plus } from "lucide-react"
+import { UserIcon, MailIcon, PhoneIcon, MapPinIcon, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -123,8 +123,8 @@ export function ClientDialog({
       }
       trigger={
         trigger ?? (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button className="gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30">
+            <Plus className="size-4" />
             Nouveau client
           </Button>
         )
@@ -133,13 +133,17 @@ export function ClientDialog({
       isPending={isPending}
       onSubmit={handleSubmit}
       onReset={handleReset}
-      submitLabel={isEditing ? "Enregistrer" : "Créer"}
+      submitLabel={isEditing ? "Enregistrer" : "Créer le client"}
       submitPendingLabel="Enregistrement..."
       showCancel={!isEditing}
+      icon={<UserIcon className="size-5" />}
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field data-invalid={!!errors.name} className="md:col-span-2">
-          <FieldLabel htmlFor="name">Nom du client *</FieldLabel>
+          <FieldLabel htmlFor="name" className="flex items-center gap-1.5">
+            <UserIcon className="size-3.5 text-muted-foreground" />
+            Nom du client <span className="text-destructive">*</span>
+          </FieldLabel>
           <Input
             id="name"
             value={formData.name}
@@ -152,7 +156,10 @@ export function ClientDialog({
         </Field>
 
         <Field data-invalid={!!errors.wilaya}>
-          <FieldLabel htmlFor="wilaya">Wilaya</FieldLabel>
+          <FieldLabel htmlFor="wilaya" className="flex items-center gap-1.5">
+            <MapPinIcon className="size-3.5 text-muted-foreground" />
+            Wilaya
+          </FieldLabel>
           <Input
             id="wilaya"
             value={formData.wilaya}
@@ -167,7 +174,10 @@ export function ClientDialog({
         </Field>
 
         <Field data-invalid={!!errors.email}>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email" className="flex items-center gap-1.5">
+            <MailIcon className="size-3.5 text-muted-foreground" />
+            Email
+          </FieldLabel>
           <Input
             id="email"
             type="email"
@@ -180,15 +190,18 @@ export function ClientDialog({
           {errors.email && <FieldDescription>{errors.email}</FieldDescription>}
         </Field>
 
-        <Field data-invalid={!!errors.phone}>
-          <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
+        <Field data-invalid={!!errors.phone} className="md:col-span-2">
+          <FieldLabel htmlFor="phone" className="flex items-center gap-1.5">
+            <PhoneIcon className="size-3.5 text-muted-foreground" />
+            Téléphone
+          </FieldLabel>
           <Input
             id="phone"
             type="tel"
             value={formData.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
             aria-invalid={!!errors.phone}
-            className="h-11"
+            className="h-11 font-mono text-sm tracking-wide"
             placeholder="0555 00 00 00"
           />
           {errors.phone && <FieldDescription>{errors.phone}</FieldDescription>}
