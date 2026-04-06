@@ -7,13 +7,8 @@ import { toast } from "sonner"
 import {
   Building02Icon,
   CodeIcon,
-  MapPinIcon,
-  User02Icon,
   Note01Icon,
   Calendar03Icon,
-  Timer01Icon,
-  StatusIcon,
-  CheckmarkCircle01Icon,
   PercentIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"

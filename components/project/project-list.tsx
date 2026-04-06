@@ -42,7 +42,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { MoreHorizontal, Eye, Pencil, Archive } from "lucide-react"
+import {
+  MoreHorizontal,
+  Eye,
+  Pencil,
+  Archive,
+  Search,
+  ArrowUpRight,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface SimpleProject {
   id: string
@@ -75,6 +83,13 @@ const statusLabels: Record<string, string> = {
   Complete: "Terminé",
 }
 
+const statusDotColors: Record<string, string> = {
+  New: "bg-blue-500",
+  InProgress: "bg-emerald-500",
+  Pause: "bg-amber-500",
+  Complete: "bg-gray-500",
+}
+
 export function ProjectList({
   projects,
   unitId,
@@ -105,7 +120,8 @@ export function ProjectList({
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(query) ||
-          p.code.toLowerCase().includes(query)
+          p.code.toLowerCase().includes(query) ||
+          p.client?.name.toLowerCase().includes(query)
       )
     }
 
@@ -154,16 +170,19 @@ export function ProjectList({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4">
-        <div className="min-w-[200px] flex-1">
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par nom ou code..."
+            placeholder="Rechercher par nom, code ou client..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10 pl-9"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="h-10 w-full sm:w-[180px]">
             <SelectValue placeholder="Tous les statuts" />
           </SelectTrigger>
           <SelectContent>
@@ -175,7 +194,7 @@ export function ProjectList({
           </SelectContent>
         </Select>
         <Select value={clientFilter} onValueChange={setClientFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="h-10 w-full sm:w-[180px]">
             <SelectValue placeholder="Tous les clients" />
           </SelectTrigger>
           <SelectContent>
@@ -191,7 +210,7 @@ export function ProjectList({
           value={sortBy}
           onValueChange={(v) => setSortBy(v as "date" | "montant")}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="h-10 w-full sm:w-[160px]">
             <SelectValue placeholder="Trier par" />
           </SelectTrigger>
           <SelectContent>
@@ -201,103 +220,181 @@ export function ProjectList({
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      {/* Results count */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>
+          {filteredProjects.length} projet
+          {filteredProjects.length !== 1 ? "s" : ""}
+          {filteredProjects.length !== projects.length &&
+            ` sur ${projects.length}`}
+        </span>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="min-w-[200px]">Projet</TableHead>
               <TableHead>Code</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Statut</TableHead>
-              <TableHead>Montant TTC</TableHead>
-              <TableHead>Progression</TableHead>
+              <TableHead className="text-right">Montant TTC</TableHead>
+              <TableHead className="min-w-[140px]">Progression</TableHead>
               <TableHead>ODS</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  Aucun projet trouvé
+                <TableCell colSpan={8} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Search className="size-5 opacity-50" />
+                    <span>Aucun projet trouvé</span>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell className="font-medium">{project.name}</TableCell>
-                  <TableCell>{project.code}</TableCell>
-                  <TableCell>{project.client?.name ?? "-"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        STATUS_COLORS[
-                          project.status as keyof typeof STATUS_COLORS
-                        ]
-                      }
-                    >
-                      {statusLabels[project.status] || project.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatCurrency(project.montantTTC)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress
-                        value={calculateProgress(project)}
-                        className="h-2 w-24"
-                      />
-                      <span className="text-xs">
-                        {calculateProgress(project)}%
+              filteredProjects.map((project) => {
+                const progress = calculateProgress(project)
+                return (
+                  <TableRow
+                    key={project.id}
+                    className="group/row transition-colors hover:bg-primary/[0.02]"
+                  >
+                    {/* Project name - link, truncated with tooltip */}
+                    <TableCell>
+                      <Link
+                        href={`/unite/${unitId}/projects/${project.id}`}
+                        className="group/link flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary"
+                        title={project.name}
+                      >
+                        <span className="max-w-[250px] truncate">
+                          {project.name}
+                        </span>
+                        <ArrowUpRight className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/link:opacity-100" />
+                      </Link>
+                    </TableCell>
+
+                    {/* Code */}
+                    <TableCell>
+                      <span className="inline-flex rounded-md bg-muted/50 px-2 py-1 font-mono text-xs font-medium tracking-wide text-muted-foreground">
+                        {project.code}
                       </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {project.ods ? formatDate(project.ods) : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/unite/${unitId}/projects/${project.id}`}
+                    </TableCell>
+
+                    {/* Client */}
+                    <TableCell className="text-muted-foreground">
+                      {project.client?.name ?? (
+                        <span className="text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Status Badge */}
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "flex items-center gap-1.5 font-medium",
+                          STATUS_COLORS[
+                            project.status as keyof typeof STATUS_COLORS
+                          ]
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            statusDotColors[project.status]
+                          )}
+                        />
+                        {statusLabels[project.status] || project.status}
+                      </Badge>
+                    </TableCell>
+
+                    {/* Montant TTC */}
+                    <TableCell className="text-right font-semibold tabular-nums">
+                      {formatCurrency(project.montantTTC)}
+                    </TableCell>
+
+                    {/* Progress */}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Progress value={progress} className="h-1.5 flex-1" />
+                        <span
+                          className={cn(
+                            "shrink-0 text-xs font-medium tabular-nums",
+                            progress === 100
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {progress}%
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* ODS */}
+                    <TableCell className="text-sm text-muted-foreground">
+                      {project.ods ? (
+                        formatDate(project.ods)
+                      ) : (
+                        <span className="text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 opacity-0 transition-opacity group-hover/row:opacity-100"
                           >
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir
-                          </Link>
-                        </DropdownMenuItem>
-                        {canEdit && (
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link
-                              href={`/unite/${unitId}/projects/${project.id}?edit=true`}
+                              href={`/unite/${unitId}/projects/${project.id}`}
                             >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Modifier
+                              <Eye className="mr-2 size-4" />
+                              Voir
                             </Link>
                           </DropdownMenuItem>
-                        )}
-                        {canEdit && (
-                          <DropdownMenuItem
-                            onClick={() => setArchiveDialogId(project.id)}
-                          >
-                            <Archive className="mr-2 h-4 w-4" />
-                            Archiver
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          {canEdit && (
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/unite/${unitId}/projects/${project.id}?edit=true`}
+                              >
+                                <Pencil className="mr-2 size-4" />
+                                Modifier
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                          {canEdit && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setArchiveDialogId(project.id)}
+                            >
+                              <Archive className="mr-2 size-4" />
+                              Archiver
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
       </div>
 
+      {/* Archive Confirmation */}
       <AlertDialog
         open={!!archiveDialogId}
         onOpenChange={() => setArchiveDialogId(null)}
