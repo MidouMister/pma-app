@@ -235,12 +235,12 @@ export function ProjectList({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="min-w-[200px]">Projet</TableHead>
+              <TableHead className="min-w-[220px]">Projet</TableHead>
               <TableHead>Code</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead className="text-right">Montant TTC</TableHead>
-              <TableHead className="min-w-[140px]">Progression</TableHead>
+              <TableHead className="w-[100px]">Prog.</TableHead>
               <TableHead>ODS</TableHead>
               <TableHead className="w-[50px]" />
             </TableRow>
@@ -263,17 +263,16 @@ export function ProjectList({
                     key={project.id}
                     className="group/row transition-colors hover:bg-primary/[0.02]"
                   >
-                    {/* Project name - link, truncated with tooltip */}
-                    <TableCell>
+                    {/* Project name - link, up to 2 lines */}
+                    <TableCell className="max-w-[300px]">
                       <Link
                         href={`/unite/${unitId}/projects/${project.id}`}
-                        className="group/link flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary"
-                        title={project.name}
+                        className="group/link inline-flex items-start gap-1.5 font-medium text-foreground transition-colors hover:text-primary"
                       >
-                        <span className="max-w-[250px] truncate">
+                        <span className="line-clamp-2 leading-snug">
                           {project.name}
                         </span>
-                        <ArrowUpRight className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/link:opacity-100" />
+                        <ArrowUpRight className="size-3.5 shrink-0 translate-x-0 translate-y-0.5 opacity-0 transition-all group-hover/link:translate-x-0.5 group-hover/link:opacity-100" />
                       </Link>
                     </TableCell>
 

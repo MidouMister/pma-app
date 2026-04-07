@@ -269,8 +269,11 @@ export async function getCompanyDashboard(companyId: string) {
       Project: {
         select: {
           id: true,
+          name: true,
           montantTTC: true,
           status: true,
+          createdAt: true,
+          unitId: true,
         },
       },
       users: {
