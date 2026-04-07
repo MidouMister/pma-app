@@ -4,12 +4,13 @@ import { getCurrentUser } from "@/lib/auth"
 import {
   getProjectById,
   getProjectDocuments,
+  getGanttData,
   isProjectMember,
 } from "@/lib/queries"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
 import { ProjectOverview } from "@/components/project/project-overview"
-import { ProjectGanttPlaceholder } from "@/components/project/project-gantt-placeholder"
+import { ProjectGantt } from "@/components/project/project-gantt"
 import { ProjectProductionPlaceholder } from "@/components/project/project-production-placeholder"
 import { ProjectTasksPlaceholder } from "@/components/project/project-tasks-placeholder"
 import { ProjectTimeTrackingPlaceholder } from "@/components/project/project-time-tracking-placeholder"
@@ -52,6 +53,9 @@ export default async function ProjectDetailPage({
   }
 
   const documents = await getProjectDocuments(projectId)
+  const { phases, markers } = await getGanttData(projectId)
+
+  const canEdit = user.role === "OWNER" || user.role === "ADMIN"
 
   return (
     <div className="container mx-auto py-6">
@@ -78,7 +82,11 @@ export default async function ProjectDetailPage({
         </TabsContent>
 
         <TabsContent value="gantt">
-          <ProjectGanttPlaceholder projectId={project.id} />
+          <ProjectGantt
+            phases={phases}
+            markers={markers.map((m) => ({ ...m, className: m.className ?? undefined }))}
+            canEdit={canEdit}
+          />
         </TabsContent>
 
         <TabsContent value="production">

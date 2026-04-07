@@ -58,12 +58,12 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
     <div className="flex flex-col gap-6 p-4 sm:p-6">
       {/* Premium Header */}
       <header className="relative rounded-xl border bg-card">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/40 to-transparent" />
         <div className="flex items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="-ml-1 shrink-0" />
             <div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+              <div className="mb-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Link
                   href={`/unite/${unitId}`}
                   className="transition-colors hover:text-foreground"
@@ -73,7 +73,7 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
                 <ChevronRight className="size-3" />
                 <span>Projets</span>
               </div>
-              <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+              <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
                 Projets
                 <Badge variant="secondary" className="font-mono text-xs">
                   {projects.length}
