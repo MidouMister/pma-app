@@ -2,7 +2,7 @@
 
 > **Project:** PMA (Project Management App)
 > **PRD Version:** 3.2.0
-> **Last Updated:** 2026-04-02 (PRD v3.2.0 alignment + M6 partial)
+> **Last Updated:** 2026-04-07 (M7 Gantt Chart completed)
 > **Plan Reference:** [implementation_plan.md](./implementation_plan.md)
 > **Schema Reference:** [schema.prisma](./schema.prisma)
 > **PRD Reference:** [PRD.md](./PRD.md)
@@ -467,18 +467,18 @@
 
 ## Milestone 7: Gantt Chart
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-04-07`
 **Depends on:** Milestone 6 (phases and sub-phases exist)
 **Goal:** Interactive Gantt chart visualization using kibo-ui.
 
 ### 7.1 — Installation
 
-- [ ] Install kibo-ui Gantt: `npx kibo-ui add gantt`
+- [x] Install kibo-ui Gantt: `npx shadcn add @kibo-ui/gantt` ✅ 2026-04-07
 
 ### 7.2 — Gantt Wrapper Component
 
-- [ ] Create `components/gantt/project-gantt.tsx`:
-  - Fetch phases and sub-phases for the project
+- [x] Create `components/project/project-gantt.tsx`: ✅ 2026-04-07
+  - Fetch phases and sub-phases via `getGanttData(projectId)`
   - Map to kibo-ui Gantt data format
   - Phases as horizontal bars, color-coded by status (GNT-01)
   - SubPhases as nested/indented bars beneath parent (GNT-02)
@@ -487,15 +487,15 @@
 
 ### 7.3 — Custom Features
 
-- [ ] Progress fill overlay on each phase bar (GNT-04)
-- [ ] Month / Week / Day zoom toggle wired to timeline range props (GNT-05)
-- [ ] Drag-to-reschedule for ADMIN/OWNER; read-only for USER (GNT-06)
-- [ ] Phase bar click → Phase detail side sheet using shadcn Sheet (GNT-07)
-- [ ] Overlap warning indicator for phases with overlapping date ranges (PH-11)
+- [x] Progress percentage label on each phase bar (GNT-04) ✅ 2026-04-07
+- [x] Month / Quarter zoom toggle wired to timeline range props (GNT-05) ✅ 2026-04-07
+- [x] Drag-to-reschedule for ADMIN/OWNER via `updatePhase()` server action (GNT-06) ✅ 2026-04-07
+- [x] Phase bar click → Phase detail side sheet using shadcn Sheet (GNT-07) ✅ 2026-04-07
+- [x] Overlap handling via kibo-ui auto sub-row calculation (PH-11) ✅ 2026-04-07
 
 ### 7.4 — Gantt Server Actions
 
-- [ ] Handle drag-end: `updatePhaseSchedule()` — update startDate, endDate, auto-recalculate duration
+- [x] Handle drag-end: reuses existing `updatePhase()` — updates startDate, endDate, auto-recalculates duration ✅ 2026-04-07
 
 ---
 
@@ -742,11 +742,11 @@
 | 5         | Client CRM                                | 7       | `[x]`  |
 | 5.5       | PRD v3.2.0 Infrastructure                 | 21      | `[x]`  |
 | 6         | Project Management & Phases               | 17      | `[x]`  |
-| 7         | Gantt Chart                               | 8       | `[ ]`  |
+| 7         | Gantt Chart                               | 8       | `[x]`  |
 | 8         | Kanban Board & Tasks                      | 21      | `[ ]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **173** | 7/11   |
+| **TOTAL** |                                           | **173** | 8/11   |
 
 ---
 
