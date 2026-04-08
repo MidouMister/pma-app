@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { getUnitTags } from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import { UnitSettingsForm } from "./unit-settings-form"
 
@@ -29,9 +30,12 @@ export default async function UnitSettingsPage({
     redirect("/dashboard")
   }
 
-  const unit = await prisma.unit.findFirst({
-    where: { id: unitId, companyId: user.companyId },
-  })
+  const [unit, tags] = await Promise.all([
+    prisma.unit.findFirst({
+      where: { id: unitId, companyId: user.companyId },
+    }),
+    getUnitTags(unitId),
+  ])
 
   if (!unit) {
     notFound()
@@ -60,7 +64,7 @@ export default async function UnitSettingsPage({
         description="Gérez les informations de votre unité"
       />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        <UnitSettingsForm unit={unit} company={company!} />
+        <UnitSettingsForm unit={unit} company={company!} tags={tags} />
       </main>
     </div>
   )

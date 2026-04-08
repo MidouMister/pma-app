@@ -501,7 +501,7 @@
 
 ## Milestone 8: Kanban Board & Tasks
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-04-08`
 **Depends on:** Milestone 6 (projects/phases exist), Milestone 2 (layout)
 **Goal:** Full Kanban board with lane management, task CRUD, comments, and @mentions.
 
@@ -521,74 +521,77 @@
 - [ ] Create `app/(dashboard)/unite/[unitId]/kanban/page.tsx`:
   - Render kibo-ui Kanban with lanes as columns
   - Task cards showing: title, assignee avatar, due date, tags, overdue badge (TASK-08, TASK-11)
-  - Overdue badge: red badge when `dueDate < NOW && !complete` (TASK-11)
-  - Phase and SubPhase NOT shown on card — only in detail sheet (TASK-14)
+- [x] Create `app/(dashboard)/unite/[unitId]/kanban/page.tsx`: ✅ 2026-04-09
+  - [x] Render kibo-ui Kanban with lanes as columns
+  - [x] Task cards showing: title, assignee avatar, due date, tags, overdue badge (TASK-08, TASK-11)
+  - [x] Overdue badge: red badge when `dueDate < NOW && !complete` (TASK-11)
+  - [x] Phase and SubPhase NOT shown on card — only in detail sheet (TASK-14)
 
 ### 8.4 — Cascading Filter Bar
 
-- [ ] Build filter bar above Kanban (TASK-18):
-  - Dropdown 1: Project (filters tasks to selected project)
-  - Dropdown 2: Phase (narrows to selected project's phases)
-  - Dropdown 3: SubPhase (narrows to selected phase's sub-phases)
-  - Each selection cascades and narrows downstream dropdowns
+- [x] Build filter bar above Kanban (TASK-18): ✅ 2026-04-09
+  - [x] Dropdown 1: Project (filters tasks to selected project)
+  - [x] Dropdown 2: Phase (narrows to selected project's phases)
+  - [x] Dropdown 3: SubPhase (narrows to selected phase's sub-phases)
+  - [x] Each selection cascades and narrows downstream dropdowns
 
 ### 8.5 — Drag and Drop
 
-- [ ] ADMIN/OWNER can drag any task between lanes (TASK-09)
-- [ ] USER can drag only their own assigned tasks (TASK-10)
-- [ ] On drop: update `laneId` and `order` via server action
+- [x] ADMIN/OWNER can drag any task between lanes (TASK-09) ✅ 2026-04-09
+- [x] USER can drag only their own assigned tasks (TASK-10) ✅ 2026-04-09
+- [x] On drop: update `laneId` and `order` via server action ✅ 2026-04-09
 
 ### 8.6 — Task CRUD
 
-- [ ] Create `actions/task.ts`:
-  - `createTask()`:
-    - **CRITICAL** `projectId` derived from `Phase.projectId` server-side (TASK-03)
-    - **CRITICAL** `assignedUserId` must be TeamMember of project (TASK-04)
-    - **CRITICAL** `subPhaseId` must be child of `phaseId` (TASK-05)
-    - **CRITICAL** Check `Plan.maxTasksPerProject` before INSERT (TASK-06)
-    - Send TASK notification to assigned user (TASK-07)
-  - `updateTask()` — same validations as create
-  - `deleteTask()`
-  - `moveTask()` — update laneId + order on drag-drop
-  - `completeTask()` — USER can complete own tasks; ADMIN/OWNER can complete any (TASK-15)
-    - Task completion does NOT auto-update SubPhase.progress (TASK-16)
+- [x] Create `actions/task.ts`: ✅ 2026-04-09
+  - [x] `createTask()`:
+    - [x] **CRITICAL** `projectId` derived from `Phase.projectId` server-side (TASK-03)
+    - [x] **CRITICAL** `assignedUserId` must be TeamMember of project (TASK-04)
+    - [x] **CRITICAL** `subPhaseId` must be child of `phaseId` (TASK-05)
+    - [x] **CRITICAL** Check `Plan.maxTasksPerProject` before INSERT (TASK-06)
+    - [x] Send TASK notification to assigned user (TASK-07)
+  - [x] `updateTask()` — same validations as create
+  - [x] `deleteTask()`
+  - [x] `moveTask()` — update laneId + order on drag-drop
+  - [x] `completeTask()` — USER can complete own tasks; ADMIN/OWNER can complete any (TASK-15)
+    - [x] Task completion does NOT auto-update SubPhase.progress (TASK-16)
 
 ### 8.7 — Task Detail Side Sheet
 
-- [ ] Create `components/kanban/task-detail-sheet.tsx` — 480px slide-over (TASK-12):
-  - Title (editable)
-  - Description (editable)
-  - Status / Complete toggle
-  - Current lane display
-  - Assignee picker (dropdown of TeamMembers) (TASK-13)
-  - Due date picker (TASK-13)
-  - Tags section (add/remove tags) (TASK-13)
-  - Project → Phase → SubPhase context section (display only) (TASK-13, TASK-14)
-  - Time entries for this task (TASK-13)
-  - Comments tab (TASK-24)
+- [x] Create `components/kanban/task-detail-sheet.tsx` — 480px slide-over (TASK-12): ✅ 2026-04-09
+  - [x] Title (editable)
+  - [x] Description (editable)
+  - [x] Status / Complete toggle
+  - [x] Current lane display
+  - [x] Assignee picker (dropdown of TeamMembers) (TASK-13)
+  - [x] Due date picker (TASK-13)
+  - [x] Tags section (add/remove tags) (TASK-13)
+  - [x] Project → Phase → SubPhase context section (display only) (TASK-13, TASK-14)
+  - [x] Time entries for this task (TASK-13)
+  - [x] Comments tab (TASK-24)
 
 ### 8.8 — Tag Management
 
-- [ ] Create `actions/tag.ts`: `createTag()`, `deleteTag()` (TASK-17)
-- [ ] Tags are Unit-scoped with name and color (TASK-17)
+- [x] Create `actions/tag.ts`: `createTag()`, `deleteTag()` (TASK-17) ✅ 2026-04-09
+- [x] Tags are Unit-scoped with name and color (TASK-17) ✅ 2026-04-09
 
 ### 8.9 — Task Comments
 
-- [ ] Create `actions/comment.ts`:
-  - `createComment()` — parse @mentions, create TaskMention records, send notifications (TASK-19 to TASK-30)
-  - `updateComment()` — set `edited = true` (TASK-21, TASK-23)
-  - `deleteComment()` — author can delete own; ADMIN/OWNER can delete any (TASK-21, TASK-22)
-- [ ] Build comment list in Task Detail Sheet (TASK-24):
-  - Ordered by `createdAt` ascending
-  - **CRITICAL** Always fetched fresh — no caching (TASK-25)
-  - "edited" label next to timestamp for edited comments (TASK-23)
-- [ ] Build `@mention` autocomplete (TASK-26, TASK-27):
-  - Typing `@` triggers dropdown of eligible users
-  - Eligible: TeamMembers of task's project + ADMIN + OWNER (excluding comment author)
-- [ ] Render mentioned usernames as highlighted chips (TASK-30)
-- [ ] On save: parse `@username` patterns, resolve to userId, create TaskMention records (TASK-28)
-- [ ] **CRITICAL** Deduplicate mentions: `@@unique([commentId, mentionedUserId])` (TASK-29)
-- [ ] Send `TASK` notification per mentioned user: `"[Author] vous a mentionné dans [Task title]"` (NOTIF-11)
+- [x] Create `actions/comment.ts`: ✅ 2026-04-09
+  - [x] `createComment()` — parse @mentions, create TaskMention records, send notifications (TASK-19 to TASK-30)
+  - [x] `updateComment()` — set `edited = true` (TASK-21, TASK-23)
+  - [x] `deleteComment()` — author can delete own; ADMIN/OWNER can delete any (TASK-21, TASK-22)
+- [x] Build comment list in Task Detail Sheet (TASK-24): ✅ 2026-04-09
+  - [x] Ordered by `createdAt` ascending
+  - [x] **CRITICAL** Always fetched fresh — no caching (TASK-25)
+  - [x] "edited" label next to timestamp for edited comments (TASK-23)
+- [x] Build `@mention` autocomplete (TASK-26, TASK-27): ✅ 2026-04-09
+  - [x] Typing `@` triggers dropdown of eligible users
+  - [x] Eligible: TeamMembers of task's project + ADMIN + OWNER (excluding comment author)
+- [x] Render mentioned usernames as highlighted chips (TASK-30) ✅ 2026-04-09
+- [x] On save: parse `@username` patterns, resolve to userId, create TaskMention records (TASK-28) ✅ 2026-04-09
+- [x] **CRITICAL** Deduplicate mentions: `@@unique([commentId, mentionedUserId])` (TASK-29) ✅ 2026-04-09
+- [x] Send `TASK` notification per mentioned user: `"[Author] vous a mentionné dans [Task title]"` (NOTIF-11) ✅ 2026-04-09
 
 ---
 

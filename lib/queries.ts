@@ -226,6 +226,7 @@ export async function getUnitTasks(unitId: string) {
       Assigned: { select: { id: true, name: true, avatarUrl: true } },
       Tags: true,
       Phase: { select: { id: true, name: true } },
+      subPhase: { select: { id: true, name: true } },
     },
     orderBy: { order: "asc" },
   })
@@ -391,7 +392,39 @@ export async function getScopedProjects(
     orderBy: { createdAt: "desc" },
     include: {
       Client: { select: { id: true, name: true } },
+      phases: {
+        select: { 
+          id: true, 
+          name: true,
+          SubPhases: { select: { id: true, name: true } }
+        },
+        orderBy: { startDate: "asc" },
+      },
     },
+  })
+}
+
+// ──── Unit Scoped Phases for Kanban Filters ──────────────────────────
+
+export async function getUnitPhases(unitId: string) {
+  "use cache"
+  cacheTag(unitProjectsTag(unitId))
+  cacheLife(MINUTES)
+  return prisma.phase.findMany({
+    where: { Project: { unitId } },
+    select: { id: true, name: true, projectId: true },
+    orderBy: { startDate: "asc" },
+  })
+}
+
+export async function getUnitSubPhases(phaseIds: string[]) {
+  "use cache"
+  cacheTag(unitProjectsTag(phaseIds[0] ?? ""))
+  cacheLife(MINUTES)
+  return prisma.subPhase.findMany({
+    where: { phaseId: { in: phaseIds } },
+    select: { id: true, name: true, phaseId: true },
+    orderBy: { startDate: "asc" },
   })
 }
 
@@ -646,5 +679,18 @@ export async function getInvitationStatus(invitationId: string) {
   return prisma.invitation.findUnique({
     where: { id: invitationId },
     select: { status: true, email: true, role: true },
+  })
+}
+
+// ──── Task Comments (no cache — PRD §3.3) ──────────────────────────
+
+export async function getTaskComments(taskId: string) {
+  unstable_noStore()
+  return prisma.taskComment.findMany({
+    where: { taskId },
+    include: {
+      Author: { select: { id: true, name: true, avatarUrl: true } },
+    },
+    orderBy: { createdAt: "asc" },
   })
 }

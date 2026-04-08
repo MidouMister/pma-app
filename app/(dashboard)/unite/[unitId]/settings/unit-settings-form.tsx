@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Separator } from "@/components/ui/separator"
+import { TagManager } from "@/components/kanban/tag-manager"
+import type { Tag } from "@prisma/client"
 
 interface CompanyInfo {
   id: string
@@ -42,9 +44,10 @@ interface CompanyInfo {
 interface UnitSettingsFormProps {
   unit: Unit
   company: CompanyInfo
+  tags: Tag[]
 }
 
-export function UnitSettingsForm({ unit, company }: UnitSettingsFormProps) {
+export function UnitSettingsForm({ unit, company, tags }: UnitSettingsFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -104,143 +107,148 @@ export function UnitSettingsForm({ unit, company }: UnitSettingsFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mx-auto flex max-w-2xl flex-col gap-6"
-    >
-      {/* Company info — read-only */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Entreprise</CardTitle>
-          <CardDescription>
-            Informations de votre entreprise
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex aspect-square size-16 items-center justify-center rounded-lg bg-muted overflow-hidden">
-              {company.logo ? (
-                <Image
-                  src={company.logo}
-                  alt={company.name}
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-cover"
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-6"
+      >
+        {/* Company info — read-only */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Entreprise</CardTitle>
+            <CardDescription>
+              Informations de votre entreprise
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex aspect-square size-16 items-center justify-center rounded-lg bg-muted overflow-hidden">
+                {company.logo ? (
+                  <Image
+                    src={company.logo}
+                    alt={company.name}
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Building2 className="w-6 h-6 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium">{company.name}</p>
+                <p className="text-sm text-muted-foreground">{company.companyEmail}</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-muted-foreground">Téléphone</span>
+                <p className="font-medium">{company.companyPhone}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Wilaya</span>
+                <p className="font-medium">{company.wilaya}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Secteur</span>
+                <p className="font-medium">{company.secteur}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">NIF</span>
+                <p className="font-medium">{company.nif}</p>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Adresse</span>
+                <p className="font-medium">{company.companyAddress}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Informations générales */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations générales</CardTitle>
+            <CardDescription>
+              Nom, adresse, téléphone et email de l&apos;unité
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FieldGroup>
+              <Field data-invalid={!!errors.name}>
+                <FieldLabel htmlFor="name">Nom de l&apos;unité</FieldLabel>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  aria-invalid={!!errors.name}
                 />
-              ) : (
-                <Building2 className="w-6 h-6 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <p className="font-medium">{company.name}</p>
-              <p className="text-sm text-muted-foreground">{company.companyEmail}</p>
-            </div>
-          </div>
-          <Separator />
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">Téléphone</span>
-              <p className="font-medium">{company.companyPhone}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Wilaya</span>
-              <p className="font-medium">{company.wilaya}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Secteur</span>
-              <p className="font-medium">{company.secteur}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">NIF</span>
-              <p className="font-medium">{company.nif}</p>
-            </div>
-            <div className="col-span-2">
-              <span className="text-muted-foreground">Adresse</span>
-              <p className="font-medium">{company.companyAddress}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                {errors.name && (
+                  <FieldDescription>{errors.name}</FieldDescription>
+                )}
+              </Field>
 
-      {/* Informations générales */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Informations générales</CardTitle>
-          <CardDescription>
-            Nom, adresse, téléphone et email de l&apos;unité
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="name">Nom de l&apos;unité</FieldLabel>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                aria-invalid={!!errors.name}
-              />
-              {errors.name && (
-                <FieldDescription>{errors.name}</FieldDescription>
-              )}
-            </Field>
+              <Field data-invalid={!!errors.address}>
+                <FieldLabel htmlFor="address">Adresse</FieldLabel>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                  aria-invalid={!!errors.address}
+                />
+                {errors.address && (
+                  <FieldDescription>{errors.address}</FieldDescription>
+                )}
+              </Field>
 
-            <Field data-invalid={!!errors.address}>
-              <FieldLabel htmlFor="address">Adresse</FieldLabel>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleChange("address", e.target.value)}
-                aria-invalid={!!errors.address}
-              />
-              {errors.address && (
-                <FieldDescription>{errors.address}</FieldDescription>
-              )}
-            </Field>
+              <Field data-invalid={!!errors.phone}>
+                <FieldLabel htmlFor="phone">Numéro de téléphone</FieldLabel>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                  aria-invalid={!!errors.phone}
+                />
+                {errors.phone && (
+                  <FieldDescription>{errors.phone}</FieldDescription>
+                )}
+              </Field>
 
-            <Field data-invalid={!!errors.phone}>
-              <FieldLabel htmlFor="phone">Numéro de téléphone</FieldLabel>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                aria-invalid={!!errors.phone}
-              />
-              {errors.phone && (
-                <FieldDescription>{errors.phone}</FieldDescription>
-              )}
-            </Field>
+              <Field data-invalid={!!errors.email}>
+                <FieldLabel htmlFor="email">Adresse email</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  aria-invalid={!!errors.email}
+                />
+                {errors.email && (
+                  <FieldDescription>{errors.email}</FieldDescription>
+                )}
+              </Field>
+            </FieldGroup>
+          </CardContent>
+        </Card>
 
-            <Field data-invalid={!!errors.email}>
-              <FieldLabel htmlFor="email">Adresse email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                aria-invalid={!!errors.email}
-              />
-              {errors.email && (
-                <FieldDescription>{errors.email}</FieldDescription>
-              )}
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
+        {/* Submit */}
+        {errors.form && (
+          <FieldDescription className="text-destructive">
+            {errors.form}
+          </FieldDescription>
+        )}
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isPending}>
+            {isPending && <Spinner data-icon="inline-start" />}
+            Enregistrer
+          </Button>
+        </div>
+      </form>
 
-      {/* Submit */}
-      {errors.form && (
-        <FieldDescription className="text-destructive">
-          {errors.form}
-        </FieldDescription>
-      )}
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending && <Spinner data-icon="inline-start" />}
-          Enregistrer
-        </Button>
-      </div>
-    </form>
+      {/* Tag Management */}
+      <TagManager unitId={unit.id} initialTags={tags} />
+    </div>
   )
 }
