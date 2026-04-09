@@ -39,6 +39,8 @@ interface SubPhaseDialogProps {
     endDate: Date | null
   }
   onSuccess?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function SubPhaseDialog({
@@ -47,9 +49,14 @@ export function SubPhaseDialog({
   phaseEndDate,
   subPhase,
   onSuccess,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
 }: SubPhaseDialogProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const open = externalOpen ?? internalOpen
+  const setOpen = externalOnOpenChange ?? setInternalOpen
 
   const [formData, setFormData] = useState({
     name: subPhase?.name ?? "",
@@ -194,9 +201,24 @@ export function SubPhaseDialog({
                   onSelect={(date) =>
                     setFormData({ ...formData, startDate: date ?? null })
                   }
+                  disabled={(date) => {
+                    if (phaseStartDate && date < new Date(phaseStartDate))
+                      return true
+                    if (phaseEndDate && date > new Date(phaseEndDate))
+                      return true
+                    return false
+                  }}
                 />
               </PopoverContent>
             </Popover>
+            {(phaseStartDate || phaseEndDate) && (
+              <p className="text-xs text-muted-foreground">
+                La date doit être comprise entre{" "}
+                {phaseStartDate && format(phaseStartDate, "dd MMM yyyy")}
+                {phaseStartDate && phaseEndDate && " et "}
+                {phaseEndDate && format(phaseEndDate, "dd MMM yyyy")}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Date de fin</Label>
@@ -215,6 +237,13 @@ export function SubPhaseDialog({
                   onSelect={(date) =>
                     setFormData({ ...formData, endDate: date ?? null })
                   }
+                  disabled={(date) => {
+                    if (phaseStartDate && date < new Date(phaseStartDate))
+                      return true
+                    if (phaseEndDate && date > new Date(phaseEndDate))
+                      return true
+                    return false
+                  }}
                 />
               </PopoverContent>
             </Popover>

@@ -15,6 +15,7 @@ import { ProjectProductionPlaceholder } from "@/components/project/project-produ
 import { ProjectTasksPlaceholder } from "@/components/project/project-tasks-placeholder"
 import { ProjectTimeTrackingPlaceholder } from "@/components/project/project-time-tracking-placeholder"
 import { ProjectDocuments } from "@/components/project/project-documents"
+import { PhaseList } from "@/components/project/phase-list"
 
 interface ProjectDetailPageProps {
   params: Promise<{ unitId: string; projectId: string }>
@@ -75,10 +76,19 @@ export default async function ProjectDetailPage({
         </TabsList>
 
         <TabsContent value="overview">
-          <ProjectOverview
-            project={project as never}
-            userRole={user.role as "OWNER" | "ADMIN" | "USER"}
-          />
+          <div className="space-y-6">
+            <ProjectOverview
+              project={project as never}
+              userRole={user.role as "OWNER" | "ADMIN" | "USER"}
+            />
+            <PhaseList
+              projectId={project.id}
+              projectMontantHT={project.montantHT}
+              projectODS={project.ods}
+              phases={phases}
+              userRole={user.role as "OWNER" | "ADMIN" | "USER"}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="gantt">

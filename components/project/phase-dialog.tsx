@@ -42,18 +42,25 @@ interface PhaseDialogProps {
     progress: number
   }
   onSuccess?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function PhaseDialog({
   projectId,
-  projectODS: _projectODS,
+  projectODS,
   projectMontantHT,
   currentPhasesSum,
   phase,
   onSuccess,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
 }: PhaseDialogProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const open = externalOpen ?? internalOpen
+  const setOpen = externalOnOpenChange ?? setInternalOpen
 
   const [formData, setFormData] = useState({
     name: phase?.name ?? "",
@@ -188,9 +195,17 @@ export function PhaseDialog({
                   onSelect={(date) =>
                     setFormData({ ...formData, startDate: date ?? null })
                   }
+                  disabled={(date) =>
+                    projectODS ? date < new Date(projectODS) : false
+                  }
                 />
               </PopoverContent>
             </Popover>
+            {projectODS && (
+              <p className="text-xs text-muted-foreground">
+                La date doit être ≥ {format(projectODS, "dd MMM yyyy")}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Date de fin</Label>

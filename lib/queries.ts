@@ -393,10 +393,10 @@ export async function getScopedProjects(
     include: {
       Client: { select: { id: true, name: true } },
       phases: {
-        select: { 
-          id: true, 
+        select: {
+          id: true,
           name: true,
-          SubPhases: { select: { id: true, name: true } }
+          SubPhases: { select: { id: true, name: true } },
         },
         orderBy: { startDate: "asc" },
       },
@@ -437,7 +437,15 @@ export async function getProjectById(projectId: string) {
   return prisma.project.findUnique({
     where: { id: projectId },
     include: {
-      Client: { select: { id: true, name: true } },
+      Client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          wilaya: true,
+        },
+      },
       phases: {
         include: { SubPhases: true },
         orderBy: { startDate: "asc" },

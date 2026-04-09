@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatCurrency } from "@/lib/format"
 import { STATUS_COLORS } from "@/lib/constants"
 import { toast } from "sonner"
@@ -34,6 +35,8 @@ import {
 } from "lucide-react"
 import { PhaseDialog } from "./phase-dialog"
 import { SubPhaseDialog } from "./subphase-dialog"
+import { deletePhase } from "@/actions/phase"
+import { deleteSubPhase } from "@/actions/subphase"
 
 interface Phase {
   id: string
@@ -61,6 +64,7 @@ interface SubPhase {
 interface PhaseListProps {
   projectId: string
   projectMontantHT: number
+  projectODS: Date | null
   phases: Phase[]
   userRole: "OWNER" | "ADMIN" | "USER"
   onPhaseUpdate?: () => void
@@ -81,13 +85,17 @@ const subPhaseStatusColors: Record<string, string> = {
 export function PhaseList({
   projectId,
   projectMontantHT,
+  projectODS,
   phases,
   userRole,
   onPhaseUpdate: _onPhaseUpdate,
 }: PhaseListProps) {
+  const router = useRouter()
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null)
   const [deleteType, setDeleteType] = useState<"phase" | "subphase">("phase")
+  const [editingPhase, setEditingPhase] = useState<Phase | null>(null)
+  const [editingSubPhase, setEditingSubPhase] = useState<SubPhase | null>(null)
 
   const canEdit = userRole === "OWNER" || userRole === "ADMIN"
 
@@ -106,13 +114,25 @@ export function PhaseList({
     })
   }
 
-  const handleDelete = () => {
-    toast.success(
+  const handleDelete = async () => {
+    const result =
       deleteType === "phase"
-        ? "Phase supprimée (temporaire)"
-        : "Sous-phase supprimée (temporaire)"
-    )
+        ? await deletePhase(deleteDialogId!)
+        : await deleteSubPhase(deleteDialogId!)
+
+    if (result.success) {
+      toast.success(
+        deleteType === "phase" ? "Phase supprimée" : "Sous-phase supprimée"
+      )
+      router.refresh()
+    } else {
+      toast.error(result.error ?? "Une erreur est survenue")
+    }
     setDeleteDialogId(null)
+  }
+
+  const handleSuccess = () => {
+    router.refresh()
   }
 
   return (
@@ -123,7 +143,7 @@ export function PhaseList({
           {canEdit && (
             <PhaseDialog
               projectId={projectId}
-              projectODS={null}
+              projectODS={projectODS}
               projectMontantHT={projectMontantHT}
               currentPhasesSum={currentPhasesSum}
             />
@@ -133,13 +153,17 @@ export function PhaseList({
       <CardContent>
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Budget total: {formatCurrency(projectMontantHT)} | Budget utilisé:{" "}
-            {formatCurrency(currentPhasesSum)} | Budget restant:{" "}
-            <span
-              className={remainingBudget < 0 ? "font-medium text-red-600" : ""}
-            >
-              {formatCurrency(remainingBudget)}
-            </span>
+            Montant total du projet: {formatCurrency(projectMontantHT)} |
+            Montant des phases: {formatCurrency(currentPhasesSum)} |{" "}
+            {remainingBudget === 0 ? (
+              <span className="font-medium text-green-600">Équilibré</span>
+            ) : remainingBudget < 0 ? (
+              <span className="font-medium text-red-600">
+                Dépassement: {formatCurrency(Math.abs(remainingBudget))}
+              </span>
+            ) : (
+              <span>Restant: {formatCurrency(remainingBudget)}</span>
+            )}
           </p>
 
           {phases.length === 0 ? (
@@ -193,7 +217,9 @@ export function PhaseList({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setEditingPhase(phase)}
+                            >
                               <Pencil className="mr-2 h-4 w-4" />
                               Modifier
                             </DropdownMenuItem>
@@ -254,7 +280,11 @@ export function PhaseList({
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        setEditingSubPhase(subphase)
+                                      }
+                                    >
                                       Modifier
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -286,6 +316,43 @@ export function PhaseList({
           )}
         </div>
       </CardContent>
+
+      {editingPhase && (
+        <PhaseDialog
+          projectId={projectId}
+          projectODS={projectODS}
+          projectMontantHT={projectMontantHT}
+          currentPhasesSum={currentPhasesSum}
+          phase={editingPhase}
+          onSuccess={handleSuccess}
+          open={!!editingPhase}
+          onOpenChange={(open) => !open && setEditingPhase(null)}
+        />
+      )}
+
+      {editingSubPhase && (
+        <SubPhaseDialog
+          phaseId={
+            phases.find((p) =>
+              p.SubPhases.some((sp) => sp.id === editingSubPhase.id)
+            )?.id ?? ""
+          }
+          phaseStartDate={
+            phases.find((p) =>
+              p.SubPhases.some((sp) => sp.id === editingSubPhase.id)
+            )?.startDate ?? null
+          }
+          phaseEndDate={
+            phases.find((p) =>
+              p.SubPhases.some((sp) => sp.id === editingSubPhase.id)
+            )?.endDate ?? null
+          }
+          subPhase={editingSubPhase}
+          onSuccess={handleSuccess}
+          open={!!editingSubPhase}
+          onOpenChange={(open) => !open && setEditingSubPhase(null)}
+        />
+      )}
 
       <AlertDialog
         open={!!deleteDialogId}

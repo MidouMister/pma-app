@@ -21,12 +21,13 @@ interface SimpleProject {
   delaiDays: number
   status: string
   signe: boolean
-  client?: {
+  Client?: {
+    id: string
     name: string
     phone?: string | null
     email?: string | null
     wilaya?: string | null
-  }
+  } | null
   phases?: Array<{
     id: string
     name: string
@@ -124,7 +125,7 @@ export function ProjectOverview({
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold">{progress}%</span>
-            <Badge variant="outline">全局</Badge>
+            <Badge variant="outline">Global</Badge>
           </div>
           <Progress value={progress} className="h-3" />
           {(project.phases ?? []).length > 0 && (
@@ -191,20 +192,20 @@ export function ProjectOverview({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p className="font-medium">{project.client?.name ?? "Non défini"}</p>
-          {project.client?.phone && (
+          <p className="font-medium">{project.Client?.name ?? "Non défini"}</p>
+          {project.Client?.phone && (
             <p className="text-sm text-muted-foreground">
-              {project.client.phone}
+              {project.Client.phone}
             </p>
           )}
-          {project.client?.email && (
+          {project.Client?.email && (
             <p className="text-sm text-muted-foreground">
-              {project.client.email}
+              {project.Client.email}
             </p>
           )}
-          {project.client?.wilaya && (
+          {project.Client?.wilaya && (
             <p className="text-sm text-muted-foreground">
-              {project.client.wilaya}
+              {project.Client.wilaya}
             </p>
           )}
         </CardContent>

@@ -59,10 +59,10 @@ interface SimpleProject {
   status: string
   montantTTC: number
   ods: Date | null
-  client?: {
+  Client?: {
     id: string
     name: string
-  }
+  } | null
   phases?: Array<{
     montantHT: number
     progress: number
@@ -105,8 +105,8 @@ export function ProjectList({
   const uniqueClients = useMemo(() => {
     const clients = new Map<string, string>()
     projects.forEach((p) => {
-      if (p.client) {
-        clients.set(p.client.id, p.client.name)
+      if (p.Client) {
+        clients.set(p.Client.id, p.Client.name)
       }
     })
     return Array.from(clients.entries()).map(([id, name]) => ({ id, name }))
@@ -121,7 +121,7 @@ export function ProjectList({
         (p) =>
           p.name.toLowerCase().includes(query) ||
           p.code.toLowerCase().includes(query) ||
-          p.client?.name.toLowerCase().includes(query)
+          p.Client?.name.toLowerCase().includes(query)
       )
     }
 
@@ -130,7 +130,7 @@ export function ProjectList({
     }
 
     if (clientFilter !== "all") {
-      result = result.filter((p) => p.client?.id === clientFilter)
+      result = result.filter((p) => p.Client?.id === clientFilter)
     }
 
     result.sort((a, b) => {
@@ -285,7 +285,7 @@ export function ProjectList({
 
                     {/* Client */}
                     <TableCell className="text-muted-foreground">
-                      {project.client?.name ?? (
+                      {project.Client?.name ?? (
                         <span className="text-muted-foreground/40">—</span>
                       )}
                     </TableCell>
