@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
-import { taskSchema } from "@/lib/validators"
+import { taskSchema, taskUpdateSchema } from "@/lib/validators"
 import { unitTasksTag, userTasksTag } from "@/lib/cache"
 
 export async function createTask(data: unknown) {
@@ -127,8 +127,8 @@ export async function createTask(data: unknown) {
           unitId: validData.unitId,
           userId: validData.assignedUserId,
           type: "TASK",
-          targetUserId: userId
-        }
+          targetUserId: userId,
+        },
       })
     }
 
@@ -165,33 +165,15 @@ export async function updateTask(data: unknown) {
       }
     }
 
-    const {
-      id,
-      title,
-      description,
-      startDate,
-      dueDate,
-      endDate,
-      complete,
-      assignedUserId,
-      laneId,
-      phaseId,
-      subPhaseId,
-      tagIds,
-    } = data as {
-      id: string
-      title?: string
-      description?: string | null
-      startDate?: Date | null
-      dueDate?: Date | null
-      endDate?: Date | null
-      complete?: boolean
-      assignedUserId?: string | null
-      laneId?: string | null
-      phaseId?: string
-      subPhaseId?: string | null
-      tagIds?: string[]
+    const validation = taskUpdateSchema.safeParse(data)
+    if (!validation.success) {
+      return {
+        success: false,
+        error: validation.error.issues[0]?.message ?? "Données invalides",
+      }
     }
+
+    const { id, ...fields } = validation.data
 
     const task = await prisma.task.findFirst({
       where: { id },
@@ -202,10 +184,10 @@ export async function updateTask(data: unknown) {
     }
 
     // Verify assignee is a TeamMember
-    if (assignedUserId) {
+    if (fields.assignedUserId) {
       const isTeamMember = await prisma.teamMember.findFirst({
         where: {
-          userId: assignedUserId,
+          userId: fields.assignedUserId,
           team: { projectId: task.projectId },
         },
       })
@@ -220,20 +202,11 @@ export async function updateTask(data: unknown) {
     await prisma.task.update({
       where: { id },
       data: {
-        ...(title !== undefined && { title }),
-        ...(description !== undefined && { description }),
-        ...(startDate !== undefined && { startDate }),
-        ...(dueDate !== undefined && { dueDate }),
-        ...(endDate !== undefined && { endDate }),
-        ...(complete !== undefined && { complete }),
-        ...(assignedUserId !== undefined && { assignedUserId }),
-        ...(laneId !== undefined && { laneId }),
-        ...(phaseId !== undefined && { phaseId }),
-        ...(subPhaseId !== undefined && { subPhaseId }),
-        ...(tagIds !== undefined && { 
-          Tags: { 
-            set: tagIds.map(id => ({ id })) 
-          } 
+        ...fields,
+        ...(fields.tagIds !== undefined && {
+          Tags: {
+            set: fields.tagIds.map((id) => ({ id })),
+          },
         }),
       },
     })
@@ -242,8 +215,11 @@ export async function updateTask(data: unknown) {
     if (task.assignedUserId) {
       revalidateTag(userTasksTag(task.assignedUserId), "max")
     }
-    if (assignedUserId && assignedUserId !== task.assignedUserId) {
-      revalidateTag(userTasksTag(assignedUserId), "max")
+    if (
+      fields.assignedUserId &&
+      fields.assignedUserId !== task.assignedUserId
+    ) {
+      revalidateTag(userTasksTag(fields.assignedUserId), "max")
     }
     return { success: true }
   } catch (error) {

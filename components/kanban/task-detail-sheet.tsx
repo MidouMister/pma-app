@@ -68,6 +68,9 @@ interface TaskDetailSheetProps {
   isOpen: boolean
   onClose: () => void
   canEdit?: boolean
+  lanes?: { id: string; name: string; color: string | null }[]
+  teamMembers?: { id: string; name: string }[]
+  currentUser?: { name: string | null; avatarUrl: string | null } | null
 }
 
 export function TaskDetailSheet({
@@ -75,6 +78,9 @@ export function TaskDetailSheet({
   isOpen,
   onClose,
   canEdit = true,
+  lanes: _lanes = [],
+  teamMembers: _teamMembers = [],
+  currentUser: _currentUser = null,
 }: TaskDetailSheetProps) {
   const [activeTab, setActiveTab] = useState("details")
 

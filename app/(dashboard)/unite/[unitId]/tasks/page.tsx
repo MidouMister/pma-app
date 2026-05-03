@@ -29,6 +29,11 @@ export default async function TasksPage({
 
   const canEdit = user.role === "OWNER" || user.role === "ADMIN"
 
+  const currentUser = {
+    name: user.name ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+  }
+
   const [lanes, tasks, _tags, projects, teamMembers] = await Promise.all([
     getUnitLanes(unitId),
     getUnitTasks(unitId),
@@ -63,10 +68,7 @@ export default async function TasksPage({
   if (lanes.length === 0) {
     return (
       <div className="flex flex-col gap-6 p-4 sm:p-6">
-        <PageHeader
-          title="Tâches"
-          description="Tableau Kanban de votre unité"
-        >
+        <PageHeader title="Tâches" description="Tableau Kanban de votre unité">
           {canEdit && <LaneDialog unitId={unitId} />}
         </PageHeader>
         <div className="flex flex-col gap-4">
@@ -75,7 +77,7 @@ export default async function TasksPage({
             description="Créez votre première colonne pour commencer à organiser vos tâches."
           />
           {canEdit && (
-            <div className="flex justify-center -mt-2">
+            <div className="-mt-2 flex justify-center">
               <LaneDialog unitId={unitId} />
             </div>
           )}
@@ -104,6 +106,8 @@ export default async function TasksPage({
     projectName: projects.find((p) => p.id === t.projectId)?.name ?? "",
     phaseName: t.Phase?.name ?? null,
     subPhaseName: t.subPhase?.name ?? null,
+    phaseId: t.phaseId ?? null,
+    subPhaseId: t.subPhaseId ?? null,
   }))
 
   // Map projects for filter
@@ -134,10 +138,7 @@ export default async function TasksPage({
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <PageHeader
-        title="Tâches"
-        description="Tableau Kanban de votre unité"
-      >
+      <PageHeader title="Tâches" description="Tableau Kanban de votre unité">
         {canEdit && (
           <div className="flex gap-2">
             <LaneDialog unitId={unitId} />
@@ -159,7 +160,10 @@ export default async function TasksPage({
         phases={kanbanPhases}
         subPhases={kanbanSubPhases}
         unitId={unitId}
+        companyId={user.companyId}
         canEdit={canEdit}
+        teamMembers={teamMembersMapped}
+        currentUser={currentUser}
       />
     </div>
   )

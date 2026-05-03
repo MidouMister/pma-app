@@ -72,6 +72,16 @@ interface KanbanSubPhase {
   phaseId: string
 }
 
+interface TeamMember {
+  id: string
+  name: string
+}
+
+interface CurrentUser {
+  name: string | null
+  avatarUrl: string | null
+}
+
 interface UnitKanbanProps {
   lanes: KanbanLane[]
   tasks: KanbanTask[]
@@ -79,7 +89,10 @@ interface UnitKanbanProps {
   phases: KanbanPhase[]
   subPhases: KanbanSubPhase[]
   unitId: string
+  companyId?: string
   canEdit: boolean
+  teamMembers?: TeamMember[]
+  currentUser?: CurrentUser | null
 }
 
 export function UnitKanban({
@@ -89,7 +102,10 @@ export function UnitKanban({
   phases,
   subPhases,
   unitId,
+  companyId: _companyId,
   canEdit,
+  teamMembers = [],
+  currentUser = null,
 }: UnitKanbanProps) {
   const router = useRouter()
   const [selectedTask, setSelectedTask] = useState<KanbanTask | null>(null)
@@ -105,20 +121,14 @@ export function UnitKanban({
       result = result.filter((t) => t.projectId === projectFilter)
     }
     if (phaseFilter !== "all") {
-      const phase = phases.find((p) => p.id === phaseFilter)
-      if (phase) {
-        result = result.filter((t) => t.phaseName === phase.name)
-      }
+      result = result.filter((t) => t.phaseId === phaseFilter)
     }
     if (subPhaseFilter !== "all") {
-      const subPhase = subPhases.find((sp) => sp.id === subPhaseFilter)
-      if (subPhase) {
-        result = result.filter((t) => t.subPhaseName === subPhase.name)
-      }
+      result = result.filter((t) => t.subPhaseId === subPhaseFilter)
     }
 
     return result
-  }, [tasks, projectFilter, phaseFilter, subPhaseFilter, phases, subPhases])
+  }, [tasks, projectFilter, phaseFilter, subPhaseFilter])
 
   // Available phases based on project filter
   const availablePhases = useMemo(() => {
@@ -372,11 +382,14 @@ export function UnitKanban({
       </div>
 
       {/* Task Detail Sheet */}
-      <TaskDetailSheet 
+      <TaskDetailSheet
         task={selectedTask}
         isOpen={!!selectedTask}
         onClose={() => setSelectedTask(null)}
         canEdit={canEdit}
+        lanes={lanes}
+        teamMembers={teamMembers}
+        currentUser={currentUser}
       />
     </div>
   )

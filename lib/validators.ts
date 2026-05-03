@@ -98,6 +98,21 @@ export const taskSchema = z.object({
   subPhaseId: z.string().uuid().optional().nullable(),
 })
 
+export const taskUpdateSchema = z.object({
+  id: z.string().min(1, "ID de tâche requis"),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  dueDate: z.date().nullable().optional(),
+  startDate: z.date().nullable().optional(),
+  endDate: z.date().nullable().optional(),
+  complete: z.boolean().optional(),
+  assignedUserId: z.string().uuid().nullable().optional(),
+  laneId: z.string().uuid().nullable().optional(),
+  phaseId: z.string().uuid().optional(),
+  subPhaseId: z.string().uuid().nullable().optional(),
+  tagIds: z.array(z.string()).optional(),
+})
+
 export const clientSchema = z.object({
   name: z
     .string()
