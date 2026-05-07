@@ -48,7 +48,7 @@ export async function createTag(data: unknown) {
       return { success: false, error: "Unité introuvable" }
     }
 
-    await prisma.tag.create({
+    const tag = await prisma.tag.create({
       data: {
         name: validData.name,
         color: validData.color,
@@ -57,7 +57,7 @@ export async function createTag(data: unknown) {
     })
 
     revalidateTag(unitTagsTag(validData.unitId), "max")
-    return { success: true }
+    return { success: true, tag }
   } catch (error) {
     console.error("createTag error:", error)
     return { success: false, error: "Une erreur est survenue" }

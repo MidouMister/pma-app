@@ -67,7 +67,11 @@ export function ProjectList({
 
     // Client filter
     if (clientFilter !== "all") {
-      result = result.filter((p) => p.clientName && clients.find((c) => c.id === clientFilter)?.name === p.clientName)
+      result = result.filter(
+        (p) =>
+          p.clientName &&
+          clients.find((c) => c.id === clientFilter)?.name === p.clientName
+      )
     }
 
     return result

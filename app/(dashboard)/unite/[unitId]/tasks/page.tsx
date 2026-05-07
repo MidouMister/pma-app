@@ -4,15 +4,14 @@ import { getCurrentUser } from "@/lib/auth"
 import {
   getUnitLanes,
   getUnitTasks,
-  getUnitTags,
   getScopedProjects,
   getUnitMembers,
+  getUnitTags,
 } from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import { UnitKanban } from "@/components/kanban/unit-kanban"
 import { EmptyState } from "@/components/shared/empty-state"
 import { LaneDialog } from "@/components/kanban/lane-dialog"
-import { TaskDialog } from "@/components/kanban/task-dialog"
 
 export default async function TasksPage({
   params,
@@ -34,12 +33,12 @@ export default async function TasksPage({
     avatarUrl: user.avatarUrl ?? null,
   }
 
-  const [lanes, tasks, _tags, projects, teamMembers] = await Promise.all([
+  const [lanes, tasks, projects, teamMembers, tags] = await Promise.all([
     getUnitLanes(unitId),
     getUnitTasks(unitId),
-    getUnitTags(unitId),
     getScopedProjects(user.companyId, unitId, user.id, user.role),
     getUnitMembers(unitId),
+    getUnitTags(unitId),
   ])
 
   // Map lanes
@@ -54,6 +53,12 @@ export default async function TasksPage({
     name: m.name,
   }))
 
+  const availableTags = tags.map((t) => ({
+    id: t.id,
+    name: t.name,
+    color: t.color,
+  }))
+
   const dialogProjects = projects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -64,24 +69,23 @@ export default async function TasksPage({
     })),
   }))
 
-  // If no lanes exist, show empty state
+  // If no lanes exist, show empty state with a prompt to create the first column
   if (lanes.length === 0) {
     return (
       <div className="flex flex-col gap-6 p-4 sm:p-6">
-        <PageHeader title="Tâches" description="Tableau Kanban de votre unité">
-          {canEdit && <LaneDialog unitId={unitId} />}
-        </PageHeader>
-        <div className="flex flex-col gap-4">
-          <EmptyState
-            title="Aucune colonne"
-            description="Créez votre première colonne pour commencer à organiser vos tâches."
-          />
-          {canEdit && (
-            <div className="-mt-2 flex justify-center">
-              <LaneDialog unitId={unitId} />
-            </div>
-          )}
-        </div>
+        <PageHeader
+          title="Tâches"
+          description="Tableau Kanban de votre unité"
+        />
+        <EmptyState
+          title="Aucune colonne"
+          description="Créez votre première colonne pour commencer à organiser vos tâches."
+        />
+        {canEdit && (
+          <div className="-mt-4 flex justify-center">
+            <LaneDialog unitId={unitId} />
+          </div>
+        )}
       </div>
     )
   }
@@ -97,9 +101,11 @@ export default async function TasksPage({
     laneName: lanes.find((l) => l.id === t.laneId)?.name ?? null,
     complete: t.complete,
     dueDate: t.dueDate,
+    startDate: t.startDate ?? null,
     assignedUserId: t.assignedUserId,
     assignedUserName: t.Assigned?.name ?? null,
     assignedUserAvatar: t.Assigned?.avatarUrl ?? null,
+    tagIds: t.Tags.map((tag) => tag.id),
     tagNames: t.Tags.map((tag) => tag.name),
     tagColors: t.Tags.map((tag) => tag.color),
     projectId: t.projectId,
@@ -138,20 +144,7 @@ export default async function TasksPage({
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <PageHeader title="Tâches" description="Tableau Kanban de votre unité">
-        {canEdit && (
-          <div className="flex gap-2">
-            <LaneDialog unitId={unitId} />
-            <TaskDialog
-              unitId={unitId}
-              companyId={user.companyId}
-              projects={dialogProjects}
-              lanes={kanbanLanes}
-              teamMembers={teamMembersMapped}
-            />
-          </div>
-        )}
-      </PageHeader>
+      <PageHeader title="Tâches" description="Tableau Kanban de votre unité" />
 
       <UnitKanban
         lanes={kanbanLanes}
@@ -164,6 +157,8 @@ export default async function TasksPage({
         canEdit={canEdit}
         teamMembers={teamMembersMapped}
         currentUser={currentUser}
+        dialogProjects={dialogProjects}
+        availableTags={availableTags}
       />
     </div>
   )

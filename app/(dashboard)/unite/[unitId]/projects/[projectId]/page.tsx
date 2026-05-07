@@ -59,7 +59,7 @@ export default async function ProjectDetailPage({
   const canEdit = user.role === "OWNER" || user.role === "ADMIN"
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto px-2 py-6">
       <PageHeader
         title={project.name}
         description={`${project.code} - ${project.type}`}
@@ -94,7 +94,10 @@ export default async function ProjectDetailPage({
         <TabsContent value="gantt">
           <ProjectGantt
             phases={phases}
-            markers={markers.map((m) => ({ ...m, className: m.className ?? undefined }))}
+            markers={markers.map((m) => ({
+              ...m,
+              className: m.className ?? undefined,
+            }))}
             canEdit={canEdit}
           />
         </TabsContent>

@@ -734,6 +734,120 @@
 
 ---
 
+## Kanban UI Improvements (Post-M8)
+
+**Status:** `[x] COMPLETED 2026-05-05`
+**Depends on:** Milestone 8 (Kanban board exists)
+**Plan:** [kanban-ui-improvements.md](./plans/kanban-ui-improvements.md)
+**Goal:** Visual identity overhaul, interaction improvements, code quality fixes.
+
+### Phase 1 — Visual Identity (Completed 2026-05-03)
+
+- [x] Lane colors on column headers (colored dot, top border, tinted badge) ✅ 2026-05-03
+- [x] Task card redesign (Avatar instead of User icon, project name on card, completion strikethrough/opacity, checkbox-style complete button) ✅ 2026-05-03
+- [x] Lane color left border on cards (`border-l-[3px]`) ✅ 2026-05-03
+
+### Phase 2 — Interactions (Completed 2026-05-03)
+
+- [x] Filter bar redesign (search input with icon, filter icons on selects, active filter count badge, grouped in rounded container) ✅ 2026-05-03
+- [x] Quick add button at bottom of each column (opens TaskDialog with lane pre-selected) ✅ 2026-05-03
+- [x] Lane context menu (DropdownMenu with Edit/Delete on hover) ✅ 2026-05-03
+- [x] Due date in TaskDialog ✅ 2026-05-03
+
+### Phase 3 — Task Detail Sheet Refactor (Completed 2026-05-05)
+
+- [x] Create `types.ts` with all interfaces ✅ 2026-05-03
+- [x] Fix current user avatar (replace hardcoded "M" with `_currentUser`) ✅ 2026-05-03
+- [x] Add lane selector in sheet header ✅ 2026-05-03
+- [x] Add delete task button with AlertDialog ✅ 2026-05-03
+- [x] Fix tag display mismatch (use `_tags` normalized variable) ✅ 2026-05-03
+- [x] Extract sub-components: `task-metadata.tsx`, `task-comments.tsx`, `task-time-entries.tsx` ✅ 2026-05-05
+- [x] Import types from `types.ts` (remove duplicated interfaces) ✅ 2026-05-05
+
+### Phase 4 — Code Quality & Performance (Completed 2026-05-05)
+
+- [x] Phase filter by ID instead of name ✅ 2026-05-03
+- [x] Remove unused `getUnitTags` fetch from page.tsx ✅ 2026-05-03
+- [x] Zod validation for `updateTask` ✅ 2026-05-03
+- [x] Loading state skeleton (`loading.tsx`) ✅ 2026-05-03
+- [x] Remove index signatures from interfaces (use type intersection at call site) ✅ 2026-05-05
+- [x] Remove `[key: string]: unknown` from `task` prop (define `TaskDetailSheetTask` interface) ✅ 2026-05-05
+- [x] Fix duplicate filter selects in filter bar ✅ 2026-05-03
+- [x] Remove dead `teamMembers` prop and unused `_laneName`/`_assignedUserId` variables ✅ 2026-05-05
+- [x] Replace `as any` cast with explicit object construction ✅ 2026-05-05
+
+---
+
+## Kanban Task Form + Card Redesign (Post-M8 Phase 5)
+
+**Status:** `[x] COMPLETED 2026-05-06`
+**Depends on:** Milestone 8 (Kanban board exists), Kanban UI Improvements (Phase 1-4)
+**Plan:** [task_form_card_redesign.md](./plans/task_form_card_redesign.md)
+**Goal:** Add missing schema fields to task form, redesign Kanban card for compactness and scannability.
+
+### Task 1 — Add `startDate`, `endDate`, Tags to Task Dialog ✅ 2026-05-06
+
+- [x] Add `startDate` date picker to form (Planification section, uninitialized by default)
+- [x] Add `endDate` date picker (edit mode only, in Planification section)
+- [x] Add Tags multi-select in Attribution section — Popover+Command with checkboxes, colored badge chips for selected tags
+- [x] Add `availableTags` prop to `TaskDialogProps`: `Array<{ id: string; name: string; color: string }>`
+- [x] Wire tags to `createTask` / `updateTask` server actions
+- [x] Update form state initialization and submission to include `startDate`, `endDate`, `tagIds`
+- [x] Extract submit logic into `buildActionPayload()` helper (avoids duplication between handleSubmit and Ctrl+Enter)
+- [x] **File**: `components/kanban/task-dialog.tsx`
+
+### Task 2 — Pass Tags + startDate Through Tasks Page ✅ 2026-05-06
+
+- [x] Fetch `getUnitTags(unitId)` in tasks page server component
+- [x] Map tags and pass as `availableTags` to `TaskDialog` via `UnitKanban`
+- [x] Add `startDate` to `KanbanTask` mapping in `kanbanTasks` (uses actual Prisma field)
+- [x] **Files**: `app/(dashboard)/unite/[unitId]/tasks/page.tsx`, `components/kanban/unit-kanban.tsx`
+
+### Task 3 — Extract Kanban Card to `task-card.tsx` ✅ 2026-05-06
+
+- [x] Extract inline card rendering from `unit-kanban.tsx` into new `components/kanban/task-card.tsx`
+- [x] Card props: `task`, `laneColor`, `canEdit`, `onComplete`, `onEdit`, `onDelete`, `onClick`
+- [x] Update `unit-kanban.tsx` to import and use `<TaskCard>` instead of inline rendering
+- [x] **Files**: `components/kanban/task-card.tsx` (new), `components/kanban/unit-kanban.tsx`
+
+### Task 4 — Redesign Kanban Card Layout ✅ 2026-05-06
+
+- [x] Remove project name from card (filter bar provides context)
+- [x] Replace "Terminer" button with inline checkbox next to title (`onClick={(e) => e.stopPropagation()}`)
+- [x] Add 1-line description preview (`text-xs text-muted-foreground line-clamp-1`)
+- [x] Show `startDate → dueDate` range if both exist, or just `dueDate`
+- [x] Add hover quick action bar on desktop (edit, delete via DropdownMenu)
+- [x] Mobile fallback: always-visible `⋮` kebab menu (DropdownMenu)
+- [x] Completed state: strikethrough title + muted opacity
+- [x] Tag overflow: wrap gracefully (5+ tags tested)
+- [x] **File**: `components/kanban/task-card.tsx`
+
+### Task 5 — Verification ✅ 2026-05-06
+
+- [x] `pnpm typecheck` — zero errors
+- [x] `pnpm lint` — zero errors
+- [x] `pnpm build` — all 24 pages compile
+- [ ] Browser test: form sections, card layout, checkbox toggle, hover actions, mobile kebab menu _(manual)_
+
+### Task 3 — Inline Tag Creation ✅ 2026-05-07
+
+- [x] Add inline tag creation form within the Tag selector popover
+- [x] Update `createTag` action to return the new tag object
+- [x] Implement optimistic UI update to auto-select and display newly created tags without refresh
+- [x] **Files**: `components/kanban/task-dialog.tsx`, `actions/tag.ts`
+
+### Task 4 — Lane UI Redesign & Interaction Fixes ✅ 2026-05-07
+
+- [x] Fix dnd-kit sensor collision (Bug B/C) by adding `activationConstraint` to allow clicks on cards
+- [x] Implement "Open Channel" lane redesign (Bug D):
+  - [x] Increased lane width to 300px and added `gap-6`
+  - [x] Removed heavy borders and background shadings for a cleaner look
+  - [x] Redesigned lane headers with colored status dots and compact badges
+  - [x] Polished "Add task" button with dashed border and hover effects
+- [x] **Files**: `components/kibo-ui/kanban/index.tsx`, `components/kanban/unit-kanban.tsx`
+
+---
+
 ## Summary Table
 
 | #         | Milestone                                 | Tasks   | Status |
@@ -746,10 +860,10 @@
 | 5.5       | PRD v3.2.0 Infrastructure                 | 21      | `[x]`  |
 | 6         | Project Management & Phases               | 17      | `[x]`  |
 | 7         | Gantt Chart                               | 8       | `[x]`  |
-| 8         | Kanban Board & Tasks                      | 21      | `[ ]`  |
+| 8         | Kanban Board & Tasks                      | 21      | `[x]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **173** | 8/11   |
+| **TOTAL** |                                           | **173** | 9/11   |
 
 ---
 

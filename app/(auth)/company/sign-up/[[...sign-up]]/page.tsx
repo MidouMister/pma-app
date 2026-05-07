@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 function SignUpFallback() {
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex w-full flex-col items-center gap-4">
       <Skeleton className="h-8 w-48" />
       <Skeleton className="h-10 w-full" />
       <Skeleton className="h-10 w-full" />
@@ -37,8 +37,10 @@ export default function SignUpPage() {
             footerActionLink:
               "text-primary hover:text-primary/80 font-medium transition-colors duration-300",
             identityPreviewText: "text-foreground font-medium",
-            identityPreviewEditButton: "text-primary hover:text-primary/80 font-medium",
-            formResendCodeLink: "text-primary hover:text-primary/80 font-medium",
+            identityPreviewEditButton:
+              "text-primary hover:text-primary/80 font-medium",
+            formResendCodeLink:
+              "text-primary hover:text-primary/80 font-medium",
             dividerLine: "bg-border",
             dividerText: "text-muted-foreground font-medium",
             alertText: "text-destructive font-medium",

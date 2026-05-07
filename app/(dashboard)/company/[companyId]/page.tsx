@@ -1,6 +1,15 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Building2, FolderKanban, Users, Banknote, Activity, Plus, Settings, UserPlus } from "lucide-react"
+import {
+  Building2,
+  FolderKanban,
+  Users,
+  Banknote,
+  Activity,
+  Plus,
+  Settings,
+  UserPlus,
+} from "lucide-react"
 import { auth } from "@clerk/nextjs/server"
 import { getCompanyDashboard } from "@/lib/queries"
 import { formatCurrency } from "@/lib/format"
@@ -8,7 +17,13 @@ import { DashboardHeader } from "@/components/shared/dashboard-header"
 import { StatCard } from "@/components/shared/stat-card"
 import { UnitCard } from "@/components/company/unit-card"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
 export default async function CompanyDashboardPage({
@@ -50,12 +65,9 @@ export default async function CompanyDashboardPage({
   }))
 
   // Get top 3 most recent projects across all units
-  const recentProjects = company.Project
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, 3)
+  const recentProjects = company.Project.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  ).slice(0, 3)
 
   const initials = company.name
     .split(" ")
@@ -114,7 +126,9 @@ export default async function CompanyDashboardPage({
           value={activeProjects}
           icon={<Activity className="size-4" />}
           accent={activeProjects > 0 ? "success" : "warning"}
-          description={activeProjects === 0 ? "Aucun projet en cours" : undefined}
+          description={
+            activeProjects === 0 ? "Aucun projet en cours" : undefined
+          }
         />
       </div>
 
@@ -123,7 +137,8 @@ export default async function CompanyDashboardPage({
         <CardHeader>
           <CardTitle>Aperçu des unités</CardTitle>
           <CardDescription>
-            {totalUnits} unité{totalUnits !== 1 ? "s" : ""} configurée{totalUnits !== 1 ? "s" : ""}
+            {totalUnits} unité{totalUnits !== 1 ? "s" : ""} configurée
+            {totalUnits !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -155,25 +170,43 @@ export default async function CompanyDashboardPage({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto flex-col gap-2 py-4"
+              >
                 <Link href={`/company/${companyId}/units`}>
                   <Plus className="size-5 text-primary" />
                   <span className="text-xs font-medium">Créer une unité</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto flex-col gap-2 py-4"
+              >
                 <Link href={`/company/${companyId}/users`}>
                   <UserPlus className="size-5 text-primary" />
-                  <span className="text-xs font-medium">Gérer l&apos;équipe</span>
+                  <span className="text-xs font-medium">
+                    Gérer l&apos;équipe
+                  </span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto flex-col gap-2 py-4"
+              >
                 <Link href={`/company/${companyId}/settings`}>
                   <Settings className="size-5 text-primary" />
                   <span className="text-xs font-medium">Paramètres</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto flex-col gap-2 py-4"
+              >
                 <Link href={`/company/${companyId}/settings/billing`}>
                   <Banknote className="size-5 text-primary" />
                   <span className="text-xs font-medium">Facturation</span>
@@ -191,9 +224,7 @@ export default async function CompanyDashboardPage({
               <CardDescription>Les 3 projets les plus récents</CardDescription>
             </div>
             <Button asChild variant="ghost" size="sm" className="gap-1">
-              <Link href={`/company/${companyId}`}>
-                Voir tout
-              </Link>
+              <Link href={`/company/${companyId}`}>Voir tout</Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -214,10 +245,16 @@ export default async function CompanyDashboardPage({
                         {project.name}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {project.status === "InProgress" ? "En cours" : project.status === "Complete" ? "Terminé" : project.status === "Pause" ? "En pause" : "Nouveau"}
+                        {project.status === "InProgress"
+                          ? "En cours"
+                          : project.status === "Complete"
+                            ? "Terminé"
+                            : project.status === "Pause"
+                              ? "En pause"
+                              : "Nouveau"}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums text-foreground">
+                    <span className="text-sm font-semibold text-foreground tabular-nums">
                       {formatCurrency(project.montantTTC)}
                     </span>
                   </Link>

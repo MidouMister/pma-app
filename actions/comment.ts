@@ -101,8 +101,8 @@ export async function createComment(taskId: string, body: string) {
                 unitId: task.unitId,
                 userId: mentionedUser.id,
                 type: "TASK",
-                targetUserId: user.id
-              }
+                targetUserId: user.id,
+              },
             })
           } catch {
             // Ignore unique constraint violations (duplicate mentions)

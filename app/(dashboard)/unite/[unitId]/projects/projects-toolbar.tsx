@@ -82,7 +82,7 @@ export function ProjectToolbar({
           variant="ghost"
           size="sm"
           onClick={onReset}
-          className="h-10 gap-1.5 shrink-0"
+          className="h-10 shrink-0 gap-1.5"
         >
           <X className="size-3.5" />
           Réinitialiser

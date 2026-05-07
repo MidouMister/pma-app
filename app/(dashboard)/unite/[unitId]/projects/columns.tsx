@@ -78,11 +78,11 @@ export function getProjectColumns({
               href={`/unite/${unitId}/projects/${project.id}`}
               className="group/link font-medium text-foreground transition-colors hover:text-primary"
             >
-              <span className="whitespace-normal leading-snug line-clamp-2">
+              <span className="line-clamp-2 leading-snug whitespace-normal">
                 {project.name}
               </span>
             </Link>
-            <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+            <span className="font-mono text-[10px] font-medium tracking-wider text-muted-foreground/60 uppercase">
               {project.code}
             </span>
           </div>
@@ -119,7 +119,9 @@ export function getProjectColumns({
               config.className
             )}
           >
-            <span className={cn("size-1.5 shrink-0 rounded-full", config.dot)} />
+            <span
+              className={cn("size-1.5 shrink-0 rounded-full", config.dot)}
+            />
             {config.label}
           </Badge>
         )
@@ -176,7 +178,11 @@ export function getProjectColumns({
         const ods = row.getValue("ods") as Date | null
         return (
           <span className="text-sm text-muted-foreground">
-            {ods ? formatDate(ods) : <span className="text-muted-foreground/40">—</span>}
+            {ods ? (
+              formatDate(ods)
+            ) : (
+              <span className="text-muted-foreground/40">—</span>
+            )}
           </span>
         )
       },
@@ -189,11 +195,7 @@ export function getProjectColumns({
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-              >
+              <Button variant="ghost" size="icon" className="size-8">
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>

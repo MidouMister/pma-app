@@ -24,11 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  FieldGroup,
-  Field,
-  FieldLabel,
-} from "@/components/ui/field"
+import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
 
 interface TagManagerProps {
   unitId: string
@@ -75,7 +71,8 @@ export function TagManager({ unitId, initialTags }: TagManagerProps) {
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm("Supprimer ce tag ? Il sera retiré de toutes les tâches.")) return
+    if (!confirm("Supprimer ce tag ? Il sera retiré de toutes les tâches."))
+      return
 
     startTransition(async () => {
       const res = await deleteTag(id)
@@ -133,8 +130,10 @@ export function TagManager({ unitId, initialTags }: TagManagerProps) {
                       className="size-8 rounded-full border-2 transition-all hover:scale-110"
                       style={{
                         backgroundColor: color,
-                        borderColor: tagColor === color ? "white" : "transparent",
-                        boxShadow: tagColor === color ? "0 0 0 2px " + color : "none",
+                        borderColor:
+                          tagColor === color ? "white" : "transparent",
+                        boxShadow:
+                          tagColor === color ? "0 0 0 2px " + color : "none",
                       }}
                     />
                   ))}
@@ -149,7 +148,10 @@ export function TagManager({ unitId, initialTags }: TagManagerProps) {
               >
                 Annuler
               </Button>
-              <Button onClick={handleCreate} disabled={isPending || !tagName.trim()}>
+              <Button
+                onClick={handleCreate}
+                disabled={isPending || !tagName.trim()}
+              >
                 {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                 Créer le tag
               </Button>
@@ -160,7 +162,7 @@ export function TagManager({ unitId, initialTags }: TagManagerProps) {
       <CardContent>
         <div className="flex flex-wrap gap-2">
           {initialTags.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 italic">
+            <p className="py-4 text-sm text-muted-foreground italic">
               Aucun tag créé pour cette unité.
             </p>
           ) : (
@@ -180,7 +182,7 @@ export function TagManager({ unitId, initialTags }: TagManagerProps) {
                 <button
                   onClick={() => handleDelete(tag.id)}
                   disabled={isPending}
-                  className="ml-1 rounded-full p-0.5 opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100"
+                  className="ml-1 rounded-full p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
                 >
                   <X className="size-3" />
                 </button>

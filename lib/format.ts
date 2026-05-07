@@ -1,3 +1,6 @@
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
+
 const currencyFormatter = new Intl.NumberFormat("fr-DZ", {
   style: "currency",
   currency: "DZD",
@@ -39,4 +42,33 @@ export function formatDuration(minutes: number): string {
     parts.push(`${mins}m`)
   }
   return parts.join(" ")
+}
+
+export function formatRelativeDueDate(date: Date): {
+  text: string
+  variant: "today" | "overdue" | "normal"
+  daysUntil: number
+} {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const due = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffMs = due.getTime() - today.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) {
+    return { text: "Aujourd'hui", variant: "today", daysUntil: 0 }
+  }
+  if (diffDays < 0) {
+    const daysOverdue = Math.abs(diffDays)
+    return {
+      text: `En retard · ${daysOverdue}j`,
+      variant: "overdue",
+      daysUntil: diffDays,
+    }
+  }
+  return {
+    text: format(date, "d MMM", { locale: fr }),
+    variant: "normal",
+    daysUntil: diffDays,
+  }
 }

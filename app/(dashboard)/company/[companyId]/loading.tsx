@@ -40,7 +40,10 @@ export default function CompanyDashboardLoading() {
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-l-4 border-l-primary bg-card p-5 space-y-4">
+              <div
+                key={i}
+                className="space-y-4 rounded-xl border border-l-4 border-l-primary bg-card p-5"
+              >
                 <div className="flex items-center gap-3">
                   <Skeleton className="size-9 rounded-full" />
                   <div className="flex flex-col gap-1.5">

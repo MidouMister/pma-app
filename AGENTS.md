@@ -240,6 +240,7 @@ git push origin main
 - Use `interface` for object shapes, `type` for unions/primitives
 - Avoid `enum` — prefer const objects or string unions
 - Always use the `@/` path alias (configured in tsconfig.json)
+- **kibo-ui type constraint**: kibo-ui components (Kanban, Gantt) require `Record<string, unknown>`. Do NOT add `[key: string]: unknown` to your interfaces. Instead, use type intersection at the call site: `data={items as (MyItem & Record<string, unknown>)[]}`.
 
 ### 3.2 Naming Conventions
 
@@ -402,12 +403,19 @@ app/
 components/
 ├── ui/               # shadcn primitives (28 installed)
 ├── theme-provider    # Next-themes provider
-├── sidebar/          # Sidebar components (to be built)
-├── shared/           # Reusable across features (to be built)
-├── onboarding/       # Onboarding wizard steps (to be built)
-├── project/          # Project-specific components (to be built)
-├── kanban/           # Kanban board components (to be built)
-├── gantt/            # Gantt chart components (to be built)
+├── sidebar/          # Sidebar components
+├── shared/           # Reusable across features (page-header, empty-state, form-modal, form-section, data-table)
+├── onboarding/       # Onboarding wizard steps
+├── project/          # Project-specific components (dialog, gantt, phase/subphase dialogs)
+├── kanban/           # Kanban board components:
+│   ├── unit-kanban.tsx     # Board wrapper, filter bar, lane rendering
+│   ├── task-card.tsx       # Individual task card (extracted, redesign-ready)
+│   ├── task-dialog.tsx     # Create/edit task form with sections
+│   ├── task-detail-sheet.tsx  # Side sheet for task details
+│   ├── lane-dialog.tsx     # Create/edit lane form
+│   └── types.ts            # Shared Kanban interfaces
+├── gantt/            # Gantt chart components (kibo-ui wrapper)
+├── client/           # Client CRM components
 └── notifications/    # Notification components (to be built)
 ```
 
@@ -488,6 +496,56 @@ Use functions from `lib/format.ts` for all display values:
 - `formatCurrency(amount: number)` → `1 234 567,89 DA`
 - `formatDelai(months: number, days: number)` → `3 mois 15 jours`
 - `formatDate(date: Date)` → locale-aware French date string
+- `formatRelativeDueDate(date: Date)` → relative due date with variant (overdue/today/upcoming)
+
+### 6.5 Kanban Card Design Conventions
+
+**Card component:** `components/kanban/task-card.tsx`
+
+- **No project name on card** — filter bar provides context; detail sheet has full info
+- **Inline checkbox** for complete toggle — `onClick={(e) => e.stopPropagation()}` to prevent opening detail sheet
+- **Description preview** — 1-line with `text-xs text-muted-foreground line-clamp-1`
+- **Date display** — show `startDate → dueDate` if both exist, otherwise just `dueDate` via `formatRelativeDueDate()`
+- **Hover quick actions** (desktop) — edit/delete buttons with `opacity-0 group-hover:opacity-100 transition-opacity`
+- **Mobile kebab menu** (`md:hidden`) — always-visible `⋮` DropdownMenu for touch devices
+- **Completed state** — strikethrough title + `opacity-60` on card content
+- **Tags** — colored badge chips, wrap gracefully
+
+### 6.6 Task Dialog Structure
+
+**Component:** `components/kanban/task-dialog.tsx`
+
+The task form has 4 sections in this order:
+
+1. **Core** — Title (required, `maxLength={120}`) + Description (optional)
+2. **Localisation du projet** — Project combobox + Phase/SubPhase selects
+3. **Planification** — `startDate` + `dueDate` side-by-side; `endDate` below (edit mode only)
+4. **Attribution** — Column, Assignee, Tags in 3-column grid
+
+- `startDate` is left uninitialized (null) for new tasks — not defaulted to today
+- `endDate` only shown when editing an existing task
+- Tags use Popover+Command with checkboxes + colored badge chips
+- `Ctrl+Enter` submits form, guarded against `<textarea>` focus
+- Submit logic extracted into `buildActionPayload()` helper (shared between handleSubmit and keyboard listener)
+
+### 6.7 Kanban Drag & Drop Constraints
+
+**Component:** `components/kibo-ui/kanban/index.tsx`
+
+To prevent dnd-kit from suppressing click events on task cards (which blocks detail sheet opening and action buttons), **always** configure `MouseSensor` and `TouchSensor` with an `activationConstraint`:
+
+```typescript
+const sensors = useSensors(
+  useSensor(MouseSensor, {
+    activationConstraint: { distance: 5 }, // Allows clicks to pass through
+  }),
+  useSensor(TouchSensor, {
+    activationConstraint: { distance: 5 },
+  })
+)
+```
+
+Without this constraint, the library captures all pointer events as potential drag starts, breaking standard button interactions.
 
 ---
 

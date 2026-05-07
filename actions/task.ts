@@ -116,6 +116,12 @@ export async function createTask(data: unknown) {
         phaseId: validData.phaseId,
         subPhaseId: validData.subPhaseId,
         order: (maxOrder._max.order ?? -1) + 1,
+        ...(validData.tagIds &&
+          validData.tagIds.length > 0 && {
+            Tags: {
+              connect: validData.tagIds.map((id) => ({ id })),
+            },
+          }),
       },
     })
 

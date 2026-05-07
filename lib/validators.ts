@@ -96,6 +96,7 @@ export const taskSchema = z.object({
   projectId: z.string().uuid("Projet invalide"),
   phaseId: z.string().uuid("Phase invalide"),
   subPhaseId: z.string().uuid().optional().nullable(),
+  tagIds: z.array(z.string()).optional(),
 })
 
 export const taskUpdateSchema = z.object({

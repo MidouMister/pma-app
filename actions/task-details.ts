@@ -12,7 +12,7 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
 
   const user = await prisma.user.findUnique({
     where: { clerkId: userId },
-    select: { companyId: true }
+    select: { companyId: true },
   })
 
   if (!user?.companyId) {
@@ -22,7 +22,7 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
   // 0. Fetch the Task to get unitId and current Tags
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    include: { Tags: true }
+    include: { Tags: true },
   })
 
   if (!task || task.companyId !== user.companyId) {
@@ -34,9 +34,9 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
 
   // 2. Fetch Team Members (for Assignment dropdown)
   const teamMembers = await prisma.teamMember.findMany({
-    where: { 
+    where: {
       team: { projectId },
-      user: { companyId: user.companyId }
+      user: { companyId: user.companyId },
     },
     include: {
       user: {
@@ -44,34 +44,34 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
           id: true,
           name: true,
           avatarUrl: true,
-          email: true
-        }
-      }
-    }
+          email: true,
+        },
+      },
+    },
   })
 
   // 3. Fetch Time Entries specifically for this task
   const timeEntries = await prisma.timeEntry.findMany({
-    where: { 
+    where: {
       taskId,
-      companyId: user.companyId
+      companyId: user.companyId,
     },
     include: {
       user: {
         select: {
           id: true,
           name: true,
-          avatarUrl: true
-        }
-      }
+          avatarUrl: true,
+        },
+      },
     },
-    orderBy: { startTime: 'desc' }
+    orderBy: { startTime: "desc" },
   })
 
   // 4. Fetch all available tags in the unit
   const unitTags = await prisma.tag.findMany({
     where: { unitId: task.unitId },
-    orderBy: { name: 'asc' }
+    orderBy: { name: "asc" },
   })
 
   // 5. Fetch current task's tag IDs
@@ -82,6 +82,6 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
     teamMembers,
     timeEntries,
     unitTags,
-    taskTagIds
+    taskTagIds,
   }
 }

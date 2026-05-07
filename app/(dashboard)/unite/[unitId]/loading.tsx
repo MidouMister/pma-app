@@ -70,7 +70,10 @@ export default function UnitDashboardLoading() {
         <CardContent>
           <div className="flex flex-col gap-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg border p-4">
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-lg border p-4"
+              >
                 <div className="flex items-center gap-4">
                   <Skeleton className="size-2.5 rounded-full" />
                   <div className="flex flex-col gap-1.5">

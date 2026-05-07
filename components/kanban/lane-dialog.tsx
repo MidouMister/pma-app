@@ -25,11 +25,22 @@ export interface LaneDialogProps {
   }
   unitId: string
   onSuccess?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function LaneDialog({ lane, unitId, onSuccess }: LaneDialogProps) {
-  const [open, setOpen] = useState(false)
+export function LaneDialog({
+  lane,
+  unitId,
+  onSuccess,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
+}: LaneDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen
+  const setIsOpen = externalOnOpenChange ?? setInternalOpen
 
   const [formData, setFormData] = useState({
     name: lane?.name ?? "",
@@ -48,7 +59,7 @@ export function LaneDialog({ lane, unitId, onSuccess }: LaneDialogProps) {
 
       if (result.success) {
         toast.success(lane ? "Colonne mise à jour" : "Colonne créée")
-        setOpen(false)
+        setIsOpen(false)
         onSuccess?.()
       } else {
         toast.error(result.error ?? "Erreur")
@@ -62,7 +73,7 @@ export function LaneDialog({ lane, unitId, onSuccess }: LaneDialogProps) {
       const result = await deleteLane(lane.id)
       if (result.success) {
         toast.success("Colonne supprimée")
-        setOpen(false)
+        setIsOpen(false)
         onSuccess?.()
       } else {
         toast.error(result.error ?? "Erreur")
@@ -73,10 +84,12 @@ export function LaneDialog({ lane, unitId, onSuccess }: LaneDialogProps) {
   const isEdit = !!lane?.id
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>{isEdit ? "Modifier" : "Nouvelle colonne"}</Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      {externalOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button>{isEdit ? "Modifier" : "Nouvelle colonne"}</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -143,7 +156,7 @@ export function LaneDialog({ lane, unitId, onSuccess }: LaneDialogProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => setIsOpen(false)}
               >
                 Annuler
               </Button>

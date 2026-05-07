@@ -47,7 +47,11 @@ interface UnitSettingsFormProps {
   tags: Tag[]
 }
 
-export function UnitSettingsForm({ unit, company, tags }: UnitSettingsFormProps) {
+export function UnitSettingsForm({
+  unit,
+  company,
+  tags,
+}: UnitSettingsFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -108,36 +112,33 @@ export function UnitSettingsForm({ unit, company, tags }: UnitSettingsFormProps)
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-6"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         {/* Company info — read-only */}
         <Card>
           <CardHeader>
             <CardTitle>Entreprise</CardTitle>
-            <CardDescription>
-              Informations de votre entreprise
-            </CardDescription>
+            <CardDescription>Informations de votre entreprise</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex aspect-square size-16 items-center justify-center rounded-lg bg-muted overflow-hidden">
+              <div className="flex aspect-square size-16 items-center justify-center overflow-hidden rounded-lg bg-muted">
                 {company.logo ? (
                   <Image
                     src={company.logo}
                     alt={company.name}
                     width={64}
                     height={64}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <Building2 className="w-6 h-6 text-muted-foreground" />
+                  <Building2 className="h-6 w-6 text-muted-foreground" />
                 )}
               </div>
               <div>
                 <p className="font-medium">{company.name}</p>
-                <p className="text-sm text-muted-foreground">{company.companyEmail}</p>
+                <p className="text-sm text-muted-foreground">
+                  {company.companyEmail}
+                </p>
               </div>
             </div>
             <Separator />
