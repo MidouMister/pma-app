@@ -25,7 +25,7 @@ import {
 } from "date-fns"
 import { atom, useAtom } from "jotai"
 import throttle from "lodash.throttle"
-import { PlusIcon, TrashIcon } from "lucide-react"
+import { PencilIcon, PlusIcon, TrashIcon } from "lucide-react"
 import type {
   CSSProperties,
   FC,
@@ -1112,9 +1112,10 @@ export const GanttFeatureList: FC<GanttFeatureListProps> = ({
 export const GanttMarker: FC<
   GanttMarkerProps & {
     onRemove?: (id: string) => void
+    onEdit?: (id: string) => void
     className?: string
   }
-> = memo(({ label, date, id, onRemove, className }) => {
+> = memo(({ label, date, id, onRemove, onEdit, className }) => {
   const gantt = useContext(GanttContext)
   const differenceIn = useMemo(
     () => getDifferenceIn(gantt.range),
@@ -1141,6 +1142,7 @@ export const GanttMarker: FC<
   )
 
   const handleRemove = useCallback(() => onRemove?.(id), [onRemove, id])
+  const handleEdit = useCallback(() => onEdit?.(id), [onEdit, id])
 
   return (
     <div
@@ -1165,6 +1167,15 @@ export const GanttMarker: FC<
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          {onEdit ? (
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onClick={handleEdit}
+            >
+              <PencilIcon size={16} />
+              Edit marker
+            </ContextMenuItem>
+          ) : null}
           {onRemove ? (
             <ContextMenuItem
               className="flex items-center gap-2 text-destructive"
