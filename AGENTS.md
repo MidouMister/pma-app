@@ -510,25 +510,64 @@ Use functions from `lib/format.ts` for all display values:
 - **Mobile kebab menu** (`md:hidden`) — always-visible `⋮` DropdownMenu for touch devices
 - **Completed state** — strikethrough title + `opacity-60` on card content
 - **Tags** — colored badge chips, wrap gracefully
+- **Hover action container** must have `data-no-dnd="true"` to prevent dnd-kit from intercepting pointer events on edit/delete buttons
 
-### 6.6 Task Dialog Structure
+### 6.6 Form Modal Convention
+
+**All CRUD dialogs** must use `<FormModal>` from `components/shared/form-modal.tsx`. Do NOT use raw `<Dialog>` for forms — the project convention (established in Milestone 5.5) is that every create/edit form uses the shared wrapper for visual consistency (gradient accent header, icon support, separator between sections, consistent spinner/buttons, `onReset` cleanup).
+
+Currently migrated forms: `ProjectDialog`, `PhaseDialog`, `SubPhaseDialog`, `ClientDialog`, `TaskDialog`, `LaneDialog`.
+
+When building a new form dialog:
+
+```tsx
+<FormModal
+  open={isOpen}
+  onOpenChange={setIsOpen}
+  title="Dialog Title"
+  description="Optional description"
+  icon={<SomeIcon className="size-5" />}
+  size="sm" // sm | md | lg | xl | 2xl
+  isPending={isPending}
+  onSubmit={handleSubmit}
+  onReset={resetForm}
+  submitLabel="Enregistrer"
+  submitPendingLabel="Enregistrement..."
+>
+  <div className="flex flex-col gap-4">{children}</div>
+</FormModal>
+```
+
+### 6.7 Task Dialog Structure
 
 **Component:** `components/kanban/task-dialog.tsx`
 
-The task form has 4 sections in this order:
+The task form uses `<FormModal>` (from `components/shared/`) with 4 `<FormSection>` components:
 
-1. **Core** — Title (required, `maxLength={120}`) + Description (optional)
+1. **Informations** — Title (required, `maxLength={120}`) + Description (optional)
 2. **Localisation du projet** — Project combobox + Phase/SubPhase selects
 3. **Planification** — `startDate` + `dueDate` side-by-side; `endDate` below (edit mode only)
 4. **Attribution** — Column, Assignee, Tags in 3-column grid
 
 - `startDate` is left uninitialized (null) for new tasks — not defaulted to today
 - `endDate` only shown when editing an existing task
-- Tags use Popover+Command with checkboxes + colored badge chips
-- `Ctrl+Enter` submits form, guarded against `<textarea>` focus
-- Submit logic extracted into `buildActionPayload()` helper (shared between handleSubmit and keyboard listener)
+- Tags use Popover+Command with checkboxes + colored badge chips, with inline tag creation
+- `Ctrl+Enter` submits form via `onKeyDown` handler on the container div (not a `useEffect`)
+- Submit logic extracted into `buildActionPayload()` helper
+- **Reset:** `resetForm()` callback clears all state when dialog closes
+- **Key prop:** `unit-kanban.tsx` passes `key={editingTask?.id ?? "create"}` to force remount on mode switch
 
-### 6.7 Kanban Drag & Drop Constraints
+### 6.8 Lane Dialog Structure
+
+**Component:** `components/kanban/lane-dialog.tsx`
+
+- Uses `<FormModal>` (size="sm") with `Columns3` icon
+- Name (required) + Color (native color input + hex text input)
+- Delete button in form body (edit mode only)
+- **Reset:** `resetForm()` callback clears state on close
+- **Key prop:** `unit-kanban.tsx` passes `key={editingLane?.id ?? "create"}` to force remount
+
+### 6.9 Kanban Drag & Drop Constraints
 
 **Component:** `components/kibo-ui/kanban/index.tsx`
 

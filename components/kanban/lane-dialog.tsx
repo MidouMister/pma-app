@@ -1,21 +1,13 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useCallback } from "react"
 import { createLane, updateLane, deleteLane } from "@/actions/lane"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Spinner } from "@/components/ui/spinner"
+import { FormModal } from "@/components/shared/form-modal"
+import { Columns3 } from "lucide-react"
 
 export interface LaneDialogProps {
   lane?: {
@@ -83,91 +75,74 @@ export function LaneDialog({
 
   const isEdit = !!lane?.id
 
+  const resetForm = useCallback(() => {
+    setFormData({ name: "", color: "#6366f1" })
+  }, [])
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      {externalOpen === undefined && (
-        <DialogTrigger asChild>
-          <Button>{isEdit ? "Modifier" : "Nouvelle colonne"}</Button>
-        </DialogTrigger>
-      )}
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>
-              {isEdit ? "Modifier la colonne" : "Nouvelle colonne"}
-            </DialogTitle>
-            <DialogDescription>
-              {isEdit
-                ? "Modifiez les détails de la colonne"
-                : "Créez une nouvelle colonne pour le tableau Kanban"}
-            </DialogDescription>
-          </DialogHeader>
+    <FormModal
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      title={isEdit ? "Modifier la colonne" : "Nouvelle colonne"}
+      description={
+        isEdit
+          ? "Modifiez les détails de la colonne"
+          : "Créez une nouvelle colonne pour le tableau Kanban"
+      }
+      icon={<Columns3 className="size-5" />}
+      size="sm"
+      isPending={isPending}
+      onSubmit={handleSubmit}
+      onReset={resetForm}
+      submitLabel={isEdit ? "Enregistrer" : "Créer"}
+      submitPendingLabel={isEdit ? "Enregistrement..." : "Création..."}
+    >
+      <div className="flex flex-col gap-4 py-4">
+        <div>
+          <Label htmlFor="name">Nom</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Nom de la colonne"
+            required
+          />
+        </div>
 
-          <div className="flex flex-col gap-4 py-4">
-            <div>
-              <Label htmlFor="name">Nom</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Nom de la colonne"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="color">Couleur</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  id="color"
-                  value={formData.color ?? "#6366f1"}
-                  onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
-                  }
-                  className="h-10 w-14 cursor-pointer rounded border"
-                />
-                <Input
-                  value={formData.color ?? "#6366f1"}
-                  onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
-                  }
-                  placeholder="#6366f1"
-                  className="flex-1"
-                />
-              </div>
-            </div>
+        <div>
+          <Label htmlFor="color">Couleur</Label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              id="color"
+              value={formData.color ?? "#6366f1"}
+              onChange={(e) =>
+                setFormData({ ...formData, color: e.target.value })
+              }
+              className="h-10 w-14 cursor-pointer rounded border"
+            />
+            <Input
+              value={formData.color ?? "#6366f1"}
+              onChange={(e) =>
+                setFormData({ ...formData, color: e.target.value })
+              }
+              placeholder="#6366f1"
+              className="flex-1"
+            />
           </div>
+        </div>
 
-          <DialogFooter className="flex justify-between">
-            {isEdit && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={isPending}
-              >
-                Supprimer
-              </Button>
-            )}
-            <div className="ml-auto flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? <Spinner className="size-4" /> : null}
-                {isEdit ? "Enregistrer" : "Créer"}
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {isEdit && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isPending}
+          >
+            Supprimer
+          </Button>
+        )}
+      </div>
+    </FormModal>
   )
 }

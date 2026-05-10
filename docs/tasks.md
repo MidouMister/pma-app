@@ -848,6 +848,69 @@
 
 ---
 
+## Kanban Form Modal Migration & Bug Fixes (Post-M8 Phase 6)
+
+**Status:** `[x] COMPLETED 2026-05-10`
+**Depends on:** Kanban Task Form + Card Redesign (Phase 5)
+**Plan:** [kanban_deep_analysis.md](./plans/kanban_deep_analysis.md)
+**Goal:** Fix all bugs found during deep analysis, migrate TaskDialog/LaneDialog to FormModal, simplify keyboard handling.
+
+### Task 1 — Fix Stale Form Data (BUG-1, BUG-4) ✅ 2026-05-10
+
+- [x] Add `key={editingTask?.id ?? \`create-${taskDialogLaneId ?? "none"}\`}`to`<TaskDialog>`in`unit-kanban.tsx`
+- [x] Add `key={editingLane?.id ?? "create"}` to `<LaneDialog>` in `unit-kanban.tsx`
+- [x] Forces React remount on mode switch, eliminating stale `useState` data
+- [x] **Files**: `components/kanban/unit-kanban.tsx`
+
+### Task 2 — Fix Lane Options Visibility (BUG-3) ✅ 2026-05-10
+
+- [x] Add `group` class to `<KanbanBoard>` in `unit-kanban.tsx`
+- [x] Enables `group-hover:opacity-100` on lane "⋮" button
+- [x] **File**: `components/kanban/unit-kanban.tsx`
+
+### Task 3 — Fix Tag Badge Lookup (BUG-5) ✅ 2026-05-10
+
+- [x] Change `availableTags?.find(...)` → `localTags.find(...)` in tag badge rendering
+- [x] Prevents `null` badges for newly created inline tags
+- [x] **File**: `components/kanban/task-dialog.tsx`
+
+### Task 4 — Migrate TaskDialog to FormModal + FormSection (VIOLATION-1) ✅ 2026-05-10
+
+- [x] Replace raw `<Dialog>` with `<FormModal>` (gradient accent header, icon, consistent footer with spinner)
+- [x] Organize 4 form sections into `<FormSection>` components (Informations, Localisation, Planification, Attribution)
+- [x] Add `resetForm()` callback for clean state on dialog close
+- [x] Add `ClibpoardList` and `Users` icons for sections
+- [x] **File**: `components/kanban/task-dialog.tsx`
+
+### Task 5 — Migrate LaneDialog to FormModal (VIOLATION-2) ✅ 2026-05-10
+
+- [x] Replace raw `<Dialog>` with `<FormModal>`
+- [x] Move delete button from footer into form body
+- [x] Add `resetForm()` callback
+- [x] Add `Columns3` icon
+- [x] **File**: `components/kanban/lane-dialog.tsx`
+
+### Task 6 — Simplify Ctrl+Enter Keyboard Handling (ARCH-3) ✅ 2026-05-10
+
+- [x] Remove duplicate `useEffect` keyboard listener (duplicated entire submit flow)
+- [x] Replace with simple `handleKeyDown` on the form container div
+- [x] **File**: `components/kanban/task-dialog.tsx`
+
+### Task 7 — Add data-no-dnd to Card Buttons (BUG-2) ✅ 2026-05-10
+
+- [x] Add `data-no-dnd="true"` to hover action buttons container in `task-card.tsx`
+- [x] Prevents dnd-kit from intercepting pointer events on edit/delete buttons
+- [x] **File**: `components/kanban/task-card.tsx`
+
+### Task 8 — Verification ✅ 2026-05-10
+
+- [x] `pnpm typecheck` — 0 errors
+- [x] `pnpm lint` — 0 errors
+- [x] `pnpm build` — all 24 pages compile
+- [ ] Browser test: dialog form state, lane hover buttons, card action buttons, tag badge display _(manual)_
+
+---
+
 ## Summary Table
 
 | #         | Milestone                                 | Tasks   | Status |

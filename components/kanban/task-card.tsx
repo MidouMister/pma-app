@@ -175,7 +175,10 @@ export function TaskCard({
       </div>
 
       {/* Hover quick actions - desktop */}
-      <div className="absolute top-2 right-2 hidden gap-1 opacity-0 transition-opacity group-hover:opacity-100 md:flex">
+      <div
+        className="absolute top-2 right-2 hidden gap-1 opacity-0 transition-opacity group-hover:opacity-100 md:flex"
+        data-no-dnd="true"
+      >
         {onEdit && (
           <Button
             variant="ghost"

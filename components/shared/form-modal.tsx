@@ -96,7 +96,7 @@ export function FormModal({
       >
         {/* Header with gradient accent */}
         <DialogHeader className="relative px-6 pt-6 pb-4">
-          <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl bg-gradient-to-r from-primary/80 via-primary to-primary/80" />
+          <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl bg-linear-to-r from-primary/80 via-primary to-primary/80" />
           <div className="flex items-start gap-4">
             {icon && (
               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

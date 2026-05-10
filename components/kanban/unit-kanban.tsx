@@ -582,7 +582,7 @@ export function UnitKanban({
               <KanbanBoard
                 key={lane.id}
                 id={lane.id}
-                className="w-[300px] shrink-0 overflow-visible"
+                className="group w-[300px] shrink-0 overflow-visible"
               >
                 <KanbanHeader className="flex items-center justify-between border-b bg-transparent px-2 py-3">
                   <div className="flex items-center gap-2">
@@ -635,7 +635,7 @@ export function UnitKanban({
                         laneColor={lane.color ?? "#94a3b8"}
                         canEdit={canEdit}
                         onComplete={handleComplete}
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => handleEdit(task)}
                         onEdit={canEdit ? () => handleEdit(task) : undefined}
                         onDelete={
                           canEdit ? () => handleDelete(task.id) : undefined
@@ -707,6 +707,7 @@ export function UnitKanban({
       {/* Lane Dialog (for context menu edit) */}
       {canEdit && (
         <LaneDialog
+          key={editingLane?.id ?? "create"}
           unitId={unitId}
           lane={
             editingLane
@@ -733,6 +734,7 @@ export function UnitKanban({
       {/* Task Dialog (for quick add and edit) */}
       {canEdit && (
         <TaskDialog
+          key={editingTask?.id ?? `create-${taskDialogLaneId ?? "none"}`}
           task={
             editingTask
               ? {
