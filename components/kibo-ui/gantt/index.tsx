@@ -288,7 +288,7 @@ const calculateInnerOffset = (
   return (dayOfMonth / totalRangeDays) * columnWidth
 }
 
-const GanttContext = createContext<GanttContextProps>({
+export const GanttContext = createContext<GanttContextProps>({
   zoom: 100,
   range: "monthly",
   columnWidth: 50,
@@ -803,11 +803,15 @@ export const GanttFeatureDragHelper: FC<GanttFeatureDragHelperProps> = ({
 
 export type GanttFeatureItemCardProps = Pick<GanttFeature, "id"> & {
   children?: ReactNode
+  className?: string
+  cardStyle?: CSSProperties
 }
 
 export const GanttFeatureItemCard: FC<GanttFeatureItemCardProps> = ({
   id,
   children,
+  className,
+  cardStyle,
 }) => {
   const [, setDragging] = useGanttDragging()
   const { attributes, listeners, setNodeRef } = useDraggable({ id })
@@ -816,7 +820,13 @@ export const GanttFeatureItemCard: FC<GanttFeatureItemCardProps> = ({
   useEffect(() => setDragging(isPressed), [isPressed, setDragging])
 
   return (
-    <Card className="h-full w-full rounded-md bg-background p-2 text-xs shadow-sm">
+    <Card
+      className={cn(
+        "h-full w-full rounded-md p-2 text-xs shadow-sm",
+        className
+      )}
+      style={cardStyle}
+    >
       <div
         className={cn(
           "flex h-full w-full items-center justify-between gap-2 text-left",
@@ -836,12 +846,16 @@ export type GanttFeatureItemProps = GanttFeature & {
   onMove?: (id: string, startDate: Date, endDate: Date | null) => void
   children?: ReactNode
   className?: string
+  cardClassName?: string
+  cardStyle?: CSSProperties
 }
 
 export const GanttFeatureItem: FC<GanttFeatureItemProps> = ({
   onMove,
   children,
   className,
+  cardClassName,
+  cardStyle,
   ...feature
 }) => {
   const [scrollX] = useGanttScrollX()
@@ -852,6 +866,12 @@ export const GanttFeatureItem: FC<GanttFeatureItemProps> = ({
   )
   const [startAt, setStartAt] = useState<Date>(feature.startAt)
   const [endAt, setEndAt] = useState<Date | null>(feature.endAt)
+
+  // Sync internal state when feature dates change from parent (e.g., optimistic updates)
+  useEffect(() => {
+    setStartAt(feature.startAt)
+    setEndAt(feature.endAt)
+  }, [feature.startAt, feature.endAt])
 
   // Memoize expensive calculations
   const width = useMemo(
@@ -953,7 +973,11 @@ export const GanttFeatureItem: FC<GanttFeatureItemProps> = ({
           onDragStart={handleItemDragStart}
           sensors={[mouseSensor]}
         >
-          <GanttFeatureItemCard id={feature.id}>
+          <GanttFeatureItemCard
+            id={feature.id}
+            className={cardClassName}
+            cardStyle={cardStyle}
+          >
             {children ?? (
               <p className="flex-1 truncate text-xs">{feature.name}</p>
             )}
