@@ -99,6 +99,8 @@ export default async function ProjectDetailPage({
               className: m.className ?? undefined,
             }))}
             canEdit={canEdit}
+            projectId={projectId}
+            unitId={unitId}
           />
         </TabsContent>
 
