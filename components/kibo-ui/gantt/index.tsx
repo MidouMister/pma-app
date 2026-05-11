@@ -532,7 +532,7 @@ export const GanttSidebarHeader: FC = () => (
     style={{ height: "var(--gantt-header-height)" }}
   >
     {/* <Checkbox className="shrink-0" /> */}
-    <p className="flex-1 truncate text-left">Issues</p>
+    <p className="flex-1 truncate text-left">Phases/sub-phases</p>
     <p className="shrink-0">Duration</p>
   </div>
 )
@@ -576,7 +576,7 @@ export const GanttSidebar: FC<GanttSidebarProps> = ({
     data-roadmap-ui="gantt-sidebar"
   >
     <GanttSidebarHeader />
-    <div className="space-y-4">{children}</div>
+    <div>{children}</div>
   </div>
 )
 
@@ -1103,7 +1103,7 @@ export const GanttFeatureList: FC<GanttFeatureListProps> = ({
   children,
 }) => (
   <div
-    className={cn("absolute top-0 left-0 h-full w-max space-y-4", className)}
+    className={cn("absolute top-0 left-0 h-full w-max", className)}
     style={{ marginTop: "var(--gantt-header-height)" }}
   >
     {children}
@@ -1411,7 +1411,7 @@ export const GanttProvider: FC<GanttProviderProps> = ({
     >
       <div
         className={cn(
-          "gantt relative isolate grid h-full w-full flex-none overflow-auto rounded-sm bg-secondary select-none",
+          "gantt relative isolate grid h-full w-full flex-none overflow-x-hidden overflow-y-auto rounded-sm bg-secondary select-none",
           range,
           className
         )}
@@ -1438,7 +1438,7 @@ export const GanttTimeline: FC<GanttTimelineProps> = ({
 }) => (
   <div
     className={cn(
-      "relative flex h-full w-max flex-none overflow-clip",
+      "relative flex h-full w-max min-w-0 flex-none overflow-clip",
       className
     )}
   >
