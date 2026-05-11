@@ -1,6 +1,4 @@
-/* eslint-disable react-hooks/refs -- kibo-ui library uses refs in render for mouse tracking */
 /* eslint-disable react-hooks/exhaustive-deps -- kibo-ui library throttle pattern */
-/* eslint-disable react-hooks/use-memo -- kibo-ui library useCallback with throttle */
 "use client"
 
 import { DndContext, MouseSensor, useDraggable, useSensor } from "@dnd-kit/core"
@@ -356,7 +354,10 @@ const DailyHeader: FC = () => {
     year.quarters
       .flatMap((quarter) => quarter.months)
       .map((month, index) => (
-        <div className="relative flex flex-col" key={`${year.year}-${index}`}>
+        <div
+          className="relative flex h-full flex-col"
+          key={`${year.year}-${index}`}
+        >
           <GanttContentHeader
             columns={month.days}
             renderHeaderItem={(item: number) => (
@@ -391,7 +392,7 @@ const MonthlyHeader: FC = () => {
   const gantt = useContext(GanttContext)
 
   return gantt.timelineData.map((year) => (
-    <div className="relative flex flex-col" key={year.year}>
+    <div className="relative flex h-full flex-col" key={year.year}>
       <GanttContentHeader
         columns={year.quarters.flatMap((quarter) => quarter.months).length}
         renderHeaderItem={(item: number) => (
@@ -412,7 +413,7 @@ const QuarterlyHeader: FC = () => {
   return gantt.timelineData.map((year) =>
     year.quarters.map((quarter, quarterIndex) => (
       <div
-        className="relative flex flex-col"
+        className="relative flex h-full flex-col"
         key={`${year.year}-${quarterIndex}`}
       >
         <GanttContentHeader
@@ -770,7 +771,7 @@ export const GanttFeatureDragHelper: FC<GanttFeatureDragHelperProps> = ({
   return (
     <div
       className={cn(
-        "group absolute top-1/2 z-[3] h-full w-6 -translate-y-1/2 !cursor-col-resize rounded-md outline-none",
+        "group absolute top-1/2 z-3 h-full w-6 -translate-y-1/2 cursor-col-resize! rounded-md outline-none",
         direction === "left" ? "-left-2.5" : "-right-2.5"
       )}
       ref={setNodeRef}
@@ -1161,7 +1162,7 @@ export const GanttMarker: FC<
             )}
           >
             {label}
-            <span className="max-h-[0] overflow-hidden opacity-80 transition-all group-hover:max-h-[2rem]">
+            <span className="max-h-0 overflow-hidden opacity-80 transition-all group-hover:max-h-8">
               {formatDate(date, "MMM dd, yyyy")}
             </span>
           </div>
@@ -1492,7 +1493,7 @@ export const GanttToday: FC<GanttTodayProps> = ({ className }) => {
         )}
       >
         {label}
-        <span className="max-h-[0] overflow-hidden opacity-80 transition-all group-hover:max-h-[2rem]">
+        <span className="max-h-0 overflow-hidden opacity-80 transition-all group-hover:max-h-8">
           {formatDate(date, "MMM dd, yyyy")}
         </span>
       </div>

@@ -494,7 +494,7 @@ export function ProjectGantt({
   return (
     <div className="flex flex-col gap-3">
       {/* Toolbar with gradient card */}
-      <div className="rounded-lg border bg-gradient-to-r from-card to-muted/30 p-3">
+      <div className="rounded-lg border bg-linear-to-r from-card to-muted/30 p-3">
         <div className="flex flex-col gap-3">
           {/* Row 1: Search + Filter + Counts */}
           <div className="flex items-center gap-2">
@@ -557,6 +557,20 @@ export function ProjectGantt({
                 {markerCount} marq.
               </span>
             </div>
+
+            {canEdit && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingPhase(null)
+                  setPhaseDialogOpen(true)
+                }}
+                className="h-8 gap-2 ml-auto"
+              >
+                <Plus className="size-4" />
+                Ajouter une phase
+              </Button>
+            )}
           </div>
 
           {/* Row 2: Range toggle + Zoom controls */}
@@ -584,7 +598,7 @@ export function ProjectGantt({
               >
                 <Minus className="size-3" />
               </Button>
-              <span className="min-w-[3rem] text-center text-xs font-medium text-muted-foreground tabular-nums">
+              <span className="min-w-12 text-center text-xs font-medium text-muted-foreground tabular-nums">
                 {zoom}%
               </span>
               <Button
@@ -626,8 +640,8 @@ export function ProjectGantt({
       {/* Gantt Chart (only show when phases exist) */}
       {phases.filter((p) => p.startDate && p.endDate).length > 0 && (
         <div
-          className="overflow-hidden rounded-lg border"
-          style={{ minHeight: 400 }}
+          className="overflow-hidden rounded-xl border bg-card shadow-sm"
+          style={{ height: "calc(100vh - 280px)" }}
         >
           <GanttProvider
             range={range}
