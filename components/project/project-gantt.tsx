@@ -9,8 +9,9 @@ import {
 } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { updatePhase } from "@/actions/phase"
-import { updateSubPhase } from "@/actions/subphase"
+import { updatePhase, deletePhase } from "@/actions/phase"
+import { updateSubPhase, deleteSubPhase } from "@/actions/subphase"
+import { deleteGanttMarker } from "@/actions/gantt-marker"
 import {
   GanttProvider,
   GanttSidebar,
@@ -21,6 +22,7 @@ import {
   GanttMarker,
   GanttToday,
   GanttContext,
+  GanttCreateMarkerTrigger,
   type GanttFeature,
   type GanttStatus,
   type Range,
@@ -35,15 +37,36 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { PhaseDialog } from "@/components/project/phase-dialog"
+import { SubPhaseDialog } from "@/components/project/subphase-dialog"
+import { GanttMarkerDialog } from "@/components/gantt/gantt-marker-dialog"
 import {
-  ZoomIn,
-  ZoomOut,
   ChevronRight,
   ChevronDown,
   ListTodo,
   FolderKanban,
+  Pencil,
+  Trash2,
+  Eye,
+  Plus,
 } from "lucide-react"
 
 const STATUS_MAP: Record<string, GanttStatus> = {
@@ -126,6 +149,47 @@ export function ProjectGantt({
   const [range, setRange] = useState<Range>("monthly")
   const [selectedPhase, setSelectedPhase] = useState<PhaseData | null>(null)
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
+
+  // Dialog states
+  const [phaseDialogOpen, setPhaseDialogOpen] = useState(false)
+  const [editingPhase, setEditingPhase] = useState<{
+    id: string
+    name: string
+    code: string
+    montantHT: number
+    startDate: Date | null
+    endDate: Date | null
+    status: string
+    obs: string | null
+    progress: number
+  } | null>(null)
+
+  const [subPhaseDialogOpen, setSubPhaseDialogOpen] = useState(false)
+  const [editingSubPhase, setEditingSubPhase] = useState<{
+    id: string
+    name: string
+    code: string
+    status: string
+    progress: number
+    startDate: Date | null
+    endDate: Date | null
+  } | null>(null)
+  const [subPhaseParentId, setSubPhaseParentId] = useState<string | null>(null)
+
+  const [markerDialogOpen, setMarkerDialogOpen] = useState(false)
+  const [editingMarker, setEditingMarker] = useState<{
+    id: string
+    label: string
+    date: Date
+    className?: string | null
+  } | null>(null)
+
+  // Delete confirmation state
+  const [deletingPhaseId, setDeletingPhaseId] = useState<string | null>(null)
+  const [deletingSubPhaseId, setDeletingSubPhaseId] = useState<string | null>(
+    null
+  )
+  const [deletingMarkerId, setDeletingMarkerId] = useState<string | null>(null)
 
   const togglePhaseExpansion = useCallback((phaseId: string) => {
     setExpandedPhases((prev) => {
@@ -293,10 +357,77 @@ export function ProjectGantt({
     })
   }
 
+  // Delete handlers
+  const handleDeletePhase = async () => {
+    if (!deletingPhaseId) return
+    const result = await deletePhase(deletingPhaseId)
+    if (result.success) {
+      toast.success("Phase supprimée")
+      setDeletingPhaseId(null)
+      router.refresh()
+    } else {
+      toast.error(result.error ?? "Erreur lors de la suppression")
+      setDeletingPhaseId(null)
+    }
+  }
+
+  const handleDeleteSubPhase = async () => {
+    if (!deletingSubPhaseId) return
+    const result = await deleteSubPhase(deletingSubPhaseId)
+    if (result.success) {
+      toast.success("Sous-phase supprimée")
+      setDeletingSubPhaseId(null)
+      router.refresh()
+    } else {
+      toast.error(result.error ?? "Erreur lors de la suppression")
+      setDeletingSubPhaseId(null)
+    }
+  }
+
+  const handleDeleteMarker = async () => {
+    if (!deletingMarkerId) return
+    const result = await deleteGanttMarker(deletingMarkerId)
+    if (result.success) {
+      toast.success("Marqueur supprimé")
+      setDeletingMarkerId(null)
+      router.refresh()
+    } else {
+      toast.error(result.error ?? "Erreur lors de la suppression")
+      setDeletingMarkerId(null)
+    }
+  }
+
   const ranges: { key: Range; label: string }[] = [
     { key: "monthly", label: "Mois" },
     { key: "quarterly", label: "Trimestre" },
   ]
+
+  // Click-on-timeline — smart routing: add phase or subphase
+  const handleGanttAddItem = useCallback(
+    (_date: Date) => {
+      if (!canEdit) return
+
+      const phasesWithDates = phases.filter((p) => p.startDate && p.endDate)
+
+      if (phasesWithDates.length === 0) {
+        // No phases → add a phase
+        setEditingPhase(null)
+        setPhaseDialogOpen(true)
+      } else if (phasesWithDates.length === 1) {
+        // One phase → add subphase to it
+        setEditingSubPhase(null)
+        setSubPhaseParentId(phasesWithDates[0].id)
+        setSubPhaseDialogOpen(true)
+      } else {
+        // Multiple phases → show a toast asking to select a phase
+        toast.message("Sélectionnez une phase", {
+          description:
+            "Faites un clic droit sur une phase existante pour ajouter une sous-phase, ou utilisez le menu contextuel.",
+        })
+      }
+    },
+    [canEdit, phases]
+  )
 
   return (
     <div className="flex flex-col gap-3">
@@ -316,9 +447,7 @@ export function ProjectGantt({
           ))}
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <ZoomOut className="size-3.5" />
-          <span>Zoom</span>
-          <ZoomIn className="size-3.5" />
+          <span>Zoom (bientôt)</span>
         </div>
       </div>
 
@@ -327,7 +456,10 @@ export function ProjectGantt({
         className="overflow-hidden rounded-lg border"
         style={{ minHeight: 400 }}
       >
-        <GanttProvider range={range}>
+        <GanttProvider
+          range={range}
+          onAddItem={canEdit ? handleGanttAddItem : undefined}
+        >
           {/* Sidebar */}
           <GanttSidebar>
             <GanttContext.Consumer>
@@ -470,77 +602,191 @@ export function ProjectGantt({
           {/* Timeline */}
           <GanttTimeline>
             <GanttHeader />
+            {canEdit && (
+              <GanttCreateMarkerTrigger
+                onCreateMarker={(_date) => {
+                  setEditingMarker(null)
+                  setMarkerDialogOpen(true)
+                }}
+              />
+            )}
             <GanttFeatureList>
-              {optimisticFeatures.map((feature) => (
-                <GanttFeatureItem
-                  key={feature.id}
-                  {...feature}
-                  onMove={canEdit ? handleMove : undefined}
-                  cardClassName={cn(
-                    "border-2 backdrop-blur-sm",
-                    feature.isSubPhase
-                      ? feature.status.id === "complete"
-                        ? "border-emerald-400/60 bg-emerald-500/10"
-                        : "border-sky-400/60 bg-sky-500/10"
-                      : feature.status.id === "in-progress"
-                        ? "border-emerald-400/60 bg-emerald-500/10"
-                        : feature.status.id === "pause"
-                          ? "border-amber-400/60 bg-amber-500/10"
-                          : feature.status.id === "complete"
-                            ? "border-slate-400/60 bg-slate-500/10"
-                            : "border-blue-400/60 bg-blue-500/10",
-                    feature.isSubPhase && "ml-6"
-                  )}
-                  cardStyle={{
-                    borderLeftWidth: "3px",
-                  }}
-                >
-                  <div className="flex w-full items-center gap-2">
-                    {/* Icon */}
-                    {feature.isSubPhase ? (
-                      <ListTodo className="size-3.5 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
-                    )}
+              {optimisticFeatures.map((feature) => {
+                const isPhase = !feature.isSubPhase
+                const phaseData = isPhase
+                  ? phases.find((p) => p.id === feature.id)
+                  : null
 
-                    {/* Name */}
-                    <span className="flex-1 truncate text-xs font-medium">
-                      {feature.name}
-                    </span>
+                return (
+                  <ContextMenu key={feature.id}>
+                    <ContextMenuTrigger asChild>
+                      <div>
+                        <GanttFeatureItem
+                          {...feature}
+                          onMove={canEdit ? handleMove : undefined}
+                          cardClassName={cn(
+                            "border-2 backdrop-blur-sm",
+                            feature.isSubPhase
+                              ? feature.status.id === "complete"
+                                ? "border-emerald-400/60 bg-emerald-500/10"
+                                : "border-sky-400/60 bg-sky-500/10"
+                              : feature.status.id === "in-progress"
+                                ? "border-emerald-400/60 bg-emerald-500/10"
+                                : feature.status.id === "pause"
+                                  ? "border-amber-400/60 bg-amber-500/10"
+                                  : feature.status.id === "complete"
+                                    ? "border-slate-400/60 bg-slate-500/10"
+                                    : "border-blue-400/60 bg-blue-500/10",
+                            feature.isSubPhase && "ml-6"
+                          )}
+                          cardStyle={{
+                            borderLeftWidth: "3px",
+                          }}
+                        >
+                          <div className="flex w-full items-center gap-2">
+                            {/* Icon */}
+                            {feature.isSubPhase ? (
+                              <ListTodo className="size-3.5 shrink-0 text-muted-foreground" />
+                            ) : (
+                              <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
+                            )}
 
-                    {/* Duration for subphases */}
-                    {feature.isSubPhase && (
-                      <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
-                        (
-                        {Math.ceil(
-                          (feature.endAt.getTime() -
-                            feature.startAt.getTime()) /
-                            (1000 * 60 * 60 * 24)
-                        )}{" "}
-                        j)
-                      </span>
-                    )}
+                            {/* Name */}
+                            <span className="flex-1 truncate text-xs font-medium">
+                              {feature.name}
+                            </span>
 
-                    {/* Progress badge for phases */}
-                    {!feature.isSubPhase && (
-                      <span className="shrink-0 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium tabular-nums">
-                        {feature.progress}%
-                      </span>
-                    )}
-                  </div>
+                            {/* Duration for subphases */}
+                            {feature.isSubPhase && (
+                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                                (
+                                {Math.ceil(
+                                  (feature.endAt.getTime() -
+                                    feature.startAt.getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                )}{" "}
+                                j)
+                              </span>
+                            )}
 
-                  {/* Progress overlay bar for phases */}
-                  {!feature.isSubPhase && feature.progress > 0 && (
-                    <div
-                      className="pointer-events-none absolute inset-0 rounded-[5px] opacity-20"
-                      style={{
-                        width: `${feature.progress}%`,
-                        backgroundColor: feature.status.color,
-                      }}
-                    />
-                  )}
-                </GanttFeatureItem>
-              ))}
+                            {/* Progress badge for phases */}
+                            {!feature.isSubPhase && (
+                              <span className="shrink-0 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium tabular-nums">
+                                {feature.progress}%
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Progress overlay bar for phases */}
+                          {!feature.isSubPhase && feature.progress > 0 && (
+                            <div
+                              className="pointer-events-none absolute inset-0 rounded-[5px] opacity-20"
+                              style={{
+                                width: `${feature.progress}%`,
+                                backgroundColor: feature.status.color,
+                              }}
+                            />
+                          )}
+                        </GanttFeatureItem>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      {isPhase ? (
+                        <>
+                          <ContextMenuItem
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              setSelectedPhase(phaseData ?? null)
+                            }}
+                          >
+                            <Eye className="size-4" />
+                            Voir les détails
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              if (!phaseData) return
+                              setEditingPhase({
+                                id: phaseData.id,
+                                name: phaseData.name,
+                                code: phaseData.code,
+                                montantHT: phaseData.montantHT,
+                                startDate: phaseData.startDate,
+                                endDate: phaseData.endDate,
+                                status: phaseData.status,
+                                obs: null,
+                                progress: phaseData.progress,
+                              })
+                              setPhaseDialogOpen(true)
+                            }}
+                          >
+                            <Pencil className="size-4" />
+                            Modifier
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              setEditingSubPhase(null)
+                              setSubPhaseParentId(feature.id)
+                              setSubPhaseDialogOpen(true)
+                            }}
+                          >
+                            <Plus className="size-4" />
+                            Ajouter une sous-phase
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            className="flex items-center gap-2 text-destructive"
+                            onClick={() => {
+                              setDeletingPhaseId(feature.id)
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                            Supprimer
+                          </ContextMenuItem>
+                        </>
+                      ) : (
+                        <>
+                          <ContextMenuItem
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              const parentPhase = phases.find((p) =>
+                                p.SubPhases.some((sp) => sp.id === feature.id)
+                              )
+                              const subPhase = parentPhase?.SubPhases.find(
+                                (sp) => sp.id === feature.id
+                              )
+                              if (!subPhase) return
+                              setEditingSubPhase({
+                                id: subPhase.id,
+                                name: subPhase.name,
+                                code: subPhase.code,
+                                status: subPhase.status,
+                                progress: subPhase.progress,
+                                startDate: subPhase.startDate,
+                                endDate: subPhase.endDate,
+                              })
+                              setSubPhaseParentId(feature.parentPhaseId)
+                              setSubPhaseDialogOpen(true)
+                            }}
+                          >
+                            <Pencil className="size-4" />
+                            Modifier
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            className="flex items-center gap-2 text-destructive"
+                            onClick={() => {
+                              setDeletingSubPhaseId(feature.id)
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                            Supprimer
+                          </ContextMenuItem>
+                        </>
+                      )}
+                    </ContextMenuContent>
+                  </ContextMenu>
+                )
+              })}
             </GanttFeatureList>
 
             {/* Markers */}
@@ -551,6 +797,28 @@ export function ProjectGantt({
                 date={marker.date}
                 label={marker.label}
                 className={marker.className}
+                onEdit={
+                  canEdit
+                    ? () => {
+                        const m = markers.find((mk) => mk.id === marker.id)
+                        if (!m) return
+                        setEditingMarker({
+                          id: m.id,
+                          label: m.label,
+                          date: m.date,
+                          className: m.className,
+                        })
+                        setMarkerDialogOpen(true)
+                      }
+                    : undefined
+                }
+                onRemove={
+                  canEdit
+                    ? () => {
+                        setDeletingMarkerId(marker.id)
+                      }
+                    : undefined
+                }
               />
             ))}
             <GanttToday />
@@ -693,6 +961,131 @@ export function ProjectGantt({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Phase Dialog */}
+      <PhaseDialog
+        projectId={_projectId}
+        projectODS={null}
+        projectMontantHT={0}
+        currentPhasesSum={0}
+        phase={editingPhase ?? undefined}
+        open={phaseDialogOpen}
+        onOpenChange={(open) => {
+          setPhaseDialogOpen(open)
+          if (!open) setEditingPhase(null)
+        }}
+        onSuccess={() => router.refresh()}
+      />
+
+      {/* SubPhase Dialog */}
+      {subPhaseParentId && (
+        <SubPhaseDialog
+          phaseId={subPhaseParentId}
+          phaseStartDate={
+            phases.find((p) => p.id === subPhaseParentId)?.startDate ?? null
+          }
+          phaseEndDate={
+            phases.find((p) => p.id === subPhaseParentId)?.endDate ?? null
+          }
+          subPhase={editingSubPhase ?? undefined}
+          open={subPhaseDialogOpen}
+          onOpenChange={(open) => {
+            setSubPhaseDialogOpen(open)
+            if (!open) {
+              setEditingSubPhase(null)
+              setSubPhaseParentId(null)
+            }
+          }}
+          onSuccess={() => router.refresh()}
+        />
+      )}
+
+      {/* GanttMarker Dialog */}
+      <GanttMarkerDialog
+        projectId={_projectId}
+        marker={editingMarker ?? undefined}
+        open={markerDialogOpen}
+        onOpenChange={(open) => {
+          setMarkerDialogOpen(open)
+          if (!open) setEditingMarker(null)
+        }}
+        onSuccess={() => router.refresh()}
+      />
+
+      {/* Delete Phase Confirmation */}
+      <AlertDialog
+        open={!!deletingPhaseId}
+        onOpenChange={(open) => !open && setDeletingPhaseId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la phase</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette phase ? Cette action est
+              irréversible. Toutes les sous-phases et tâches associées seront
+              également supprimées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePhase}
+              className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete SubPhase Confirmation */}
+      <AlertDialog
+        open={!!deletingSubPhaseId}
+        onOpenChange={(open) => !open && setDeletingSubPhaseId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la sous-phase</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette sous-phase ? Cette action
+              est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSubPhase}
+              className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Marker Confirmation */}
+      <AlertDialog
+        open={!!deletingMarkerId}
+        onOpenChange={(open) => !open && setDeletingMarkerId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le marqueur</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce marqueur ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMarker}
+              className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
