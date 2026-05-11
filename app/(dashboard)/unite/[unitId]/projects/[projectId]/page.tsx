@@ -101,6 +101,8 @@ export default async function ProjectDetailPage({
             canEdit={canEdit}
             projectId={projectId}
             unitId={unitId}
+            projectMontantHT={project.montantHT}
+            projectODS={project.ods}
           />
         </TabsContent>
 

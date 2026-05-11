@@ -572,7 +572,7 @@ export function UnitKanban({
           data={filteredTasks as (KanbanTask & Record<string, unknown>)[]}
           columns={lanes as (KanbanLane & Record<string, unknown>)[]}
           onDragEnd={handleDragEnd}
-          className="flex h-full w-full gap-6 px-4"
+          className="flex h-full w-full gap-2 px-4"
         >
           {(column) => {
             const lane = column as unknown as KanbanLane
@@ -582,7 +582,7 @@ export function UnitKanban({
               <KanbanBoard
                 key={lane.id}
                 id={lane.id}
-                className="group w-[300px] shrink-0 overflow-visible"
+                className="group w-[300px] shrink-0 overflow-visible rounded-xl border-2"
               >
                 <KanbanHeader className="flex items-center justify-between border-b bg-transparent px-2 py-3">
                   <div className="flex items-center gap-2">

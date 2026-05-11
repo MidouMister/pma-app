@@ -911,6 +911,58 @@
 
 ---
 
+## Gantt Feature Upgrade (Post-M7)
+
+**Status:** `[x] COMPLETED 2026-05-11`
+**Depends on:** Milestone 7 (Gantt Chart)
+**Plan:** [implementation_plan-gantt.md](./plans/implementation_plan-gantt.md)
+**Goal:** Bring Gantt to feature parity with pmp-app: flat list rendering, expand/collapse, custom sidebar, custom bar styling, optimistic updates, subphase drag, context menus, CRUD dialogs, marker CRUD, click-on-timeline, toolbar with search/filter/zoom/empty state.
+
+### Phase A — Visual Foundation (Completed 2026-05-11)
+
+- [x] Export `GanttContext` from kibo-ui library for sidebar scrollToFeature access ✅ 2026-05-11
+- [x] Add `cardClassName` + `cardStyle` props to `GanttFeatureItemCard` and `GanttFeatureItem` ✅ 2026-05-11
+- [x] Add `useEffect` state sync in `GanttFeatureItem` for optimistic update support ✅ 2026-05-11
+- [x] **Files**: `components/kibo-ui/gantt/index.tsx`
+
+### Phase A.2 — Component Refactor (Completed 2026-05-11)
+
+- [x] Add `projectId`, `unitId` to `ProjectGanttProps` ✅ 2026-05-11
+- [x] Create `GanttPhaseFeature` extended type with `isSubPhase`, `parentPhaseId`, `subPhaseCount` ✅ 2026-05-11
+- [x] Switch from lane-based `GanttFeatureRow` to flat `GanttFeatureItem` list ✅ 2026-05-11
+- [x] Add `expandedPhases: Set<string>` state with `togglePhaseExpansion()` ✅ 2026-05-11
+- [x] Custom sidebar: expand/collapse chevrons, subphase checkboxes, count badges, scrollToFeature ✅ 2026-05-11
+- [x] Custom bar rendering: glassmorphism, status-colored borders, progress overlay, icons, subphase duration ✅ 2026-05-11
+- [x] `useOptimistic` for drag and checkbox toggles ✅ 2026-05-11
+- [x] Subphase drag support (was silently ignored before) ✅ 2026-05-11
+- [x] **File**: `components/project/project-gantt.tsx`
+
+### Phase B — Interactivity (Completed 2026-05-11)
+
+- [x] Add `onEdit` callback to `GanttMarker` component ✅ 2026-05-11
+- [x] Create `components/gantt/gantt-marker-dialog.tsx` — FormModal-based marker CRUD ✅ 2026-05-11
+- [x] Context menus on bars: Phase (View/Edit/Add SubPhase/Delete), SubPhase (View/Edit/Delete) ✅ 2026-05-11
+- [x] Wire `PhaseDialog` + `SubPhaseDialog` to context menu actions ✅ 2026-05-11
+- [x] Wire `GanttMarkerDialog` to marker context menu (Edit) + `GanttCreateMarkerTrigger` (Create) ✅ 2026-05-11
+- [x] Wire marker `onRemove` to `deleteGanttMarker` with AlertDialog confirmation ✅ 2026-05-11
+- [x] Delete confirmation AlertDialogs for Phase, SubPhase, Marker ✅ 2026-05-11
+- [x] Click-on-timeline smart routing: 0 phases → add phase, 1 → add subphase, 2+ → toast guide ✅ 2026-05-11
+- [x] **Files**: `components/project/project-gantt.tsx`, `components/kibo-ui/gantt/index.tsx`, `components/gantt/gantt-marker-dialog.tsx`
+
+### Phase C — Polish (Completed 2026-05-11)
+
+- [x] Search input with clear button (filters by name/code) ✅ 2026-05-11
+- [x] Status filter dropdown (New/InProgress/Pause/Complete) ✅ 2026-05-11
+- [x] Clear filters button (visible when filters active) ✅ 2026-05-11
+- [x] Functional zoom controls (+/- buttons, 50-200%, 10% steps) ✅ 2026-05-11
+- [x] Daily view range added to toggle (Jour/Mois/Trimestre) ✅ 2026-05-11
+- [x] Phase/subphase/marker count badges in toolbar ✅ 2026-05-11
+- [x] Empty state with CTA when no phases exist ✅ 2026-05-11
+- [x] Gradient header card toolbar layout ✅ 2026-05-11
+- [x] **File**: `components/project/project-gantt.tsx`
+
+---
+
 ## Summary Table
 
 | #         | Milestone                                 | Tasks   | Status |
@@ -924,9 +976,10 @@
 | 6         | Project Management & Phases               | 17      | `[x]`  |
 | 7         | Gantt Chart                               | 8       | `[x]`  |
 | 8         | Kanban Board & Tasks                      | 21      | `[x]`  |
+| —         | **Gantt Feature Upgrade (Post-M7)**       | **18**  | `[x]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **173** | 9/11   |
+| **TOTAL** |                                           | **191** | 10/12  |
 
 ---
 

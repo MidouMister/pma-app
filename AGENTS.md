@@ -414,7 +414,8 @@ components/
 │   ├── task-detail-sheet.tsx  # Side sheet for task details
 │   ├── lane-dialog.tsx     # Create/edit lane form
 │   └── types.ts            # Shared Kanban interfaces
-├── gantt/            # Gantt chart components (kibo-ui wrapper)
+├── gantt/            # Gantt chart components:
+│   └── gantt-marker-dialog.tsx  # FormModal-based marker CRUD dialog
 ├── client/           # Client CRM components
 └── notifications/    # Notification components (to be built)
 ```
@@ -585,6 +586,73 @@ const sensors = useSensors(
 ```
 
 Without this constraint, the library captures all pointer events as potential drag starts, breaking standard button interactions.
+
+### 6.10 Gantt Feature List — Flat GanttFeatureItem
+
+**Component:** `components/project/project-gantt.tsx`
+
+The Gantt chart uses a **flat `GanttFeatureItem` list** (not `GanttFeatureRow`). Each phase and subphase is a separate item in the flat array. Subphases only appear when their parent phase is expanded via `Set<string>` state.
+
+```typescript
+interface GanttPhaseFeature extends GanttFeature {
+  code: string
+  montantHT: number
+  progress: number
+  isSubPhase: boolean
+  parentPhaseId: string | null
+  subPhaseCount: number
+}
+```
+
+- **Expand/collapse**: `expandedPhases: Set<string>` state — toggle via `Set.add()`/`Set.delete()` (immutable with new Set).
+- **Sidebar**: Custom rendering uses `GanttContext.Consumer` to access `scrollToFeature()`. Phases show chevron + status dot + name + subphase count badge. Subphases show Checkbox for COMPLETED/TODO toggle.
+- **`useOptimistic`** wraps the `ganttFeatures` memo for instant drag/checkbox feedback. Two action types: `"move"` (date change) and `"toggleStatus"` (COMPLETED/TODO).
+
+### 6.11 Gantt Bar Styling — cardClassName/cardStyle
+
+The kibo-ui `GanttFeatureItem` accepts `cardClassName?: string` and `cardStyle?: CSSProperties` props that pass through to `GanttFeatureItemCard`:
+
+```tsx
+<GanttFeatureItem
+  {...feature}
+  cardClassName={cn(
+    "border-2 backdrop-blur-sm",
+    feature.isSubPhase
+      ? "border-sky-400/60 bg-sky-500/10"
+      : /* status-colored mapping */
+        "border-blue-400/60 bg-blue-500/10"
+  )}
+  cardStyle={{ borderLeftWidth: "3px" }}
+>
+  {/* children */}
+</GanttFeatureItem>
+```
+
+- **Phase bars**: Status-colored border + background (blue=new, emerald=in-progress, amber=pause, slate=complete).
+- **SubPhase bars**: Sky border (TODO) or emerald (COMPLETED), with `ml-6` indent.
+- **Progress overlay**: Absolutely positioned div inside the bar, `width: ${progress}%`, with `opacity-20` for a fill effect.
+- **Icons**: `FolderKanban` for phases, `ListTodo` for subphases.
+- **SubPhase duration**: `(X j)` appended after name.
+
+### 6.12 Gantt Context Menu + CRUD
+
+Each `GanttFeatureItem` is wrapped in shadcn `ContextMenu` for right-click actions:
+
+- **Phase**: "Voir les détails" (opens detail Sheet) → "Modifier" (opens PhaseDialog) → "Ajouter une sous-phase" (opens SubPhaseDialog) → "Supprimer" (AlertDialog confirmation).
+- **SubPhase**: "Voir" → "Modifier" (opens SubPhaseDialog) → "Supprimer" (AlertDialog confirmation).
+
+Deletion uses `<AlertDialog>` with confirm/cancel. All CRUD dialogs use `<FormModal>` per section 6.6.
+
+### 6.13 GanttMarker CRUD
+
+- **Create**: `GanttCreateMarkerTrigger` (from kibo-ui) renders a `+` button on timeline hover. Calls `createGanttMarker` action.
+- **Edit**: Right-click marker → "Edit marker" → opens `GanttMarkerDialog` with pre-filled data. Calls `updateGanttMarker` action.
+- **Delete**: Right-click marker → "Remove marker" → AlertDialog confirmation → calls `deleteGanttMarker` action.
+- **Dialog**: `components/gantt/gantt-marker-dialog.tsx` — uses `<FormModal>` with `Flag` icon, label input, Calendar date picker, optional CSS class.
+
+### 6.14 Gantt Exports from kibo-ui
+
+`GanttContext` is **exported** from `components/kibo-ui/gantt/index.tsx`. Use `GanttContext.Consumer` or `useContext(GanttContext)` to access `scrollToFeature()` in the sidebar.
 
 ---
 

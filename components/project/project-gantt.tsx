@@ -116,6 +116,7 @@ interface PhaseData {
   progress: number
   montantHT: number
   duration: number | null
+  obs: string | null
   SubPhases: {
     id: string
     name: string
@@ -140,6 +141,8 @@ interface ProjectGanttProps {
   canEdit: boolean
   projectId: string
   unitId: string
+  projectMontantHT: number
+  projectODS: Date | null
 }
 
 interface GanttPhaseFeature extends GanttFeature {
@@ -155,8 +158,10 @@ export function ProjectGantt({
   phases,
   markers,
   canEdit,
-  projectId: _projectId,
+  projectId,
   unitId: _unitId,
+  projectMontantHT,
+  projectODS,
 }: ProjectGanttProps) {
   const router = useRouter()
   const [_isPending, startTransition] = useTransition()
@@ -452,6 +457,12 @@ export function ProjectGantt({
   const subPhaseCount = optimisticFeatures.filter((f) => f.isSubPhase).length
   const markerCount = markers.length
   const hasActiveFilters = searchQuery.trim() !== "" || statusFilter !== null
+
+  // Compute sum of existing phase montants for budget display
+  const currentPhasesSum = useMemo(
+    () => phases.reduce((sum, p) => sum + p.montantHT, 0),
+    [phases]
+  )
 
   // Click-on-timeline — smart routing: add phase or subphase
   const handleGanttAddItem = useCallback(
@@ -879,7 +890,7 @@ export function ProjectGantt({
                                   startDate: phaseData.startDate,
                                   endDate: phaseData.endDate,
                                   status: phaseData.status,
-                                  obs: null,
+                                  obs: phaseData.obs,
                                   progress: phaseData.progress,
                                 })
                                 setPhaseDialogOpen(true)
@@ -1130,10 +1141,11 @@ export function ProjectGantt({
 
       {/* Phase Dialog */}
       <PhaseDialog
-        projectId={_projectId}
-        projectODS={null}
-        projectMontantHT={0}
-        currentPhasesSum={0}
+        key={editingPhase?.id ?? "phase-create"}
+        projectId={projectId}
+        projectODS={projectODS}
+        projectMontantHT={projectMontantHT}
+        currentPhasesSum={currentPhasesSum}
         phase={editingPhase ?? undefined}
         open={phaseDialogOpen}
         onOpenChange={(open) => {
@@ -1146,6 +1158,7 @@ export function ProjectGantt({
       {/* SubPhase Dialog */}
       {subPhaseParentId && (
         <SubPhaseDialog
+          key={`${subPhaseParentId}-${editingSubPhase?.id ?? "sub-create"}`}
           phaseId={subPhaseParentId}
           phaseStartDate={
             phases.find((p) => p.id === subPhaseParentId)?.startDate ?? null
@@ -1168,7 +1181,8 @@ export function ProjectGantt({
 
       {/* GanttMarker Dialog */}
       <GanttMarkerDialog
-        projectId={_projectId}
+        key={editingMarker?.id ?? "marker-create"}
+        projectId={projectId}
         marker={editingMarker ?? undefined}
         open={markerDialogOpen}
         onOpenChange={(open) => {
