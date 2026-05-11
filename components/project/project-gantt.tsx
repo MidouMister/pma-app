@@ -67,7 +67,21 @@ import {
   Trash2,
   Eye,
   Plus,
+  Search,
+  RotateCcw,
+  Layers,
+  Minus,
+  Flag,
 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { EmptyState } from "@/components/shared/empty-state"
 
 const STATUS_MAP: Record<string, GanttStatus> = {
   New: {
@@ -149,6 +163,9 @@ export function ProjectGantt({
   const [range, setRange] = useState<Range>("monthly")
   const [selectedPhase, setSelectedPhase] = useState<PhaseData | null>(null)
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
+  const [zoom, setZoom] = useState(100)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
 
   // Dialog states
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false)
@@ -285,6 +302,25 @@ export function ProjectGantt({
     }
   )
 
+  // Filtered features for search + status filter
+  const filteredFeatures = useMemo(() => {
+    let items = optimisticFeatures
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      items = items.filter(
+        (f) =>
+          f.name.toLowerCase().includes(q) || f.code.toLowerCase().includes(q)
+      )
+    }
+
+    if (statusFilter) {
+      items = items.filter((f) => f.status.id === statusFilter)
+    }
+
+    return items
+  }, [optimisticFeatures, searchQuery, statusFilter])
+
   // Handle drag-to-reschedule for both phases and subphases
   const handleMove = (id: string, startAt: Date, endAt: Date | null) => {
     if (!canEdit) return
@@ -398,9 +434,24 @@ export function ProjectGantt({
   }
 
   const ranges: { key: Range; label: string }[] = [
+    { key: "daily", label: "Jour" },
     { key: "monthly", label: "Mois" },
     { key: "quarterly", label: "Trimestre" },
   ]
+
+  const handleZoomIn = useCallback(() => {
+    setZoom((prev) => Math.min(200, prev + 10))
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((prev) => Math.max(50, prev - 10))
+  }, [])
+
+  // Counts
+  const phaseCount = optimisticFeatures.filter((f) => !f.isSubPhase).length
+  const subPhaseCount = optimisticFeatures.filter((f) => f.isSubPhase).length
+  const markerCount = markers.length
+  const hasActiveFilters = searchQuery.trim() !== "" || statusFilter !== null
 
   // Click-on-timeline — smart routing: add phase or subphase
   const handleGanttAddItem = useCallback(
@@ -431,400 +482,515 @@ export function ProjectGantt({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
-          {ranges.map(({ key, label }) => (
-            <Button
-              key={key}
-              variant={range === key ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setRange(key)}
-              className="h-7 text-xs"
+      {/* Toolbar with gradient card */}
+      <div className="rounded-lg border bg-gradient-to-r from-card to-muted/30 p-3">
+        <div className="flex flex-col gap-3">
+          {/* Row 1: Search + Filter + Counts */}
+          <div className="flex items-center gap-2">
+            {/* Search input */}
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom ou code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+
+            {/* Status filter */}
+            <Select
+              value={statusFilter ?? "all"}
+              onValueChange={(v) => setStatusFilter(v === "all" ? null : v)}
             >
-              {label}
-            </Button>
-          ))}
-        </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>Zoom (bientôt)</span>
+              <SelectTrigger className="h-8 w-[140px] text-xs">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="new">Nouveau</SelectItem>
+                <SelectItem value="in-progress">En cours</SelectItem>
+                <SelectItem value="pause">En pause</SelectItem>
+                <SelectItem value="complete">Terminé</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("")
+                  setStatusFilter(null)
+                }}
+                className="h-8 text-xs"
+              >
+                <RotateCcw className="mr-1 size-3" />
+                Effacer
+              </Button>
+            )}
+
+            {/* Count badges */}
+            <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+              <span className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1 tabular-nums">
+                <Layers className="size-3" />
+                {phaseCount} phases
+              </span>
+              <span className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1 tabular-nums">
+                <ListTodo className="size-3" />
+                {subPhaseCount} s/phases
+              </span>
+              <span className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1 tabular-nums">
+                <Flag className="size-3" />
+                {markerCount} marq.
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: Range toggle + Zoom controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+              {ranges.map(({ key, label }) => (
+                <Button
+                  key={key}
+                  variant={range === key ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setRange(key)}
+                  className="h-7 text-xs"
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleZoomOut}
+                disabled={zoom <= 50}
+              >
+                <Minus className="size-3" />
+              </Button>
+              <span className="min-w-[3rem] text-center text-xs font-medium text-muted-foreground tabular-nums">
+                {zoom}%
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleZoomIn}
+                disabled={zoom >= 200}
+              >
+                <Plus className="size-3" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Gantt Chart */}
-      <div
-        className="overflow-hidden rounded-lg border"
-        style={{ minHeight: 400 }}
-      >
-        <GanttProvider
-          range={range}
-          onAddItem={canEdit ? handleGanttAddItem : undefined}
-        >
-          {/* Sidebar */}
-          <GanttSidebar>
-            <GanttContext.Consumer>
-              {(ganttContext) => (
-                <div className="divide-y divide-border/50">
-                  {optimisticFeatures
-                    .filter((f) => !f.isSubPhase)
-                    .map((feature) => {
-                      const phase = phases.find((p) => p.id === feature.id)
-                      const isExpanded = expandedPhases.has(feature.id)
-                      const hasSubPhases = feature.subPhaseCount > 0
+      {/* Empty state when no phases */}
+      {phases.filter((p) => p.startDate && p.endDate).length === 0 && (
+        <div className="overflow-hidden rounded-lg border">
+          <EmptyState
+            title="Aucune phase dans ce projet"
+            description="Ajoutez des phases au projet pour visualiser le diagramme de Gantt. Les phases apparaîtront ici avec leurs sous-phases."
+            icon={<Layers className="size-6" />}
+            action={
+              canEdit
+                ? {
+                    label: "Ajouter une phase",
+                    onClick: () => {
+                      setEditingPhase(null)
+                      setPhaseDialogOpen(true)
+                    },
+                  }
+                : undefined
+            }
+          />
+        </div>
+      )}
 
-                      return (
-                        <div key={feature.id}>
-                          {/* Phase row */}
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            className="relative flex cursor-pointer items-center gap-2 p-2.5 text-xs hover:bg-secondary"
-                            style={{ height: "var(--gantt-row-height)" }}
-                            onClick={() => {
-                              ganttContext.scrollToFeature?.(feature)
-                              setSelectedPhase(phase ?? null)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
+      {/* Gantt Chart (only show when phases exist) */}
+      {phases.filter((p) => p.startDate && p.endDate).length > 0 && (
+        <div
+          className="overflow-hidden rounded-lg border"
+          style={{ minHeight: 400 }}
+        >
+          <GanttProvider
+            range={range}
+            zoom={zoom}
+            onAddItem={canEdit ? handleGanttAddItem : undefined}
+          >
+            {/* Sidebar */}
+            <GanttSidebar>
+              <GanttContext.Consumer>
+                {(ganttContext) => (
+                  <div className="divide-y divide-border/50">
+                    {filteredFeatures
+                      .filter((f) => !f.isSubPhase)
+                      .map((feature) => {
+                        const phase = phases.find((p) => p.id === feature.id)
+                        const isExpanded = expandedPhases.has(feature.id)
+                        const hasSubPhases = feature.subPhaseCount > 0
+
+                        return (
+                          <div key={feature.id}>
+                            {/* Phase row */}
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className="relative flex cursor-pointer items-center gap-2 p-2.5 text-xs hover:bg-secondary"
+                              style={{ height: "var(--gantt-row-height)" }}
+                              onClick={() => {
                                 ganttContext.scrollToFeature?.(feature)
                                 setSelectedPhase(phase ?? null)
-                              }
-                            }}
-                          >
-                            {/* Expand/collapse chevron */}
-                            {hasSubPhases && (
-                              <button
-                                type="button"
-                                className="shrink-0 text-muted-foreground hover:text-foreground"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  togglePhaseExpansion(feature.id)
-                                }}
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="size-3.5" />
-                                ) : (
-                                  <ChevronRight className="size-3.5" />
-                                )}
-                              </button>
-                            )}
-                            {!hasSubPhases && <span className="w-3.5" />}
-
-                            {/* Status dot */}
-                            <div
-                              className="pointer-events-none h-2 w-2 shrink-0 rounded-full"
-                              style={{
-                                backgroundColor: feature.status.color,
                               }}
-                            />
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  ganttContext.scrollToFeature?.(feature)
+                                  setSelectedPhase(phase ?? null)
+                                }
+                              }}
+                            >
+                              {/* Expand/collapse chevron */}
+                              {hasSubPhases && (
+                                <button
+                                  type="button"
+                                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    togglePhaseExpansion(feature.id)
+                                  }}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="size-3.5" />
+                                  ) : (
+                                    <ChevronRight className="size-3.5" />
+                                  )}
+                                </button>
+                              )}
+                              {!hasSubPhases && <span className="w-3.5" />}
 
-                            {/* Phase name */}
-                            <p className="pointer-events-none flex-1 truncate text-left font-medium">
-                              {feature.name}
-                            </p>
+                              {/* Status dot */}
+                              <div
+                                className="pointer-events-none h-2 w-2 shrink-0 rounded-full"
+                                style={{
+                                  backgroundColor: feature.status.color,
+                                }}
+                              />
 
-                            {/* Subphase count badge */}
-                            {hasSubPhases && (
-                              <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums">
-                                {feature.subPhaseCount}
-                              </span>
-                            )}
-                          </div>
+                              {/* Phase name */}
+                              <p className="pointer-events-none flex-1 truncate text-left font-medium">
+                                {feature.name}
+                              </p>
 
-                          {/* SubPhase rows (when expanded) */}
-                          {isExpanded &&
-                            optimisticFeatures
-                              .filter(
-                                (sf) =>
-                                  sf.isSubPhase &&
-                                  sf.parentPhaseId === feature.id
-                              )
-                              .map((subFeature) => {
-                                const subPhase = phase?.SubPhases.find(
-                                  (sp) => sp.id === subFeature.id
+                              {/* Subphase count badge */}
+                              {hasSubPhases && (
+                                <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums">
+                                  {feature.subPhaseCount}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* SubPhase rows (when expanded) */}
+                            {isExpanded &&
+                              filteredFeatures
+                                .filter(
+                                  (sf) =>
+                                    sf.isSubPhase &&
+                                    sf.parentPhaseId === feature.id
                                 )
-                                return (
-                                  <div
-                                    key={subFeature.id}
-                                    role="button"
-                                    tabIndex={0}
-                                    className="relative flex cursor-pointer items-center gap-2 p-2.5 pl-8 text-xs hover:bg-secondary"
-                                    style={{
-                                      height: "var(--gantt-row-height)",
-                                    }}
-                                    onClick={() => {
-                                      ganttContext.scrollToFeature?.(subFeature)
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
+                                .map((subFeature) => {
+                                  const subPhase = phase?.SubPhases.find(
+                                    (sp) => sp.id === subFeature.id
+                                  )
+                                  return (
+                                    <div
+                                      key={subFeature.id}
+                                      role="button"
+                                      tabIndex={0}
+                                      className="relative flex cursor-pointer items-center gap-2 p-2.5 pl-8 text-xs hover:bg-secondary"
+                                      style={{
+                                        height: "var(--gantt-row-height)",
+                                      }}
+                                      onClick={() => {
                                         ganttContext.scrollToFeature?.(
                                           subFeature
                                         )
-                                      }
-                                    }}
-                                  >
-                                    {/* Checkbox for COMPLETED/TODO toggle */}
-                                    <Checkbox
-                                      checked={
-                                        subFeature.status.id === "complete"
-                                      }
-                                      onCheckedChange={() => {
-                                        handleSubPhaseToggle(
-                                          subFeature.id,
-                                          subPhase?.status ?? "TODO"
-                                        )
                                       }}
-                                      className="shrink-0"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-
-                                    {/* Subphase name */}
-                                    <p
-                                      className={cn(
-                                        "pointer-events-none flex-1 truncate text-left",
-                                        subFeature.status.id === "complete" &&
-                                          "text-muted-foreground line-through"
-                                      )}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          ganttContext.scrollToFeature?.(
+                                            subFeature
+                                          )
+                                        }
+                                      }}
                                     >
-                                      {subFeature.name}
-                                    </p>
-                                  </div>
-                                )
-                              })}
-                        </div>
-                      )
-                    })}
-                </div>
-              )}
-            </GanttContext.Consumer>
-          </GanttSidebar>
+                                      {/* Checkbox for COMPLETED/TODO toggle */}
+                                      <Checkbox
+                                        checked={
+                                          subFeature.status.id === "complete"
+                                        }
+                                        onCheckedChange={() => {
+                                          handleSubPhaseToggle(
+                                            subFeature.id,
+                                            subPhase?.status ?? "TODO"
+                                          )
+                                        }}
+                                        className="shrink-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
 
-          {/* Timeline */}
-          <GanttTimeline>
-            <GanttHeader />
-            {canEdit && (
-              <GanttCreateMarkerTrigger
-                onCreateMarker={(_date) => {
-                  setEditingMarker(null)
-                  setMarkerDialogOpen(true)
-                }}
-              />
-            )}
-            <GanttFeatureList>
-              {optimisticFeatures.map((feature) => {
-                const isPhase = !feature.isSubPhase
-                const phaseData = isPhase
-                  ? phases.find((p) => p.id === feature.id)
-                  : null
-
-                return (
-                  <ContextMenu key={feature.id}>
-                    <ContextMenuTrigger asChild>
-                      <div>
-                        <GanttFeatureItem
-                          {...feature}
-                          onMove={canEdit ? handleMove : undefined}
-                          cardClassName={cn(
-                            "border-2 backdrop-blur-sm",
-                            feature.isSubPhase
-                              ? feature.status.id === "complete"
-                                ? "border-emerald-400/60 bg-emerald-500/10"
-                                : "border-sky-400/60 bg-sky-500/10"
-                              : feature.status.id === "in-progress"
-                                ? "border-emerald-400/60 bg-emerald-500/10"
-                                : feature.status.id === "pause"
-                                  ? "border-amber-400/60 bg-amber-500/10"
-                                  : feature.status.id === "complete"
-                                    ? "border-slate-400/60 bg-slate-500/10"
-                                    : "border-blue-400/60 bg-blue-500/10",
-                            feature.isSubPhase && "ml-6"
-                          )}
-                          cardStyle={{
-                            borderLeftWidth: "3px",
-                          }}
-                        >
-                          <div className="flex w-full items-center gap-2">
-                            {/* Icon */}
-                            {feature.isSubPhase ? (
-                              <ListTodo className="size-3.5 shrink-0 text-muted-foreground" />
-                            ) : (
-                              <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
-                            )}
-
-                            {/* Name */}
-                            <span className="flex-1 truncate text-xs font-medium">
-                              {feature.name}
-                            </span>
-
-                            {/* Duration for subphases */}
-                            {feature.isSubPhase && (
-                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
-                                (
-                                {Math.ceil(
-                                  (feature.endAt.getTime() -
-                                    feature.startAt.getTime()) /
-                                    (1000 * 60 * 60 * 24)
-                                )}{" "}
-                                j)
-                              </span>
-                            )}
-
-                            {/* Progress badge for phases */}
-                            {!feature.isSubPhase && (
-                              <span className="shrink-0 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium tabular-nums">
-                                {feature.progress}%
-                              </span>
-                            )}
+                                      {/* Subphase name */}
+                                      <p
+                                        className={cn(
+                                          "pointer-events-none flex-1 truncate text-left",
+                                          subFeature.status.id === "complete" &&
+                                            "text-muted-foreground line-through"
+                                        )}
+                                      >
+                                        {subFeature.name}
+                                      </p>
+                                    </div>
+                                  )
+                                })}
                           </div>
+                        )
+                      })}
+                  </div>
+                )}
+              </GanttContext.Consumer>
+            </GanttSidebar>
 
-                          {/* Progress overlay bar for phases */}
-                          {!feature.isSubPhase && feature.progress > 0 && (
-                            <div
-                              className="pointer-events-none absolute inset-0 rounded-[5px] opacity-20"
-                              style={{
-                                width: `${feature.progress}%`,
-                                backgroundColor: feature.status.color,
+            {/* Timeline */}
+            <GanttTimeline>
+              <GanttHeader />
+              {canEdit && (
+                <GanttCreateMarkerTrigger
+                  onCreateMarker={(_date) => {
+                    setEditingMarker(null)
+                    setMarkerDialogOpen(true)
+                  }}
+                />
+              )}
+              <GanttFeatureList>
+                {filteredFeatures.map((feature) => {
+                  const isPhase = !feature.isSubPhase
+                  const phaseData = isPhase
+                    ? phases.find((p) => p.id === feature.id)
+                    : null
+
+                  return (
+                    <ContextMenu key={feature.id}>
+                      <ContextMenuTrigger asChild>
+                        <div>
+                          <GanttFeatureItem
+                            {...feature}
+                            onMove={canEdit ? handleMove : undefined}
+                            cardClassName={cn(
+                              "border-2 backdrop-blur-sm",
+                              feature.isSubPhase
+                                ? feature.status.id === "complete"
+                                  ? "border-emerald-400/60 bg-emerald-500/10"
+                                  : "border-sky-400/60 bg-sky-500/10"
+                                : feature.status.id === "in-progress"
+                                  ? "border-emerald-400/60 bg-emerald-500/10"
+                                  : feature.status.id === "pause"
+                                    ? "border-amber-400/60 bg-amber-500/10"
+                                    : feature.status.id === "complete"
+                                      ? "border-slate-400/60 bg-slate-500/10"
+                                      : "border-blue-400/60 bg-blue-500/10",
+                              feature.isSubPhase && "ml-6"
+                            )}
+                            cardStyle={{
+                              borderLeftWidth: "3px",
+                            }}
+                          >
+                            <div className="flex w-full items-center gap-2">
+                              {/* Icon */}
+                              {feature.isSubPhase ? (
+                                <ListTodo className="size-3.5 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
+                              )}
+
+                              {/* Name */}
+                              <span className="flex-1 truncate text-xs font-medium">
+                                {feature.name}
+                              </span>
+
+                              {/* Duration for subphases */}
+                              {feature.isSubPhase && (
+                                <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                                  (
+                                  {Math.ceil(
+                                    (feature.endAt.getTime() -
+                                      feature.startAt.getTime()) /
+                                      (1000 * 60 * 60 * 24)
+                                  )}{" "}
+                                  j)
+                                </span>
+                              )}
+
+                              {/* Progress badge for phases */}
+                              {!feature.isSubPhase && (
+                                <span className="shrink-0 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium tabular-nums">
+                                  {feature.progress}%
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Progress overlay bar for phases */}
+                            {!feature.isSubPhase && feature.progress > 0 && (
+                              <div
+                                className="pointer-events-none absolute inset-0 rounded-[5px] opacity-20"
+                                style={{
+                                  width: `${feature.progress}%`,
+                                  backgroundColor: feature.status.color,
+                                }}
+                              />
+                            )}
+                          </GanttFeatureItem>
+                        </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        {isPhase ? (
+                          <>
+                            <ContextMenuItem
+                              className="flex items-center gap-2"
+                              onClick={() => {
+                                setSelectedPhase(phaseData ?? null)
                               }}
-                            />
-                          )}
-                        </GanttFeatureItem>
-                      </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      {isPhase ? (
-                        <>
-                          <ContextMenuItem
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              setSelectedPhase(phaseData ?? null)
-                            }}
-                          >
-                            <Eye className="size-4" />
-                            Voir les détails
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              if (!phaseData) return
-                              setEditingPhase({
-                                id: phaseData.id,
-                                name: phaseData.name,
-                                code: phaseData.code,
-                                montantHT: phaseData.montantHT,
-                                startDate: phaseData.startDate,
-                                endDate: phaseData.endDate,
-                                status: phaseData.status,
-                                obs: null,
-                                progress: phaseData.progress,
-                              })
-                              setPhaseDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="size-4" />
-                            Modifier
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              setEditingSubPhase(null)
-                              setSubPhaseParentId(feature.id)
-                              setSubPhaseDialogOpen(true)
-                            }}
-                          >
-                            <Plus className="size-4" />
-                            Ajouter une sous-phase
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            className="flex items-center gap-2 text-destructive"
-                            onClick={() => {
-                              setDeletingPhaseId(feature.id)
-                            }}
-                          >
-                            <Trash2 className="size-4" />
-                            Supprimer
-                          </ContextMenuItem>
-                        </>
-                      ) : (
-                        <>
-                          <ContextMenuItem
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              const parentPhase = phases.find((p) =>
-                                p.SubPhases.some((sp) => sp.id === feature.id)
-                              )
-                              const subPhase = parentPhase?.SubPhases.find(
-                                (sp) => sp.id === feature.id
-                              )
-                              if (!subPhase) return
-                              setEditingSubPhase({
-                                id: subPhase.id,
-                                name: subPhase.name,
-                                code: subPhase.code,
-                                status: subPhase.status,
-                                progress: subPhase.progress,
-                                startDate: subPhase.startDate,
-                                endDate: subPhase.endDate,
-                              })
-                              setSubPhaseParentId(feature.parentPhaseId)
-                              setSubPhaseDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="size-4" />
-                            Modifier
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            className="flex items-center gap-2 text-destructive"
-                            onClick={() => {
-                              setDeletingSubPhaseId(feature.id)
-                            }}
-                          >
-                            <Trash2 className="size-4" />
-                            Supprimer
-                          </ContextMenuItem>
-                        </>
-                      )}
-                    </ContextMenuContent>
-                  </ContextMenu>
-                )
-              })}
-            </GanttFeatureList>
+                            >
+                              <Eye className="size-4" />
+                              Voir les détails
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              className="flex items-center gap-2"
+                              onClick={() => {
+                                if (!phaseData) return
+                                setEditingPhase({
+                                  id: phaseData.id,
+                                  name: phaseData.name,
+                                  code: phaseData.code,
+                                  montantHT: phaseData.montantHT,
+                                  startDate: phaseData.startDate,
+                                  endDate: phaseData.endDate,
+                                  status: phaseData.status,
+                                  obs: null,
+                                  progress: phaseData.progress,
+                                })
+                                setPhaseDialogOpen(true)
+                              }}
+                            >
+                              <Pencil className="size-4" />
+                              Modifier
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              className="flex items-center gap-2"
+                              onClick={() => {
+                                setEditingSubPhase(null)
+                                setSubPhaseParentId(feature.id)
+                                setSubPhaseDialogOpen(true)
+                              }}
+                            >
+                              <Plus className="size-4" />
+                              Ajouter une sous-phase
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              className="flex items-center gap-2 text-destructive"
+                              onClick={() => {
+                                setDeletingPhaseId(feature.id)
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                              Supprimer
+                            </ContextMenuItem>
+                          </>
+                        ) : (
+                          <>
+                            <ContextMenuItem
+                              className="flex items-center gap-2"
+                              onClick={() => {
+                                const parentPhase = phases.find((p) =>
+                                  p.SubPhases.some((sp) => sp.id === feature.id)
+                                )
+                                const subPhase = parentPhase?.SubPhases.find(
+                                  (sp) => sp.id === feature.id
+                                )
+                                if (!subPhase) return
+                                setEditingSubPhase({
+                                  id: subPhase.id,
+                                  name: subPhase.name,
+                                  code: subPhase.code,
+                                  status: subPhase.status,
+                                  progress: subPhase.progress,
+                                  startDate: subPhase.startDate,
+                                  endDate: subPhase.endDate,
+                                })
+                                setSubPhaseParentId(feature.parentPhaseId)
+                                setSubPhaseDialogOpen(true)
+                              }}
+                            >
+                              <Pencil className="size-4" />
+                              Modifier
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              className="flex items-center gap-2 text-destructive"
+                              onClick={() => {
+                                setDeletingSubPhaseId(feature.id)
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                              Supprimer
+                            </ContextMenuItem>
+                          </>
+                        )}
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  )
+                })}
+              </GanttFeatureList>
 
-            {/* Markers */}
-            {markers.map((marker) => (
-              <GanttMarker
-                key={marker.id}
-                id={marker.id}
-                date={marker.date}
-                label={marker.label}
-                className={marker.className}
-                onEdit={
-                  canEdit
-                    ? () => {
-                        const m = markers.find((mk) => mk.id === marker.id)
-                        if (!m) return
-                        setEditingMarker({
-                          id: m.id,
-                          label: m.label,
-                          date: m.date,
-                          className: m.className,
-                        })
-                        setMarkerDialogOpen(true)
-                      }
-                    : undefined
-                }
-                onRemove={
-                  canEdit
-                    ? () => {
-                        setDeletingMarkerId(marker.id)
-                      }
-                    : undefined
-                }
-              />
-            ))}
-            <GanttToday />
-          </GanttTimeline>
-        </GanttProvider>
-      </div>
+              {/* Markers */}
+              {markers.map((marker) => (
+                <GanttMarker
+                  key={marker.id}
+                  id={marker.id}
+                  date={marker.date}
+                  label={marker.label}
+                  className={marker.className}
+                  onEdit={
+                    canEdit
+                      ? () => {
+                          const m = markers.find((mk) => mk.id === marker.id)
+                          if (!m) return
+                          setEditingMarker({
+                            id: m.id,
+                            label: m.label,
+                            date: m.date,
+                            className: m.className,
+                          })
+                          setMarkerDialogOpen(true)
+                        }
+                      : undefined
+                  }
+                  onRemove={
+                    canEdit
+                      ? () => {
+                          setDeletingMarkerId(marker.id)
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+              <GanttToday />
+            </GanttTimeline>
+          </GanttProvider>
+        </div>
+      )}
 
       {/* Phase Detail Sheet */}
       <Sheet
