@@ -1411,14 +1411,14 @@ export const GanttProvider: FC<GanttProviderProps> = ({
     >
       <div
         className={cn(
-          "gantt relative isolate grid h-full w-full flex-none overflow-x-hidden overflow-y-auto rounded-sm bg-secondary select-none",
+          "gantt relative isolate grid h-full w-full flex-none overflow-x-auto overflow-y-auto rounded-sm bg-secondary select-none",
           range,
           className
         )}
         ref={scrollRef}
         style={{
           ...cssVariables,
-          gridTemplateColumns: "var(--gantt-sidebar-width) 1fr",
+          gridTemplateColumns: "var(--gantt-sidebar-width) minmax(0, 1fr)",
         }}
       >
         {children}

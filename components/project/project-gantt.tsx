@@ -6,7 +6,6 @@ import {
   useTransition,
   useMemo,
   useOptimistic,
-  useEffect,
 } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -29,11 +28,7 @@ import {
   type Range,
 } from "@/components/kibo-ui/gantt"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -50,7 +45,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { PhaseDialog } from "@/components/project/phase-dialog"
 import { SubPhaseDialog } from "@/components/project/subphase-dialog"
@@ -69,11 +63,6 @@ import {
   Layers,
   Minus,
   Flag,
-  CalendarDays,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  Info,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
@@ -171,18 +160,13 @@ export function ProjectGantt({
   markers,
   canEdit,
   projectId,
-  unitId: _unitId,
+
   projectMontantHT,
   projectODS,
 }: ProjectGanttProps) {
   const router = useRouter()
   const [_isPending, startTransition] = useTransition()
   const [range, setRange] = useState<Range>("monthly")
-  const [selectedPhase, setSelectedPhase] = useState<PhaseData | null>(null)
-  const [selectedSubPhaseDetail, setSelectedSubPhaseDetail] = useState<{
-    subPhase: PhaseData["SubPhases"][number]
-    parentPhaseName: string
-  } | null>(null)
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
   const [zoom, setZoom] = useState(100)
   const [searchQuery, setSearchQuery] = useState("")
@@ -483,31 +467,6 @@ export function ProjectGantt({
     [phases]
   )
 
-  // Track current time for "time remaining" countdown (updates every 60s)
-  const [now, setNow] = useState<number>(() => Date.now())
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 60_000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const phaseTimeRemaining = useMemo(() => {
-    if (!selectedPhase?.endDate || selectedPhase.status === "Complete")
-      return null
-    const diff = Math.ceil(
-      (selectedPhase.endDate.getTime() - now) / (1000 * 60 * 60 * 24)
-    )
-    if (diff < 0)
-      return {
-        label: `Retard de ${Math.abs(diff)} j`,
-        variant: "overdue" as const,
-      }
-    if (diff === 0)
-      return { label: "Dernier jour", variant: "warning" as const }
-    if (diff === 1)
-      return { label: "1 jour restant", variant: "warning" as const }
-    return { label: `${diff} jours restants`, variant: "ok" as const }
-  }, [selectedPhase, now])
-
   // Click-on-timeline — guide user to use context menu
   const handleGanttAddItem = useCallback(
     (_date: Date) => {
@@ -521,10 +480,10 @@ export function ProjectGantt({
   )
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex w-full flex-col gap-3 overflow-hidden">
       {/* Toolbar with gradient card */}
       <div className="rounded-lg border bg-linear-to-r from-card to-muted/30 p-3">
-        <div className="flex flex-col gap-3">
+        <div className="flex w-full max-w-full flex-col gap-3 overflow-x-hidden">
           {/* Row 1: Search + Filter + Counts */}
           <div className="flex items-center gap-2">
             {/* Search input */}
@@ -669,7 +628,7 @@ export function ProjectGantt({
       {/* Gantt Chart (only show when phases exist) */}
       {phases.filter((p) => p.startDate && p.endDate).length > 0 && (
         <div
-          className="overflow-hidden rounded-xl border bg-card shadow-sm"
+          className="w-full overflow-hidden rounded-xl border bg-card shadow-sm"
           style={{ height: "calc(100vh - 280px)" }}
         >
           <GanttProvider
@@ -859,10 +818,20 @@ export function ProjectGantt({
                       <ContextMenuTrigger asChild>
                         <div
                           onClick={() => {
-                            if (isPhase) {
-                              setSelectedPhase(phaseData ?? null)
-                              setSelectedSubPhaseDetail(null)
-                            } else {
+                            if (isPhase && phaseData) {
+                              setEditingPhase({
+                                id: phaseData.id,
+                                name: phaseData.name,
+                                code: phaseData.code,
+                                montantHT: phaseData.montantHT,
+                                startDate: phaseData.startDate,
+                                endDate: phaseData.endDate,
+                                status: phaseData.status,
+                                obs: phaseData.obs,
+                                progress: phaseData.progress,
+                              })
+                              setPhaseDialogOpen(true)
+                            } else if (!isPhase) {
                               const parentPhase = phases.find((p) =>
                                 p.SubPhases.some((sp) => sp.id === feature.id)
                               )
@@ -870,11 +839,17 @@ export function ProjectGantt({
                                 (sp) => sp.id === feature.id
                               )
                               if (subPhase) {
-                                setSelectedSubPhaseDetail({
-                                  subPhase,
-                                  parentPhaseName: parentPhase?.name ?? "",
+                                setEditingSubPhase({
+                                  id: subPhase.id,
+                                  name: subPhase.name,
+                                  code: subPhase.code,
+                                  status: subPhase.status,
+                                  progress: subPhase.progress,
+                                  startDate: subPhase.startDate,
+                                  endDate: subPhase.endDate,
                                 })
-                                setSelectedPhase(null)
+                                setSubPhaseParentId(feature.parentPhaseId)
+                                setSubPhaseDialogOpen(true)
                               }
                             }
                           }}
@@ -967,11 +942,23 @@ export function ProjectGantt({
                             <ContextMenuItem
                               className="flex items-center gap-2"
                               onClick={() => {
-                                setSelectedPhase(phaseData ?? null)
+                                if (!phaseData) return
+                                setEditingPhase({
+                                  id: phaseData.id,
+                                  name: phaseData.name,
+                                  code: phaseData.code,
+                                  montantHT: phaseData.montantHT,
+                                  startDate: phaseData.startDate,
+                                  endDate: phaseData.endDate,
+                                  status: phaseData.status,
+                                  obs: phaseData.obs,
+                                  progress: phaseData.progress,
+                                })
+                                setPhaseDialogOpen(true)
                               }}
                             >
                               <Eye className="size-4" />
-                              Voir les détails
+                              {canEdit ? "Modifier" : "Voir les détails"}
                             </ContextMenuItem>
                             <ContextMenuItem
                               className="flex items-center gap-2"
@@ -1097,462 +1084,6 @@ export function ProjectGantt({
           </GanttProvider>
         </div>
       )}
-
-      {/* ── Detail Sheet: Phase ── */}
-      <Sheet
-        open={!!selectedPhase || !!selectedSubPhaseDetail}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedPhase(null)
-            setSelectedSubPhaseDetail(null)
-          }
-        }}
-      >
-        <SheetContent
-          side="right"
-          className="flex flex-col gap-0 p-0 sm:max-w-md"
-        >
-          {/* ── Phase Detail ── */}
-          {selectedPhase && (
-            <>
-              {/* ═══ HERO HEADER ═══ */}
-              <div
-                className={cn(
-                  "relative overflow-hidden px-6 pt-6 pb-5",
-                  selectedPhase.status === "InProgress" &&
-                    "bg-linear-to-br from-card via-emerald-500/10 to-muted/50",
-                  selectedPhase.status === "Complete" &&
-                    "bg-linear-to-br from-card via-slate-500/10 to-muted/50",
-                  selectedPhase.status === "Pause" &&
-                    "bg-linear-to-br from-card via-amber-500/10 to-muted/50",
-                  selectedPhase.status === "New" &&
-                    "bg-linear-to-br from-card via-indigo-500/10 to-muted/50"
-                )}
-              >
-                {/* Subtle background ornament */}
-                <div
-                  className={cn(
-                    "pointer-events-none absolute -top-6 -right-6 size-32 rounded-full opacity-[0.08] blur-3xl",
-                    selectedPhase.status === "InProgress" && "bg-emerald-500",
-                    selectedPhase.status === "Complete" && "bg-slate-500",
-                    selectedPhase.status === "Pause" && "bg-amber-500",
-                    selectedPhase.status === "New" && "bg-indigo-500"
-                  )}
-                />
-
-                <div className="relative flex items-start justify-between gap-3">
-                  <SheetTitle className="text-lg leading-tight font-semibold">
-                    {selectedPhase.name}
-                  </SheetTitle>
-                  <Badge
-                    className={cn(
-                      "mt-0.5 shrink-0 border-2 px-2.5 py-0.5 text-[11px] font-bold tracking-widest uppercase shadow-xs",
-                      selectedPhase.status === "InProgress" &&
-                        "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-500/20 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-                      selectedPhase.status === "Complete" &&
-                        "border-slate-300 bg-slate-100 text-slate-600 shadow-slate-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400",
-                      selectedPhase.status === "Pause" &&
-                        "border-amber-300 bg-amber-50 text-amber-700 shadow-amber-500/20 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
-                      selectedPhase.status === "New" &&
-                        "border-indigo-300 bg-indigo-50 text-indigo-700 shadow-indigo-500/20 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
-                    )}
-                  >
-                    {selectedPhase.status === "InProgress"
-                      ? "En cours"
-                      : selectedPhase.status === "Complete"
-                        ? "Terminé"
-                        : selectedPhase.status === "Pause"
-                          ? "En pause"
-                          : "Nouveau"}
-                  </Badge>
-                </div>
-                <p className="relative mt-1 font-mono text-xs tracking-wider text-muted-foreground">
-                  {selectedPhase.code}
-                </p>
-              </div>
-
-              {/* ═══ BODY ═══ */}
-              <ScrollArea className="flex-1 px-6 py-5">
-                <div className="flex flex-col gap-4">
-                  {/* ── DATES MODULE ── */}
-                  <div className="relative overflow-hidden rounded-xl border bg-card p-4">
-                    {/* Understated icon separators */}
-                    <div className="mb-3 flex items-center gap-2">
-                      <CalendarDays className="size-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-                        Dates
-                      </span>
-                      <div className="ml-auto h-px flex-1 bg-border/50" />
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                          Début
-                        </span>
-                        <p className="mt-0.5 text-sm font-semibold">
-                          {selectedPhase.startDate
-                            ? formatDate(selectedPhase.startDate)
-                            : "—"}
-                        </p>
-                      </div>
-
-                      {/* Arrow between dates */}
-                      <div className="flex shrink-0 items-center text-muted-foreground/40">
-                        <svg
-                          width="20"
-                          height="12"
-                          viewBox="0 0 20 12"
-                          fill="none"
-                          className="size-5"
-                        >
-                          <path
-                            d="M1 6h16M13 1l5 5-5 5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-
-                      <div className="flex-1 text-right">
-                        <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                          Fin
-                        </span>
-                        <p className="mt-0.5 text-sm font-semibold">
-                          {selectedPhase.endDate
-                            ? formatDate(selectedPhase.endDate)
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {selectedPhase.duration && (
-                      <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Clock className="size-3" />
-                          Durée
-                        </span>
-                        <span className="text-xs font-bold tabular-nums">
-                          {selectedPhase.duration} jours
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Time remaining countdown */}
-                    {phaseTimeRemaining && (
-                      <div className="mt-2 text-center">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tabular-nums",
-                            phaseTimeRemaining.variant === "overdue" &&
-                              "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400",
-                            phaseTimeRemaining.variant === "warning" &&
-                              "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
-                            phaseTimeRemaining.variant === "ok" &&
-                              "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
-                          )}
-                        >
-                          {phaseTimeRemaining.label}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── BUDGET MODULE ── */}
-                  <div className="relative overflow-hidden rounded-xl border bg-card p-4">
-                    {/* Watermark */}
-                    <DollarSign className="pointer-events-none absolute -right-2 -bottom-2 size-20 text-muted-foreground/[0.06]" />
-
-                    <div className="mb-3 flex items-center gap-2">
-                      <DollarSign className="size-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-                        Budget
-                      </span>
-                      <div className="ml-auto h-px flex-1 bg-border/50" />
-                    </div>
-
-                    <p className="font-mono text-2xl font-bold tracking-tight tabular-nums">
-                      {formatCurrency(selectedPhase.montantHT)}
-                    </p>
-                  </div>
-
-                  {/* ── PROGRESS MODULE ── */}
-                  <div className="rounded-xl border bg-card p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <TrendingUp className="size-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-                        Progression
-                      </span>
-                      <div className="ml-auto h-px flex-1 bg-border/50" />
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Progress
-                        value={selectedPhase.progress}
-                        className={cn(
-                          "h-2 flex-1 rounded-full bg-muted [&>div]:rounded-full [&>div]:transition-all [&>div]:duration-500",
-                          selectedPhase.progress >= 100 &&
-                            "[&>div]:bg-emerald-500",
-                          selectedPhase.progress > 0 &&
-                            selectedPhase.progress < 100 &&
-                            selectedPhase.status === "InProgress" &&
-                            "[&>div]:animate-pulse [&>div]:bg-emerald-500",
-                          selectedPhase.progress > 0 &&
-                            selectedPhase.progress < 100 &&
-                            selectedPhase.status === "Pause" &&
-                            "[&>div]:bg-amber-500",
-                          selectedPhase.progress === 0 &&
-                            "[&>div]:bg-indigo-400"
-                        )}
-                      />
-                      <span className="min-w-10 text-right text-base font-bold tabular-nums">
-                        {selectedPhase.progress}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* ── OBSERVATIONS MODULE ── */}
-                  {selectedPhase.obs && (
-                    <div className="rounded-xl border-l-4 border-l-amber-400/60 bg-amber-50/40 p-4 dark:border-l-amber-600/40 dark:bg-amber-950/10">
-                      <div className="mb-2 flex items-center gap-2">
-                        <Info className="size-3.5 text-amber-600 dark:text-amber-400" />
-                        <span className="text-[11px] font-semibold tracking-widest text-amber-600 uppercase dark:text-amber-400">
-                          Observations
-                        </span>
-                      </div>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
-                        {selectedPhase.obs}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ── SOUS-PHASES MODULE ── */}
-                  {selectedPhase.SubPhases.length > 0 && (
-                    <div className="rounded-xl border bg-card p-4">
-                      <div className="mb-3 flex items-center gap-2">
-                        <ListTodo className="size-3.5 text-muted-foreground" />
-                        <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-                          Sous-phases ({selectedPhase.SubPhases.length})
-                        </span>
-                        <div className="ml-auto h-px flex-1 bg-border/50" />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        {selectedPhase.SubPhases.map((sub) => (
-                          <div
-                            key={sub.id}
-                            className={cn(
-                              "group flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-all duration-200 hover:scale-[1.02] hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-500/10 dark:hover:border-emerald-800",
-                              sub.status === "COMPLETED" &&
-                                "border-emerald-200/60 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
-                            )}
-                          >
-                            <div className="flex flex-1 items-center gap-2.5 truncate">
-                              <div
-                                className={cn(
-                                  "h-1.5 w-1.5 shrink-0 rounded-full ring-2 ring-transparent transition-all group-hover:ring-offset-1",
-                                  sub.status === "COMPLETED"
-                                    ? "bg-emerald-500 ring-emerald-200 dark:ring-emerald-800"
-                                    : "bg-sky-500 ring-sky-200 dark:ring-sky-800"
-                                )}
-                              />
-                              <span
-                                className={cn(
-                                  "truncate text-sm",
-                                  sub.status === "COMPLETED" &&
-                                    "text-muted-foreground line-through"
-                                )}
-                              >
-                                {sub.code} — {sub.name}
-                              </span>
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "ml-2 shrink-0 text-[10px] font-semibold transition-all group-hover:scale-105",
-                                sub.status === "COMPLETED" &&
-                                  "border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400"
-                              )}
-                            >
-                              {sub.status === "COMPLETED"
-                                ? "Terminé"
-                                : "À faire"}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </>
-          )}
-
-          {/* ── SubPhase Detail ── */}
-          {selectedSubPhaseDetail && (
-            <>
-              {/* ═══ HERO HEADER ═══ */}
-              <div
-                className={cn(
-                  "relative overflow-hidden px-6 pt-6 pb-5",
-                  selectedSubPhaseDetail.subPhase.status === "COMPLETED"
-                    ? "bg-linear-to-br from-card via-emerald-500/10 to-muted/50"
-                    : "bg-linear-to-br from-card via-sky-500/10 to-muted/50"
-                )}
-              >
-                {/* Subtle background ornament */}
-                <div
-                  className={cn(
-                    "pointer-events-none absolute -top-6 -right-6 size-32 rounded-full opacity-[0.08] blur-3xl",
-                    selectedSubPhaseDetail.subPhase.status === "COMPLETED"
-                      ? "bg-emerald-500"
-                      : "bg-sky-500"
-                  )}
-                />
-
-                <div className="relative flex items-start justify-between gap-3">
-                  <SheetTitle className="text-lg leading-tight font-semibold">
-                    {selectedSubPhaseDetail.subPhase.name}
-                  </SheetTitle>
-                  <Badge
-                    className={cn(
-                      "mt-0.5 shrink-0 border-2 px-2.5 py-0.5 text-[11px] font-bold tracking-widest uppercase shadow-xs",
-                      selectedSubPhaseDetail.subPhase.status === "COMPLETED"
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-500/20 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                        : "border-sky-300 bg-sky-50 text-sky-700 shadow-sky-500/20 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-                    )}
-                  >
-                    {selectedSubPhaseDetail.subPhase.status === "COMPLETED"
-                      ? "Terminé"
-                      : "À faire"}
-                  </Badge>
-                </div>
-
-                {/* Breadcrumb-style meta row */}
-                <div className="relative mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-mono tracking-wider">
-                    {selectedSubPhaseDetail.subPhase.code}
-                  </span>
-                  <span className="text-border">/</span>
-                  <FolderKanban className="size-3" />
-                  <span className="truncate">
-                    {selectedSubPhaseDetail.parentPhaseName}
-                  </span>
-                </div>
-              </div>
-
-              {/* ═══ BODY ═══ */}
-              <ScrollArea className="flex-1 px-6 py-5">
-                <div className="flex flex-col gap-4">
-                  {/* ── DATES MODULE ── */}
-                  <div className="rounded-xl border bg-card p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <CalendarDays className="size-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-                        Dates
-                      </span>
-                      <div className="ml-auto h-px flex-1 bg-border/50" />
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                          Début
-                        </span>
-                        <p className="mt-0.5 text-sm font-semibold">
-                          {selectedSubPhaseDetail.subPhase.startDate
-                            ? formatDate(
-                                selectedSubPhaseDetail.subPhase.startDate
-                              )
-                            : "—"}
-                        </p>
-                      </div>
-
-                      <div className="flex shrink-0 items-center text-muted-foreground/40">
-                        <svg
-                          width="20"
-                          height="12"
-                          viewBox="0 0 20 12"
-                          fill="none"
-                          className="size-5"
-                        >
-                          <path
-                            d="M1 6h16M13 1l5 5-5 5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-
-                      <div className="flex-1 text-right">
-                        <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                          Fin
-                        </span>
-                        <p className="mt-0.5 text-sm font-semibold">
-                          {selectedSubPhaseDetail.subPhase.endDate
-                            ? formatDate(
-                                selectedSubPhaseDetail.subPhase.endDate
-                              )
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Duration for subphase */}
-                    {selectedSubPhaseDetail.subPhase.startDate &&
-                      selectedSubPhaseDetail.subPhase.endDate && (
-                        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="size-3" />
-                            Durée
-                          </span>
-                          <span className="text-xs font-bold tabular-nums">
-                            {Math.ceil(
-                              (selectedSubPhaseDetail.subPhase.endDate.getTime() -
-                                selectedSubPhaseDetail.subPhase.startDate.getTime()) /
-                                (1000 * 60 * 60 * 24)
-                            )}{" "}
-                            jours
-                          </span>
-                        </div>
-                      )}
-                  </div>
-
-                  {/* ── PROGRESS MODULE ── */}
-                  <div className="rounded-xl border bg-card p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <TrendingUp className="size-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-                        Progression
-                      </span>
-                      <div className="ml-auto h-px flex-1 bg-border/50" />
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Progress
-                        value={selectedSubPhaseDetail.subPhase.progress}
-                        className={cn(
-                          "h-2 flex-1 rounded-full bg-muted [&>div]:rounded-full [&>div]:transition-all [&>div]:duration-500",
-                          selectedSubPhaseDetail.subPhase.progress >= 100
-                            ? "[&>div]:bg-emerald-500"
-                            : "[&>div]:animate-pulse [&>div]:bg-sky-400"
-                        )}
-                      />
-                      <span className="min-w-10 text-right text-base font-bold tabular-nums">
-                        {selectedSubPhaseDetail.subPhase.progress}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </ScrollArea>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
 
       {/* Phase Dialog */}
       <PhaseDialog
