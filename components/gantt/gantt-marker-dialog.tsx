@@ -15,6 +15,20 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { FormModal } from "@/components/shared/form-modal"
+import { cn } from "@/lib/utils"
+
+const PRESET_COLORS = [
+  { name: "Bleu", hex: "#3b82f6" },
+  { name: "Rouge", hex: "#ef4444" },
+  { name: "Vert", hex: "#22c55e" },
+  { name: "Orange", hex: "#f97316" },
+  { name: "Violet", hex: "#8b5cf6" },
+  { name: "Rose", hex: "#ec4899" },
+  { name: "Ambre", hex: "#f59e0b" },
+  { name: "Cyan", hex: "#06b6d4" },
+  { name: "Émeraude", hex: "#10b981" },
+  { name: "Ardoise", hex: "#64748b" },
+]
 
 interface GanttMarkerDialogProps {
   projectId: string
@@ -24,14 +38,22 @@ interface GanttMarkerDialogProps {
     date: Date
     className?: string | null
   }
+  defaultDate?: Date | null
   onSuccess?: () => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
 
+function extractColor(className?: string | null): string {
+  if (!className) return "#3b82f6"
+  if (className.startsWith("color:")) return className.slice(6)
+  return "#3b82f6"
+}
+
 export function GanttMarkerDialog({
   projectId,
   marker,
+  defaultDate,
   onSuccess,
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
@@ -43,20 +65,22 @@ export function GanttMarkerDialog({
   const setOpen = externalOnOpenChange ?? setInternalOpen
 
   const [label, setLabel] = useState(marker?.label ?? "")
-  const [date, setDate] = useState<Date | null>(marker?.date ?? null)
-  const [cssClass, setCssClass] = useState(marker?.className ?? "")
+  const [date, setDate] = useState<Date | null>(
+    marker?.date ?? defaultDate ?? null
+  )
+  const [color, setColor] = useState(extractColor(marker?.className))
 
   function handleReset() {
     setLabel("")
     setDate(null)
-    setCssClass("")
+    setColor("#3b82f6")
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     if (!label.trim()) {
-      toast.error("Le libell\u00e9 est requis")
+      toast.error("Le libellé est requis")
       return
     }
     if (!date) {
@@ -69,7 +93,7 @@ export function GanttMarkerDialog({
         projectId,
         label: label.trim(),
         date,
-        className: cssClass.trim() || null,
+        className: `color:${color}`,
       }
 
       let result
@@ -81,9 +105,7 @@ export function GanttMarkerDialog({
 
       if (result.success) {
         toast.success(
-          marker
-            ? "Marqueur mis \u00e0 jour"
-            : "Marqueur cr\u00e9\u00e9 avec succ\u00e8s"
+          marker ? "Marqueur mis à jour" : "Marqueur créé avec succès"
         )
         setOpen(false)
         onSuccess?.()
@@ -104,17 +126,17 @@ export function GanttMarkerDialog({
       isPending={isPending}
       onSubmit={handleSubmit}
       onReset={handleReset}
-      submitLabel={marker ? "Enregistrer" : "Cr\u00e9er"}
+      submitLabel={marker ? "Enregistrer" : "Créer"}
       submitPendingLabel="En cours..."
     >
       <div className="flex flex-col gap-4">
         <div className="space-y-2">
-          <Label htmlFor="label">Libell\u00e9 *</Label>
+          <Label htmlFor="label">Libellé *</Label>
           <Input
             id="label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="Ex: R\u00e9ception b\u00e9ton, Livraison acier..."
+            placeholder="Ex: Réception béton, Livraison acier..."
             required
           />
         </div>
@@ -127,9 +149,7 @@ export function GanttMarkerDialog({
                 variant="outline"
                 className="w-full justify-start font-normal"
               >
-                {date
-                  ? format(date, "dd MMM yyyy")
-                  : "S\u00e9lectionner une date"}
+                {date ? format(date, "dd MMM yyyy") : "Sélectionner une date"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -143,16 +163,39 @@ export function GanttMarkerDialog({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="className">Classe CSS (optionnel)</Label>
-          <Input
-            id="className"
-            value={cssClass}
-            onChange={(e) => setCssClass(e.target.value)}
-            placeholder="Ex: text-red-500, border-dashed..."
-          />
-          <p className="text-xs text-muted-foreground">
-            Classe Tailwind pour personnaliser l&apos;apparence du marqueur
-          </p>
+          <Label>Couleur</Label>
+          <div className="grid grid-cols-5 gap-2">
+            {PRESET_COLORS.map((preset) => (
+              <button
+                key={preset.hex}
+                type="button"
+                title={preset.name}
+                className={cn(
+                  "h-8 w-full rounded-md border-2 transition-all hover:scale-110",
+                  color === preset.hex
+                    ? "border-foreground ring-2 ring-foreground/30"
+                    : "border-transparent"
+                )}
+                style={{ backgroundColor: preset.hex }}
+                onClick={() => setColor(preset.hex)}
+              />
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="h-8 w-12 cursor-pointer rounded-md border"
+            />
+            <span className="font-mono text-xs text-muted-foreground">
+              {color}
+            </span>
+            <div
+              className="ml-auto h-6 w-10 rounded-md border"
+              style={{ backgroundColor: color }}
+            />
+          </div>
         </div>
       </div>
     </FormModal>

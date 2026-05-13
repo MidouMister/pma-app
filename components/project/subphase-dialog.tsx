@@ -55,6 +55,7 @@ export function SubPhaseDialog({
   const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  const isControlled = externalOnOpenChange !== undefined
   const open = externalOpen ?? internalOpen
   const setOpen = externalOnOpenChange ?? setInternalOpen
 
@@ -110,10 +111,12 @@ export function SubPhaseDialog({
           : undefined
       }
       trigger={
-        <Button variant="outline" size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Ajouter une sous-phase
-        </Button>
+        !isControlled ? (
+          <Button variant="outline" size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter une sous-phase
+          </Button>
+        ) : undefined
       }
       size="md"
       isPending={isPending}

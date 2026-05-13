@@ -56,7 +56,6 @@ import {
   FolderKanban,
   Pencil,
   Trash2,
-  Eye,
   Plus,
   Search,
   RotateCcw,
@@ -205,6 +204,7 @@ export function ProjectGantt({
     date: Date
     className?: string | null
   } | null>(null)
+  const [markerDefaultDate, setMarkerDefaultDate] = useState<Date | null>(null)
 
   // Delete confirmation state
   const [deletingPhaseId, setDeletingPhaseId] = useState<string | null>(null)
@@ -545,20 +545,6 @@ export function ProjectGantt({
                 {markerCount} marq.
               </span>
             </div>
-
-            {canEdit && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingPhase(null)
-                  setPhaseDialogOpen(true)
-                }}
-                className="ml-auto h-8 gap-2"
-              >
-                <Plus className="size-4" />
-                Ajouter une phase
-              </Button>
-            )}
           </div>
 
           {/* Row 2: Range toggle + Zoom controls */}
@@ -800,8 +786,9 @@ export function ProjectGantt({
               <GanttHeader />
               {canEdit && (
                 <GanttCreateMarkerTrigger
-                  onCreateMarker={(_date) => {
+                  onCreateMarker={(date) => {
                     setEditingMarker(null)
+                    setMarkerDefaultDate(date)
                     setMarkerDialogOpen(true)
                   }}
                 />
@@ -957,27 +944,6 @@ export function ProjectGantt({
                                 setPhaseDialogOpen(true)
                               }}
                             >
-                              <Eye className="size-4" />
-                              {canEdit ? "Modifier" : "Voir les détails"}
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                              className="flex items-center gap-2"
-                              onClick={() => {
-                                if (!phaseData) return
-                                setEditingPhase({
-                                  id: phaseData.id,
-                                  name: phaseData.name,
-                                  code: phaseData.code,
-                                  montantHT: phaseData.montantHT,
-                                  startDate: phaseData.startDate,
-                                  endDate: phaseData.endDate,
-                                  status: phaseData.status,
-                                  obs: phaseData.obs,
-                                  progress: phaseData.progress,
-                                })
-                                setPhaseDialogOpen(true)
-                              }}
-                            >
                               <Pencil className="size-4" />
                               Modifier
                             </ContextMenuItem>
@@ -1048,37 +1014,47 @@ export function ProjectGantt({
               </GanttFeatureList>
 
               {/* Markers */}
-              {markers.map((marker) => (
-                <GanttMarker
-                  key={marker.id}
-                  id={marker.id}
-                  date={marker.date}
-                  label={marker.label}
-                  className={marker.className}
-                  onEdit={
-                    canEdit
-                      ? () => {
-                          const m = markers.find((mk) => mk.id === marker.id)
-                          if (!m) return
-                          setEditingMarker({
-                            id: m.id,
-                            label: m.label,
-                            date: m.date,
-                            className: m.className,
-                          })
-                          setMarkerDialogOpen(true)
-                        }
-                      : undefined
-                  }
-                  onRemove={
-                    canEdit
-                      ? () => {
-                          setDeletingMarkerId(marker.id)
-                        }
-                      : undefined
-                  }
-                />
-              ))}
+              {markers.map((marker) => {
+                const markerColor = marker.className?.startsWith("color:")
+                  ? marker.className.slice(6)
+                  : undefined
+
+                const openMarkerEdit = (id: string) => {
+                  const m = markers.find((mk) => mk.id === id)
+                  if (!m) return
+                  setEditingMarker({
+                    id: m.id,
+                    label: m.label,
+                    date: m.date,
+                    className: m.className,
+                  })
+                  setMarkerDialogOpen(true)
+                }
+
+                return (
+                  <GanttMarker
+                    key={marker.id}
+                    id={marker.id}
+                    date={marker.date}
+                    label={marker.label}
+                    color={markerColor}
+                    className={markerColor ? undefined : marker.className}
+                    onEdit={
+                      canEdit ? () => openMarkerEdit(marker.id) : undefined
+                    }
+                    onDoubleClick={
+                      canEdit ? () => openMarkerEdit(marker.id) : undefined
+                    }
+                    onRemove={
+                      canEdit
+                        ? () => {
+                            setDeletingMarkerId(marker.id)
+                          }
+                        : undefined
+                    }
+                  />
+                )
+              })}
               <GanttToday />
             </GanttTimeline>
           </GanttProvider>
@@ -1127,13 +1103,17 @@ export function ProjectGantt({
 
       {/* GanttMarker Dialog */}
       <GanttMarkerDialog
-        key={editingMarker?.id ?? "marker-create"}
+        key={`${editingMarker?.id ?? "marker-create"}-${markerDefaultDate?.getTime() ?? "no-date"}`}
         projectId={projectId}
         marker={editingMarker ?? undefined}
+        defaultDate={markerDefaultDate}
         open={markerDialogOpen}
         onOpenChange={(open) => {
           setMarkerDialogOpen(open)
-          if (!open) setEditingMarker(null)
+          if (!open) {
+            setEditingMarker(null)
+            setMarkerDefaultDate(null)
+          }
         }}
         onSuccess={() => router.refresh()}
       />

@@ -59,6 +59,7 @@ export function PhaseDialog({
   const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  const isControlled = externalOnOpenChange !== undefined
   const open = externalOpen ?? internalOpen
   const setOpen = externalOnOpenChange ?? setInternalOpen
 
@@ -125,7 +126,11 @@ export function PhaseDialog({
           ? "Modifiez les informations de la phase."
           : "Ajoutez une nouvelle phase au projet."
       }
-      trigger={<Button>{phase ? "Modifier" : "Ajouter une phase"}</Button>}
+      trigger={
+        !isControlled ? (
+          <Button>{phase ? "Modifier" : "Ajouter une phase"}</Button>
+        ) : undefined
+      }
       size="md"
       isPending={isPending}
       onSubmit={handleSubmit}

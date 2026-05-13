@@ -1114,84 +1114,111 @@ export const GanttMarker: FC<
   GanttMarkerProps & {
     onRemove?: (id: string) => void
     onEdit?: (id: string) => void
+    onDoubleClick?: (id: string) => void
     className?: string
+    color?: string
   }
-> = memo(({ label, date, id, onRemove, onEdit, className }) => {
-  const gantt = useContext(GanttContext)
-  const differenceIn = useMemo(
-    () => getDifferenceIn(gantt.range),
-    [gantt.range]
-  )
-  const timelineStartDate = useMemo(
-    () => new Date(gantt.timelineData.at(0)?.year ?? 0, 0, 1),
-    [gantt.timelineData]
-  )
+> = memo(
+  ({ label, date, id, onRemove, onEdit, onDoubleClick, className, color }) => {
+    const gantt = useContext(GanttContext)
+    const differenceIn = useMemo(
+      () => getDifferenceIn(gantt.range),
+      [gantt.range]
+    )
+    const timelineStartDate = useMemo(
+      () => new Date(gantt.timelineData.at(0)?.year ?? 0, 0, 1),
+      [gantt.timelineData]
+    )
 
-  // Memoize expensive calculations
-  const offset = useMemo(
-    () => differenceIn(date, timelineStartDate),
-    [differenceIn, date, timelineStartDate]
-  )
-  const innerOffset = useMemo(
-    () =>
-      calculateInnerOffset(
-        date,
-        gantt.range,
-        (gantt.columnWidth * gantt.zoom) / 100
-      ),
-    [date, gantt.range, gantt.columnWidth, gantt.zoom]
-  )
+    // Memoize expensive calculations
+    const offset = useMemo(
+      () => differenceIn(date, timelineStartDate),
+      [differenceIn, date, timelineStartDate]
+    )
+    const innerOffset = useMemo(
+      () =>
+        calculateInnerOffset(
+          date,
+          gantt.range,
+          (gantt.columnWidth * gantt.zoom) / 100
+        ),
+      [date, gantt.range, gantt.columnWidth, gantt.zoom]
+    )
 
-  const handleRemove = useCallback(() => onRemove?.(id), [onRemove, id])
-  const handleEdit = useCallback(() => onEdit?.(id), [onEdit, id])
+    const handleRemove = useCallback(() => onRemove?.(id), [onRemove, id])
+    const handleEdit = useCallback(() => onEdit?.(id), [onEdit, id])
+    const handleDoubleClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onDoubleClick?.(id)
+      },
+      [onDoubleClick, id]
+    )
 
-  return (
-    <div
-      className="pointer-events-none absolute top-0 left-0 z-20 flex h-full flex-col items-center justify-center overflow-visible select-none"
-      style={{
-        width: 0,
-        transform: `translateX(calc(var(--gantt-column-width) * ${offset} + ${innerOffset}px))`,
-      }}
-    >
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div
-            className={cn(
-              "group pointer-events-auto sticky top-0 flex flex-col flex-nowrap items-center justify-center rounded-b-md bg-card px-2 py-1 text-xs whitespace-nowrap text-foreground select-auto",
-              className
-            )}
-          >
-            {label}
-            <span className="max-h-0 overflow-hidden opacity-80 transition-all group-hover:max-h-8">
-              {formatDate(date, "MMM dd, yyyy")}
-            </span>
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          {onEdit ? (
-            <ContextMenuItem
-              className="flex items-center gap-2"
-              onClick={handleEdit}
+    return (
+      <div
+        className="pointer-events-none absolute top-0 left-0 z-20 flex h-full flex-col items-center justify-center overflow-visible select-none"
+        style={{
+          width: 0,
+          transform: `translateX(calc(var(--gantt-column-width) * ${offset} + ${innerOffset}px))`,
+        }}
+      >
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              className={cn(
+                "group pointer-events-auto sticky top-0 flex cursor-pointer flex-col flex-nowrap items-center justify-center rounded-b-md bg-card px-2 py-1 text-xs whitespace-nowrap text-foreground select-auto",
+                className
+              )}
+              style={
+                color
+                  ? ({
+                      backgroundColor: color,
+                      color: "#fff",
+                    } as React.CSSProperties)
+                  : undefined
+              }
+              onDoubleClick={handleDoubleClick}
             >
-              <PencilIcon size={16} />
-              Edit marker
-            </ContextMenuItem>
-          ) : null}
-          {onRemove ? (
-            <ContextMenuItem
-              className="flex items-center gap-2 text-destructive"
-              onClick={handleRemove}
-            >
-              <TrashIcon size={16} />
-              Remove marker
-            </ContextMenuItem>
-          ) : null}
-        </ContextMenuContent>
-      </ContextMenu>
-      <div className={cn("h-full w-px bg-card", className)} />
-    </div>
-  )
-})
+              {label}
+              <span className="max-h-0 overflow-hidden opacity-80 transition-all group-hover:max-h-8">
+                {formatDate(date, "MMM dd, yyyy")}
+              </span>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            {onEdit ? (
+              <ContextMenuItem
+                className="flex items-center gap-2"
+                onClick={handleEdit}
+              >
+                <PencilIcon size={16} />
+                modifier le marker
+              </ContextMenuItem>
+            ) : null}
+            {onRemove ? (
+              <ContextMenuItem
+                className="flex items-center gap-2 text-destructive"
+                onClick={handleRemove}
+              >
+                <TrashIcon size={16} />
+                Supprimer le marker
+              </ContextMenuItem>
+            ) : null}
+          </ContextMenuContent>
+        </ContextMenu>
+        <div
+          className={cn("h-full w-px bg-card", className)}
+          style={
+            color
+              ? ({ backgroundColor: color } as React.CSSProperties)
+              : undefined
+          }
+        />
+      </div>
+    )
+  }
+)
 
 GanttMarker.displayName = "GanttMarker"
 
