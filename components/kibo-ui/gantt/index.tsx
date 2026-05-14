@@ -10,8 +10,6 @@ import {
   differenceInDays,
   differenceInHours,
   differenceInMonths,
-  endOfDay,
-  endOfMonth,
   format,
   formatDate,
   formatDistance,
@@ -145,16 +143,6 @@ const getStartOf = (range: Range) => {
   return fn
 }
 
-const getEndOf = (range: Range) => {
-  let fn = endOfDay
-
-  if (range === "monthly" || range === "quarterly") {
-    fn = endOfMonth
-  }
-
-  return fn
-}
-
 const getAddRange = (range: Range) => {
   let fn = addDays
 
@@ -268,22 +256,6 @@ const getWidth = (
     startRangeOffset * pixelsPerDayInStartMonth +
     endRangeOffset * pixelsPerDayInEndMonth
   )
-}
-
-const calculateInnerOffset = (
-  date: Date,
-  range: Range,
-  columnWidth: number
-) => {
-  const startOf = getStartOf(range)
-  const endOf = getEndOf(range)
-  const differenceIn = getInnerDifferenceIn(range)
-  const startOfRange = startOf(date)
-  const endOfRange = endOf(date)
-  const totalRangeDays = differenceIn(endOfRange, startOfRange)
-  const dayOfMonth = date.getDate()
-
-  return (dayOfMonth / totalRangeDays) * columnWidth
 }
 
 export const GanttContext = createContext<GanttContextProps>({
@@ -1121,28 +1093,14 @@ export const GanttMarker: FC<
 > = memo(
   ({ label, date, id, onRemove, onEdit, onDoubleClick, className, color }) => {
     const gantt = useContext(GanttContext)
-    const differenceIn = useMemo(
-      () => getDifferenceIn(gantt.range),
-      [gantt.range]
-    )
     const timelineStartDate = useMemo(
       () => new Date(gantt.timelineData.at(0)?.year ?? 0, 0, 1),
       [gantt.timelineData]
     )
 
-    // Memoize expensive calculations
-    const offset = useMemo(
-      () => differenceIn(date, timelineStartDate),
-      [differenceIn, date, timelineStartDate]
-    )
-    const innerOffset = useMemo(
-      () =>
-        calculateInnerOffset(
-          date,
-          gantt.range,
-          (gantt.columnWidth * gantt.zoom) / 100
-        ),
-      [date, gantt.range, gantt.columnWidth, gantt.zoom]
+    const pixelOffset = useMemo(
+      () => getOffset(date, timelineStartDate, gantt),
+      [date, timelineStartDate, gantt]
     )
 
     const handleRemove = useCallback(() => onRemove?.(id), [onRemove, id])
@@ -1160,7 +1118,7 @@ export const GanttMarker: FC<
         className="pointer-events-none absolute top-0 left-0 z-20 flex h-full flex-col items-center justify-center overflow-visible select-none"
         style={{
           width: 0,
-          transform: `translateX(calc(var(--gantt-column-width) * ${offset} + ${innerOffset}px))`,
+          transform: `translateX(${Math.round(pixelOffset)}px)`,
         }}
       >
         <ContextMenu>
@@ -1481,28 +1439,14 @@ export const GanttToday: FC<GanttTodayProps> = ({ className }) => {
   const label = "Today"
   const date = useMemo(() => new Date(), [])
   const gantt = useContext(GanttContext)
-  const differenceIn = useMemo(
-    () => getDifferenceIn(gantt.range),
-    [gantt.range]
-  )
   const timelineStartDate = useMemo(
     () => new Date(gantt.timelineData.at(0)?.year ?? 0, 0, 1),
     [gantt.timelineData]
   )
 
-  // Memoize expensive calculations
-  const offset = useMemo(
-    () => differenceIn(date, timelineStartDate),
-    [differenceIn, date, timelineStartDate]
-  )
-  const innerOffset = useMemo(
-    () =>
-      calculateInnerOffset(
-        date,
-        gantt.range,
-        (gantt.columnWidth * gantt.zoom) / 100
-      ),
-    [date, gantt.range, gantt.columnWidth, gantt.zoom]
+  const pixelOffset = useMemo(
+    () => getOffset(date, timelineStartDate, gantt),
+    [date, timelineStartDate, gantt]
   )
 
   return (
@@ -1510,7 +1454,7 @@ export const GanttToday: FC<GanttTodayProps> = ({ className }) => {
       className="pointer-events-none absolute top-0 left-0 z-20 flex h-full flex-col items-center justify-center overflow-visible select-none"
       style={{
         width: 0,
-        transform: `translateX(calc(var(--gantt-column-width) * ${offset} + ${innerOffset}px))`,
+        transform: `translateX(${Math.round(pixelOffset)}px)`,
       }}
     >
       <div
