@@ -2,14 +2,21 @@
 
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { AlertTriangle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import {
+  CalendarDays,
+  CheckCircle2,
+  Circle,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react"
 
 import { KanbanCard } from "@/components/kibo-ui/kanban"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +41,7 @@ interface TaskCardProps {
     tagColors: string[]
     projectName: string
     column: string
+    commentCount?: number
   }
   laneColor: string
   canEdit: boolean
@@ -55,6 +63,7 @@ export function TaskCard({
   const dueDate = task.dueDate
   const startDate = task.startDate
   const dueInfo = dueDate ? formatRelativeDueDate(dueDate) : null
+  const commentCount = task.commentCount ?? 0
 
   const getDateDisplay = () => {
     if (startDate && dueDate) {
@@ -81,96 +90,141 @@ export function TaskCard({
           onClick()
         }
       }}
-      className="group relative cursor-pointer border-l-[3px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/5"
-      style={{ borderLeftColor: laneColor }}
+      className={cn(
+        "group relative cursor-pointer rounded-xl border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg",
+        task.complete && "opacity-50"
+      )}
     >
-      <div className={cn("flex flex-col gap-2", task.complete && "opacity-60")}>
-        {/* Checkbox + Title row */}
-        <div className="flex items-start gap-2">
-          {canEdit && (
-            <Checkbox
-              checked={task.complete}
-              onCheckedChange={() => onComplete(task.id)}
-              onClick={(e) => e.stopPropagation()}
-              className="mt-0.5"
-              aria-label={
-                task.complete
-                  ? "Marquer comme non terminée"
-                  : "Marquer comme terminée"
-              }
+      <div className="flex flex-col gap-3 p-3">
+        {/* Status badge row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <div
+              className="size-2 rounded-full"
+              style={{ backgroundColor: laneColor }}
             />
+            <span
+              className={cn(
+                "text-[11px] font-medium",
+                task.complete ? "text-emerald-600" : "text-muted-foreground"
+              )}
+            >
+              {task.complete ? "Terminé" : "En cours"}
+            </span>
+          </div>
+
+          {/* Mobile kebab menu - always visible on touch */}
+          {(onEdit || onDelete) && (
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Options de la tâche"
+                  >
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {onEdit && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit()
+                      }}
+                    >
+                      <Pencil className="mr-2 h-3.5 w-3.5" />
+                      Modifier
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete()
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      Supprimer
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
-          <p
-            className={cn(
-              "text-sm leading-snug font-medium",
-              !canEdit && "ml-6",
-              task.complete && "text-muted-foreground line-through"
-            )}
-          >
-            {task.title}
-          </p>
         </div>
 
-        {/* Description preview */}
+        {/* Title */}
+        <h4
+          className={cn(
+            "text-base leading-snug font-semibold",
+            task.complete && "text-muted-foreground line-through"
+          )}
+        >
+          {task.title}
+        </h4>
+
+        {/* Description */}
         {task.description && (
           <p className="line-clamp-1 text-xs text-muted-foreground">
             {task.description}
           </p>
         )}
 
-        {/* Tag badges */}
-        {task.tagNames.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {task.tagNames.map((tag: string, i: number) => {
-              const color = task.tagColors[i] ?? "#6b7280"
-              return (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="text-[10px]"
-                  style={{
-                    backgroundColor: color + "20",
-                    color,
-                  }}
-                >
-                  {tag}
-                </Badge>
-              )
-            })}
+        {/* Assignee row */}
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs text-muted-foreground">Assigné :</span>
+          <Avatar className="size-6">
+            <AvatarImage src={task.assignedUserAvatar ?? undefined} />
+            <AvatarFallback className="text-[10px]">
+              {task.assignedUserName?.[0]?.toUpperCase() ?? "?"}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* Date + Tag row */}
+        {(dateDisplay || task.tagNames.length > 0) && (
+          <div className="flex items-center justify-between">
+            {dateDisplay && (
+              <div
+                className={cn(
+                  "flex items-center gap-1 text-xs",
+                  isOverdue && !task.complete
+                    ? "font-medium text-destructive"
+                    : dueInfo?.variant === "today"
+                      ? "font-medium text-emerald-600"
+                      : "text-muted-foreground"
+                )}
+              >
+                <CalendarDays className="size-3" />
+                <span>{dateDisplay}</span>
+              </div>
+            )}
+            {task.tagNames.length > 0 && (
+              <Badge
+                variant="secondary"
+                className="text-[10px]"
+                style={{
+                  backgroundColor: (task.tagColors[0] ?? "#6b7280") + "20",
+                  color: task.tagColors[0] ?? "#6b7280",
+                }}
+              >
+                {task.tagNames[0]}
+              </Badge>
+            )}
           </div>
         )}
 
-        {/* Footer: assignee + date */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Avatar className="size-6">
-              <AvatarImage src={task.assignedUserAvatar ?? undefined} />
-              <AvatarFallback className="text-[10px]">
-                {task.assignedUserName?.[0]?.toUpperCase() ?? "?"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="max-w-[100px] truncate text-xs text-muted-foreground">
-              {task.assignedUserName ?? "Non assigné"}
-            </span>
-          </div>
-
-          {dateDisplay && (
-            <div
-              className={cn(
-                "flex items-center gap-1 text-xs",
-                isOverdue && !task.complete
-                  ? "font-medium text-destructive"
-                  : dueInfo?.variant === "today"
-                    ? "font-medium text-emerald-500"
-                    : "text-muted-foreground"
-              )}
-            >
-              <span>{dateDisplay}</span>
-              {isOverdue && !task.complete && (
-                <AlertTriangle className="size-3 text-destructive" />
-              )}
-            </div>
-          )}
+        {/* Comment count footer */}
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <MessageSquare className="size-3" />
+          <span>
+            {commentCount} Commentaire{commentCount !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
@@ -179,6 +233,26 @@ export function TaskCard({
         className="absolute top-2 right-2 hidden gap-1 opacity-0 transition-opacity group-hover:opacity-100 md:flex"
         data-no-dnd="true"
       >
+        {canEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation()
+              onComplete(task.id)
+            }}
+            aria-label={
+              task.complete ? "Réouvrir la tâche" : "Marquer comme terminée"
+            }
+          >
+            {task.complete ? (
+              <CheckCircle2 className="h-3 w-3" />
+            ) : (
+              <Circle className="h-3 w-3" />
+            )}
+          </Button>
+        )}
         {onEdit && (
           <Button
             variant="ghost"
@@ -208,50 +282,6 @@ export function TaskCard({
           </Button>
         )}
       </div>
-
-      {/* Mobile kebab menu - always visible on touch */}
-      {(onEdit || onDelete) && (
-        <div className="absolute top-2 right-2 md:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Options de la tâche"
-              >
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {onEdit && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEdit()
-                  }}
-                >
-                  <Pencil className="mr-2 h-3.5 w-3.5" />
-                  Modifier
-                </DropdownMenuItem>
-              )}
-              {onDelete && (
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDelete()
-                  }}
-                >
-                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                  Supprimer
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
     </KanbanCard>
   )
 }

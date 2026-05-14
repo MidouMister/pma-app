@@ -404,16 +404,23 @@ components/
 ├── ui/               # shadcn primitives (28 installed)
 ├── theme-provider    # Next-themes provider
 ├── sidebar/          # Sidebar components
-├── shared/           # Reusable across features (page-header, empty-state, form-modal, form-section, data-table)
+├── shared/           # Reusable across features (page-header, empty-state, form-modal, detail-modal, form-section, data-table)
 ├── onboarding/       # Onboarding wizard steps
 ├── project/          # Project-specific components (dialog, gantt, phase/subphase dialogs)
 ├── kanban/           # Kanban board components:
-│   ├── unit-kanban.tsx     # Board wrapper, filter bar, lane rendering
-│   ├── task-card.tsx       # Individual task card (extracted, redesign-ready)
-│   ├── task-dialog.tsx     # Create/edit task form with sections
-│   ├── task-detail-sheet.tsx  # Side sheet for task details
-│   ├── lane-dialog.tsx     # Create/edit lane form
-│   └── types.ts            # Shared Kanban interfaces
+│   ├── unit-kanban.tsx         # Board wrapper, filter bar, lane rendering, view toggle
+│   ├── task-card.tsx           # Individual task card (redesigned: status badge, comment count)
+│   ├── task-dialog.tsx         # Create/edit task form with sections
+│   ├── task-detail-modal.tsx   # Detail view modal (replaces task-detail-sheet)
+│   ├── task-detail-sheet.tsx   # DEPRECATED — kept for reference, no longer imported
+│   ├── task-table.tsx          # Table/list view alternative to Kanban
+│   ├── task-comments.tsx       # Comment input + list (reused in detail modal)
+│   ├── task-metadata.tsx       # Assignee, date, tags section (reused in detail modal)
+│   ├── task-time-entries.tsx   # Time entries display (reused in detail modal)
+│   ├── lane-dialog.tsx         # Create/edit lane form
+│   ├── tag-dialog.tsx          # Tag management dialog
+│   ├── tag-manager.tsx         # Tag management UI
+│   └── types.ts                # Shared Kanban interfaces
 ├── gantt/            # Gantt chart components:
 │   └── gantt-marker-dialog.tsx  # FormModal-based marker CRUD dialog
 ├── client/           # Client CRM components
@@ -653,6 +660,103 @@ Deletion uses `<AlertDialog>` with confirm/cancel. All CRUD dialogs use `<FormMo
 ### 6.14 Gantt Exports from kibo-ui
 
 `GanttContext` is **exported** from `components/kibo-ui/gantt/index.tsx`. Use `GanttContext.Consumer` or `useContext(GanttContext)` to access `scrollToFeature()` in the sidebar.
+
+### 6.15 DetailModal Convention (read/detail counterpart to FormModal)
+
+**Component:** `components/shared/detail-modal.tsx`
+
+`DetailModal` is the read-only counterpart to `FormModal`. Use it for **detail views** that don't need a form wrapper. Same visual language: gradient accent bar, icon box, Separator.
+
+```typescript
+interface DetailModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  subtitle?: string
+  icon?: ReactNode
+  badge?: ReactNode // Status badge (lane name)
+  headerActions?: ReactNode // Action buttons (Edit, Complete, Delete)
+  size?: "md" | "lg" | "xl" | "2xl"
+  className?: string
+  children: ReactNode
+}
+```
+
+**Key differences from FormModal:**
+
+- NO `<form>` wrapper — just `<div>` for content
+- NO `DialogFooter` — no submit/cancel buttons
+- Has `badge` and `headerActions` slots in header
+- Defaults to `size="lg"`
+
+### 6.16 TaskDetailModal Convention
+
+**Component:** `components/kanban/task-detail-modal.tsx`
+
+The detail view for a task, opened when clicking a task card. Uses `DetailModal` with `size="2xl"`.
+
+**Layout (two-column on `lg+`, stacks on mobile):**
+
+- **Header**: Lane name badge (colored dot + name), Edit/Complete/Delete buttons, editable title (saves on blur), breadcrumb (Project › Phase › SubPhase)
+- **Left column (~60%)**: Description (editable textarea, saves on blur) + Tabs (Activité with TaskComments, Temps with TaskTimeEntries)
+- **Right column (~40%)**: Metadata sidebar card with Assigné à (Select), Date début (display), Échéance (color-coded popover), Colonne (Select with dots), Tags (colored badges + add popover), Projet (read-only), Phase (read-only)
+
+**Data fetching:** Calls `getTaskDetailsData(taskId, projectId)` on open via `useEffect` with `isMounted` cleanup.
+
+**State management:** Local state for `title`, `description`, `dueDate`, `newComment` + `useTransition` for mutations.
+
+**Mutations:** Calls `handleUpdateTask(fields)` → `updateTask()` server action, then `onTaskUpdated?.()` callback (passed from parent for `router.refresh()`).
+
+**Props:**
+
+```typescript
+interface TaskDetailModalProps {
+  task: { ... } | null
+  isOpen: boolean
+  onClose: () => void
+  canEdit?: boolean
+  lanes?: { id: string; name: string; color: string | null }[]
+  currentUser?: { name: string | null; avatarUrl: string | null } | null
+  onEdit?: () => void           // Opens TaskDialog from parent
+  onTaskUpdated?: () => void     // Refreshes parent data after mutations
+}
+```
+
+### 6.17 TaskTable Convention
+
+**Component:** `components/kanban/task-table.tsx`
+
+Table/list view alternative to the Kanban board. Uses `@tanstack/react-table` directly.
+
+**Columns:** Statut (colored dot + lane name), Titre (clickable → opens detail modal), Projet, Phase, Assigné (Avatar + name), Échéance (color-coded), Tags (max 2 colored badges + "+N" overflow), Terminé (Checkbox), Actions (edit/delete buttons).
+
+**Features:**
+
+- Sorting enabled on 6 columns (Statut, Titre, Projet, Phase, Assigné, Échéance)
+- Pagination via `getPaginationRowModel` with page sizes 10/20/50
+- Column visibility toggle via DropdownMenu
+- Row click opens detail modal; `e.stopPropagation()` on action buttons/checkbox
+- Empty state with `List` icon and "Aucune tâche trouvée"
+- Responsive: horizontal scroll via `overflow-x-auto`
+
+### 6.18 View Toggle Convention (Kanban / Table)
+
+**Component:** `components/kanban/unit-kanban.tsx`
+
+The tasks page supports two view modes: **Kanban** (board) and **Table** (list). Toggle via segmented button group in the filter bar.
+
+```typescript
+const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban")
+```
+
+**Toggle buttons:** Two `Button` components with `LayoutGrid` (Kanban) and `List` (Table) icons, wrapped in a `rounded-lg border` container. Active mode uses `variant="secondary"`, inactive uses `variant="ghost"`.
+
+**Rendering logic:**
+
+- `viewMode === "kanban"` → renders `<KanbanProvider>` with `<KanbanBoard>` per lane
+- `viewMode === "table"` → renders `<TaskTable>` with filtered tasks
+
+Both modes share the same filter state (search query, project/phase/subPhase filters).
 
 ---
 

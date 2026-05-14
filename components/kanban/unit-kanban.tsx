@@ -7,6 +7,8 @@ import {
   Filter,
   FolderKanban,
   Layers,
+  LayoutGrid,
+  List,
   ListTree,
   MoreHorizontal,
   Pencil,
@@ -67,7 +69,8 @@ import { deleteLane } from "@/actions/lane"
 
 import { TaskCard } from "./task-card"
 import { LaneDialog } from "./lane-dialog"
-import { TaskDetailSheet } from "./task-detail-sheet"
+import { TaskDetailModal } from "./task-detail-modal"
+import { TaskTable } from "./task-table"
 import { TaskDialog } from "./task-dialog"
 
 interface KanbanTask {
@@ -86,6 +89,7 @@ interface KanbanTask {
   tagIds: string[]
   tagNames: string[]
   tagColors: string[]
+  commentCount: number
   projectId: string
   projectName: string
   phaseName: string | null
@@ -176,6 +180,7 @@ export function UnitKanban({
   const [laneDialogOpen, setLaneDialogOpen] = useState(false)
   const [editingLane, setEditingLane] = useState<KanbanLane | null>(null)
   const [projectComboboxOpen, setProjectComboboxOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban")
 
   const filteredTasks = useMemo(() => {
     let result = [...tasks]
@@ -194,6 +199,31 @@ export function UnitKanban({
     }
     return result
   }, [tasks, projectFilter, phaseFilter, subPhaseFilter, searchQuery])
+
+  const tableTasks = useMemo(
+    () =>
+      filteredTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        complete: t.complete,
+        laneId: t.laneId,
+        laneName: lanes.find((l) => l.id === t.laneId)?.name ?? null,
+        assignedUserId: t.assignedUserId,
+        assignedUserName: t.assignedUserName,
+        assignedUserAvatar: t.assignedUserAvatar,
+        dueDate: t.dueDate,
+        startDate: t.startDate,
+        projectId: t.projectId,
+        projectName: t.projectName,
+        phaseName: t.phaseName,
+        subPhaseName: t.subPhaseName,
+        tagNames: t.tagNames,
+        tagColors: t.tagColors,
+        commentCount: t.commentCount,
+      })),
+    [filteredTasks, lanes]
+  )
 
   const availablePhases = useMemo(() => {
     if (projectFilter === "all") return phases
@@ -255,6 +285,13 @@ export function UnitKanban({
     },
     [router]
   )
+
+  const handleDetailEdit = useCallback(() => {
+    if (!selectedTask) return
+    setEditingTask(selectedTask)
+    setTaskDialogOpen(true)
+    setSelectedTask(null)
+  }, [selectedTask])
 
   const resetFilters = () => {
     setProjectFilter("all")
@@ -547,6 +584,28 @@ export function UnitKanban({
             </>
           )}
 
+          {/* View toggle */}
+          <div className="flex items-center gap-1 rounded-lg border p-0.5">
+            <Button
+              variant={viewMode === "kanban" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("kanban")}
+              className="h-7 px-2"
+              aria-label="Vue Kanban"
+            >
+              <LayoutGrid className="size-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === "table" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="h-7 px-2"
+              aria-label="Vue tableau"
+            >
+              <List className="size-3.5" />
+            </Button>
+          </div>
+
           {canEdit && (
             <Button
               variant="outline"
@@ -565,111 +624,139 @@ export function UnitKanban({
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex grow overflow-x-auto overflow-y-hidden pb-4">
-        <KanbanProvider
-          id={`kanban-${unitId}`}
-          data={filteredTasks as (KanbanTask & Record<string, unknown>)[]}
-          columns={lanes as (KanbanLane & Record<string, unknown>)[]}
-          onDragEnd={handleDragEnd}
-          className="flex h-full w-full gap-2 px-4"
-        >
-          {(column) => {
-            const lane = column as unknown as KanbanLane
-            const laneTasks = filteredTasks.filter((t) => t.laneId === lane.id)
+      {viewMode === "kanban" && (
+        <div className="flex grow overflow-x-auto overflow-y-hidden pb-4">
+          <KanbanProvider
+            id={`kanban-${unitId}`}
+            data={filteredTasks as (KanbanTask & Record<string, unknown>)[]}
+            columns={lanes as (KanbanLane & Record<string, unknown>)[]}
+            onDragEnd={handleDragEnd}
+            className="flex h-full w-full gap-2 px-4"
+          >
+            {(column) => {
+              const lane = column as unknown as KanbanLane
+              const laneTasks = filteredTasks.filter(
+                (t) => t.laneId === lane.id
+              )
 
-            return (
-              <KanbanBoard
-                key={lane.id}
-                id={lane.id}
-                className="group w-[300px] shrink-0 overflow-visible rounded-xl border-2"
-              >
-                <KanbanHeader className="flex items-center justify-between border-b bg-transparent px-2 py-3">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: lane.color ?? "#94a3b8" }}
-                    />
-                    <h3 className="text-sm font-semibold tracking-tight">
-                      {lane.name}
-                    </h3>
-                    <Badge variant="secondary" className="h-5 px-1 text-[10px]">
-                      {laneTasks.length}
-                    </Badge>
-                  </div>
-                  {canEdit && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 opacity-0 transition-opacity group-hover:opacity-100"
-                          aria-label="Options de colonne"
-                        >
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openLaneEdit(lane)}>
-                          <Pencil className="mr-2 size-3.5" /> Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDeleteLane(lane.id)}
-                        >
-                          <Trash2 className="mr-2 size-3.5" /> Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </KanbanHeader>
-
-                <KanbanCards id={lane.id} className="mt-2 space-y-2">
-                  {(item) => {
-                    const task = item as unknown as KanbanTask
-                    return (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        laneColor={lane.color ?? "#94a3b8"}
-                        canEdit={canEdit}
-                        onComplete={handleComplete}
-                        onClick={() => handleEdit(task)}
-                        onEdit={canEdit ? () => handleEdit(task) : undefined}
-                        onDelete={
-                          canEdit ? () => handleDelete(task.id) : undefined
-                        }
+              return (
+                <KanbanBoard
+                  key={lane.id}
+                  id={lane.id}
+                  className="group w-[300px] shrink-0 overflow-visible rounded-xl border-2"
+                >
+                  <KanbanHeader className="flex items-center justify-between border-b bg-transparent px-2 py-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: lane.color ?? "#94a3b8" }}
                       />
-                    )
-                  }}
-                </KanbanCards>
+                      <h3 className="text-sm font-semibold tracking-tight">
+                        {lane.name}
+                      </h3>
+                      <Badge
+                        variant="secondary"
+                        className="h-5 px-1 text-[10px]"
+                      >
+                        {laneTasks.length}
+                      </Badge>
+                    </div>
+                    {canEdit && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 opacity-0 transition-opacity group-hover:opacity-100"
+                            aria-label="Options de colonne"
+                          >
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openLaneEdit(lane)}>
+                            <Pencil className="mr-2 size-3.5" /> Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDeleteLane(lane.id)}
+                          >
+                            <Trash2 className="mr-2 size-3.5" /> Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </KanbanHeader>
 
-                {canEdit && (
-                  <div className="p-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/40 bg-transparent text-xs text-muted-foreground/60 transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
-                      onClick={() => {
-                        setTaskDialogLaneId(lane.id)
-                        setTaskDialogOpen(true)
-                      }}
-                      aria-label="Ajouter une tâche dans cette colonne"
-                    >
-                      <Plus className="size-4" />
-                      <span>Ajouter une tâche</span>
-                    </Button>
-                  </div>
-                )}
-              </KanbanBoard>
-            )
+                  <KanbanCards id={lane.id} className="mt-2 space-y-2">
+                    {(item) => {
+                      const task = item as unknown as KanbanTask
+                      return (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          laneColor={lane.color ?? "#94a3b8"}
+                          canEdit={canEdit}
+                          onComplete={handleComplete}
+                          onClick={() => setSelectedTask(task)}
+                          onEdit={canEdit ? () => handleEdit(task) : undefined}
+                          onDelete={
+                            canEdit ? () => handleDelete(task.id) : undefined
+                          }
+                        />
+                      )
+                    }}
+                  </KanbanCards>
+
+                  {canEdit && (
+                    <div className="p-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/40 bg-transparent text-xs text-muted-foreground/60 transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                        onClick={() => {
+                          setTaskDialogLaneId(lane.id)
+                          setTaskDialogOpen(true)
+                        }}
+                        aria-label="Ajouter une tâche dans cette colonne"
+                      >
+                        <Plus className="size-4" />
+                        <span>Ajouter une tâche</span>
+                      </Button>
+                    </div>
+                  )}
+                </KanbanBoard>
+              )
+            }}
+          </KanbanProvider>
+        </div>
+      )}
+
+      {viewMode === "table" && (
+        <TaskTable
+          tasks={tableTasks}
+          lanes={lanes}
+          canEdit={canEdit}
+          onEdit={
+            canEdit
+              ? (task) => {
+                  const t = filteredTasks.find((f) => f.id === task.id)
+                  if (t) handleEdit(t)
+                }
+              : undefined
+          }
+          onDelete={canEdit ? handleDelete : undefined}
+          onComplete={canEdit ? handleComplete : undefined}
+          onRowClick={(task) => {
+            const fullTask = filteredTasks.find((t) => t.id === task.id)
+            if (fullTask) setSelectedTask(fullTask)
           }}
-        </KanbanProvider>
-      </div>
+        />
+      )}
 
-      {/* Task Detail Sheet */}
-      <TaskDetailSheet
+      {/* Task Detail Modal */}
+      <TaskDetailModal
         task={
           selectedTask
             ? {
@@ -684,16 +771,14 @@ export function UnitKanban({
                 assignedUserName: selectedTask.assignedUserName,
                 assignedUserAvatar: selectedTask.assignedUserAvatar,
                 dueDate: selectedTask.dueDate,
+                startDate: selectedTask.startDate,
                 projectId: selectedTask.projectId,
                 projectName: selectedTask.projectName,
                 phaseName: selectedTask.phaseName,
                 subPhaseName: selectedTask.subPhaseName,
                 tagNames: selectedTask.tagNames,
                 tagColors: selectedTask.tagColors,
-                Project: null,
-                Phase: null,
-                SubPhase: null,
-                Tags: [],
+                commentCount: selectedTask.commentCount,
               }
             : null
         }
@@ -702,6 +787,8 @@ export function UnitKanban({
         canEdit={canEdit}
         lanes={lanes}
         currentUser={currentUser}
+        onEdit={canEdit ? handleDetailEdit : undefined}
+        onTaskUpdated={() => router.refresh()}
       />
 
       {/* Lane Dialog (for context menu edit) */}

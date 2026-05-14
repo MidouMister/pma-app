@@ -963,6 +963,87 @@
 
 ---
 
+---
+
+## Kanban Revamp — Detail Modal, Card Redesign & Table View (Post-M8)
+
+**Status:** `[x] COMPLETED 2026-05-14`
+**Depends on:** Milestone 8 (Kanban board exists), Kanban Task Form + Card Redesign (Phase 5-6)
+**Plan:** [kanban-revamp.md](./plans/implementation_plan-kanban-revamp.md)
+**Goal:** Fix card click → edit form problem, add detail modal with comments/activity, redesign cards, add table view.
+
+### Task 1 — Create DetailModal Wrapper ✅ 2026-05-14
+
+- [x] Create `components/shared/detail-modal.tsx` — reusable read/detail modal wrapper
+- [x] Same visual language as FormModal (gradient accent bar, icon box, Separator, SIZE_MAP)
+- [x] No `<form>` wrapper, no DialogFooter, no DialogTrigger
+- [x] Props: `open`, `onOpenChange`, `title`, `subtitle`, `icon`, `badge`, `headerActions`, `size`, `className`, `children`
+- [x] **File**: `components/shared/detail-modal.tsx` (NEW)
+
+### Task 2 — Add commentCount to Data Pipeline ✅ 2026-05-14
+
+- [x] Add `_count: { select: { TaskComment: true } }` to `getUnitTasks` in `lib/queries.ts`
+- [x] Map `commentCount: t._count?.TaskComment ?? 0` in tasks page
+- [x] **Files**: `lib/queries.ts`, `app/(dashboard)/unite/[unitId]/tasks/page.tsx`
+
+### Task 3 — Redesign Task Card ✅ 2026-05-14
+
+- [x] Remove left colored border and inline checkbox
+- [x] Add status badge row (colored dot + lane name)
+- [x] Larger title (`text-base font-semibold`), always-visible description
+- [x] Right-aligned assignee row ("Assigné :" label + avatar)
+- [x] Date + first tag row (CalendarDays icon + formatted date left, first tag colored badge right)
+- [x] Comment count footer (MessageSquare icon + "N Commentaire(s)")
+- [x] Complete toggle moved to hover actions
+- [x] Completed state: `opacity-50` with strikethrough title
+- [x] Card: `rounded-xl border bg-card shadow-sm`, hover: `-translate-y-1 shadow-lg`
+- [x] **File**: `components/kanban/task-card.tsx` (MODIFY)
+
+### Task 4 — Create TaskDetailModal ✅ 2026-05-14
+
+- [x] Create `components/kanban/task-detail-modal.tsx` — replaces `task-detail-sheet.tsx`
+- [x] Uses `DetailModal` wrapper with `size="2xl"`
+- [x] Two-column layout: description + tabs (activity/time) on left, metadata sidebar on right
+- [x] Editable title and description (saves on blur)
+- [x] Header actions: Edit pencil (opens TaskDialog), Complete toggle, Delete with AlertDialog
+- [x] Metadata sidebar: Assigné à, Date début, Échéance (color-coded), Colonne, Tags, Projet, Phase
+- [x] Reuses `TaskComments` + `TaskTimeEntries` sub-components
+- [x] Data fetching via `getTaskDetailsData` on open
+- [x] `onTaskUpdated` callback for parent refresh after mutations
+- [x] **File**: `components/kanban/task-detail-modal.tsx` (NEW)
+- [x] **Deprecated**: `components/kanban/task-detail-sheet.tsx` (kept, no longer imported)
+
+### Task 5 — Create TaskTable Component ✅ 2026-05-14
+
+- [x] Create `components/kanban/task-table.tsx` — table/list alternative to Kanban board
+- [x] 9 columns: Statut, Titre, Projet, Phase, Assigné, Échéance, Tags, Terminé, Actions
+- [x] Sorting on 6 columns via `getSortedRowModel`
+- [x] Pagination with page sizes 10/20/50
+- [x] Column visibility toggle dropdown
+- [x] Row click opens detail modal; `e.stopPropagation()` on action buttons
+- [x] Empty state with List icon and "Aucune tâche trouvée"
+- [x] **File**: `components/kanban/task-table.tsx` (NEW)
+
+### Task 6 — Wire Everything in unit-kanban.tsx ✅ 2026-05-14
+
+- [x] Fix click handler: card click opens TaskDetailModal (not edit form)
+- [x] Add `viewMode` state (`'kanban' | 'table'`) with toggle buttons (LayoutGrid / List)
+- [x] Conditionally render KanbanProvider or TaskTable based on viewMode
+- [x] Replace TaskDetailSheet import with TaskDetailModal
+- [x] Wire `handleDetailEdit` → closes modal + opens TaskDialog
+- [x] Pass `onTaskUpdated` callback for router.refresh() after mutations
+- [x] Add `commentCount` to interface and props
+- [x] **File**: `components/kanban/unit-kanban.tsx` (MODIFY)
+
+### Task 7 — Verification ✅ 2026-05-14
+
+- [x] `pnpm typecheck` — 0 errors
+- [x] `pnpm lint` — 0 errors (2 pre-existing TanStack Table warnings)
+- [x] `pnpm build` — all pages compile
+- [x] `pnpm format` — all files formatted
+
+---
+
 ## Summary Table
 
 | #         | Milestone                                 | Tasks   | Status |
@@ -977,9 +1058,10 @@
 | 7         | Gantt Chart                               | 8       | `[x]`  |
 | 8         | Kanban Board & Tasks                      | 21      | `[x]`  |
 | —         | **Gantt Feature Upgrade (Post-M7)**       | **18**  | `[x]`  |
+| —         | **Kanban Revamp (Post-M8)**               | **7**   | `[x]`  |
 | 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **191** | 10/12  |
+| **TOTAL** |                                           | **198** | 11/13  |
 
 ---
 

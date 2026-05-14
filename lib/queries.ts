@@ -227,6 +227,7 @@ export async function getUnitTasks(unitId: string) {
       Tags: true,
       Phase: { select: { id: true, name: true } },
       subPhase: { select: { id: true, name: true } },
+      _count: { select: { TaskComment: true } },
     },
     orderBy: { order: "asc" },
   })

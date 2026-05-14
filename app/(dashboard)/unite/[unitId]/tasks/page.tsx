@@ -114,6 +114,7 @@ export default async function TasksPage({
     subPhaseName: t.subPhase?.name ?? null,
     phaseId: t.phaseId ?? null,
     subPhaseId: t.subPhaseId ?? null,
+    commentCount: t._count?.TaskComment ?? 0,
   }))
 
   // Map projects for filter
