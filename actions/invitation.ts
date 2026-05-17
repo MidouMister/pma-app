@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { sendInvitationSchema } from "@/lib/validators"
 import { unitMembersTag, companyTeamTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function sendInvitation(data: unknown) {
   try {
@@ -133,6 +134,30 @@ export async function sendInvitation(data: unknown) {
     revalidateTag(unitMembersTag(validData.unitId), "max")
     revalidateTag(companyTeamTag(user.companyId), "max")
 
+    // 10. Notify OWNER + ADMIN
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "INVITATION",
+        message: `Invitation envoyée à ${validData.email}`,
+        targetRole: "OWNER",
+      })
+    } catch {
+      // Notification failure should not block the mutation
+    }
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "INVITATION",
+        message: `Invitation envoyée à ${validData.email}`,
+        targetRole: "ADMIN",
+      })
+    } catch {
+      // Notification failure should not block the mutation
+    }
+
     return { success: true }
   } catch (error) {
     console.error("sendInvitation error:", error)
@@ -192,6 +217,30 @@ export async function revokeInvitation(invitationId: string) {
     // 5. Revalidate
     revalidateTag(unitMembersTag(invitation.unitId), "max")
     revalidateTag(companyTeamTag(user.companyId), "max")
+
+    // 6. Notify OWNER + ADMIN
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "INVITATION",
+        message: `Invitation de ${invitation.email} révoquée`,
+        targetRole: "OWNER",
+      })
+    } catch {
+      // Notification failure should not block the mutation
+    }
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "INVITATION",
+        message: `Invitation de ${invitation.email} révoquée`,
+        targetRole: "ADMIN",
+      })
+    } catch {
+      // Notification failure should not block the mutation
+    }
 
     return { success: true }
   } catch (error) {

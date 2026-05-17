@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { clientSchema, updateClientSchema } from "@/lib/validators"
 import { unitClientsTag, projectTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function createClient(data: unknown) {
   try {
@@ -83,6 +84,26 @@ export async function createClient(data: unknown) {
 
     // 7. Revalidate
     revalidateTag(unitClientsTag(validData.unitId), "max")
+
+    // 8. Notify OWNER + ADMIN
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "CLIENT",
+        message: `Le client ${validData.name} a été ajouté`,
+        targetRole: "OWNER",
+      })
+    } catch {}
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "CLIENT",
+        message: `Le client ${validData.name} a été ajouté`,
+        targetRole: "ADMIN",
+      })
+    } catch {}
 
     return { success: true }
   } catch (error) {
@@ -183,6 +204,26 @@ export async function updateClient(data: unknown) {
     // 7. Revalidate
     revalidateTag(unitClientsTag(client.unitId), "max")
     revalidateTag(projectTag(client.id), "max")
+
+    // 8. Notify OWNER + ADMIN
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "CLIENT",
+        message: `Le client ${client.name} a été modifié`,
+        targetRole: "OWNER",
+      })
+    } catch {}
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "CLIENT",
+        message: `Le client ${client.name} a été modifié`,
+        targetRole: "ADMIN",
+      })
+    } catch {}
 
     return { success: true }
   } catch (error) {

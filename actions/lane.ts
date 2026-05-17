@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { laneSchema } from "@/lib/validators"
 import { unitLanesTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function createLane(data: unknown) {
   try {
@@ -63,6 +64,25 @@ export async function createLane(data: unknown) {
         color: validData.color,
       },
     })
+
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "LANE",
+        message: `La colonne ${validData.name} a été créée`,
+        targetRole: "OWNER",
+      })
+    } catch {}
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "LANE",
+        message: `La colonne ${validData.name} a été créée`,
+        targetRole: "ADMIN",
+      })
+    } catch {}
 
     revalidateTag(unitLanesTag(validData.unitId), "max")
     return { success: true }
@@ -162,6 +182,25 @@ export async function deleteLane(laneId: string) {
     }
 
     await prisma.lane.delete({ where: { id: laneId } })
+
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "LANE",
+        message: `La colonne ${lane.name} a été supprimée`,
+        targetRole: "OWNER",
+      })
+    } catch {}
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "LANE",
+        message: `La colonne ${lane.name} a été supprimée`,
+        targetRole: "ADMIN",
+      })
+    } catch {}
 
     revalidateTag(unitLanesTag(lane.unitId), "max")
     return { success: true }

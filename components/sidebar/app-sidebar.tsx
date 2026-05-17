@@ -6,6 +6,7 @@ import { Building2 } from "lucide-react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavUser } from "@/components/sidebar/nav-user"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 import {
   CompanyUnitSwitcher,
   WorkspaceItem,
@@ -95,6 +96,9 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
+        <div className="flex items-center justify-center py-1 md:justify-start md:px-4">
+          <NotificationBell userId={userData.id} />
+        </div>
         <NavUser user={userData} />
       </SidebarFooter>
       <SidebarRail />

@@ -597,72 +597,72 @@
 
 ## Milestone 9: Production, Time Tracking & Notifications
 
-**Status:** `[ ] NOT STARTED`
+**Status:** `[x] COMPLETED 2026-05-17`
 **Depends on:** Milestone 6 (phases exist), Milestone 8 (tasks exist for time tracking)
 **Goal:** Production monitoring with charts, time entry logging with timer, and full notification system.
 
 ### 9.1 — Production Module
 
-- [ ] Install chart library: `pnpm add recharts`
-- [ ] Create `actions/production.ts`:
-  - `createProduct()` — one per phase max (PROD-01, PROD-02)
-  - `createProduction()` — auto-calculate `mntProd = Phase.montantHT * (taux / 100)` (PROD-03, PROD-04)
-  - **CRITICAL** On save: if `Production.taux < (Product.taux * Company.productionAlertThreshold / 100)` → create PRODUCTION notification for OWNER (PROD-07, BR-14)
-- [ ] Build Production tab in Project Detail:
-  - Product creation form (planned taux, montantProd, date)
-  - Production entry form (actual taux, date)
-  - Line chart: Planned vs Actual production rate (PROD-05)
-  - Grouped bar chart: Planned vs Actual amount (PROD-05)
-  - Data table: date, planned taux, actual taux, variance, variance % — red rows when actual < planned (PROD-06)
+- [x] Install chart library: `pnpm add recharts` ✅ 2026-05-17
+- [x] Create `actions/production.ts`:
+  - `createProduct()` — one per phase max (PROD-01, PROD-02) ✅ 2026-05-17
+  - `createProduction()` — auto-calculate `mntProd = Phase.montantHT * (taux / 100)` (PROD-03, PROD-04) ✅ 2026-05-17
+  - **CRITICAL** On save: if `Production.taux < (Product.taux * Company.productionAlertThreshold / 100)` → create PRODUCTION notification for OWNER (PROD-07, BR-14) ✅ 2026-05-17
+- [x] Build Production tab in Project Detail:
+  - Product creation form (planned taux, montantProd, date) ✅ 2026-05-17
+  - Production entry form (actual taux, date) ✅ 2026-05-17
+  - Line chart: Planned vs Actual production rate (PROD-05) ✅ 2026-05-17
+  - Grouped bar chart: Planned vs Actual amount (PROD-05) ✅ 2026-05-17
+  - Data table: date, planned taux, actual taux, variance, variance % — red rows when actual < planned (PROD-06) ✅ 2026-05-17
 
 ### 9.2 — Time Tracking
 
-- [ ] Create `actions/time-entry.ts`:
-  - `createTimeEntry()` — manual entry with startTime, endTime, description (TIME-05)
-  - `startTimer()` — create entry with startTime=now, endTime=null (TIME-04)
-  - `stopTimer()` — set endTime=now, calculate duration in minutes (TIME-04)
-  - `updateTimeEntry()` — users edit own; ADMIN/OWNER edit any in scope (TIME-06)
-  - `deleteTimeEntry()` — same permissions as edit (TIME-06)
-  - **CRITICAL** USERs can only log time on projects where they are TeamMember (TIME-07)
-- [ ] Build Time Tracking tab in Project Detail (TIME-08):
-  - Entries grouped by user
-  - Total duration per user per week
-  - Grand total
-- [ ] Build time entries section in Task Detail Sheet (TIME-09)
-- [ ] Build live timer UI component: start/stop button with elapsed time display (TIME-04)
+- [x] Create `actions/time-entry.ts`:
+  - `createTimeEntry()` — manual entry with startTime, endTime, description (TIME-05) ✅ 2026-05-17
+  - `startTimer()` — create entry with startTime=now, endTime=null (TIME-04) ✅ 2026-05-17
+  - `stopTimer()` — set endTime=now, calculate duration in minutes (TIME-04) ✅ 2026-05-17
+  - `updateTimeEntry()` — users edit own; ADMIN/OWNER edit any in scope (TIME-06) ✅ 2026-05-17
+  - `deleteTimeEntry()` — same permissions as edit (TIME-06) ✅ 2026-05-17
+  - **CRITICAL** USERs can only log time on projects where they are TeamMember (TIME-07) ✅ 2026-05-17
+- [x] Build Time Tracking tab in Project Detail (TIME-08):
+  - Entries grouped by user ✅ 2026-05-17
+  - Total duration per user per week ✅ 2026-05-17
+  - Grand total ✅ 2026-05-17
+- [x] Build time entries section in Task Detail Sheet (TIME-09) ✅ 2026-05-17
+- [x] Build live timer UI component: start/stop button with elapsed time display (TIME-04) ✅ 2026-05-17
 
 ### 9.3 — Notification System
 
-- [ ] Create `actions/notification.ts`:
-  - `getUnreadCount()` — returns count for current user (NOTIF-08, NOTIF-10)
-  - `getNotifications()` — list with filters by type and read status (NOTIF-04)
-  - `markAsRead()` — single notification (NOTIF-04)
-  - `markAllAsRead()` — all unread for user (NOTIF-05)
-  - `createNotification()` — used internally by other server actions
-- [ ] Role-targeted delivery: notifications with `targetRole: OWNER` go only to OWNER (NOTIF-06)
-- [ ] USER receives PROJECT notifications only for assigned projects (NOTIF-07)
-- [ ] Build `components/notifications/notification-bell.tsx` — Client Component (NOTIF-02, NOTIF-08, NOTIF-09):
-  - Unread count badge on bell icon
-  - **CRITICAL** Polling every 30 seconds via `setInterval` + Server Action call (NOTIF-08, NOTIF-09)
-  - Only count is polled — not full list (NOTIF-10)
-- [ ] Build bell dropdown: latest 5 unread with type icon, message, timestamp (NOTIF-03)
-- [ ] Create `app/(dashboard)/dashboard/notifications/page.tsx` (NOTIF-04):
-  - Full notification list with filter tabs: All / Unread / by Type
-  - "Mark all as read" button (NOTIF-05)
+- [x] Create `actions/notification.ts`:
+  - `getUnreadCount()` — returns count for current user (NOTIF-08, NOTIF-10) ✅ 2026-05-17
+  - `getNotifications()` — list with filters by type and read status (NOTIF-04) ✅ 2026-05-17
+  - `markAsRead()` — single notification (NOTIF-04) ✅ 2026-05-17
+  - `markAllAsRead()` — all unread for user (NOTIF-05) ✅ 2026-05-17
+  - `createNotification()` — used internally by other server actions ✅ 2026-05-17
+- [x] Role-targeted delivery: notifications with `targetRole: OWNER` go only to OWNER (NOTIF-06) ✅ 2026-05-17
+- [x] USER receives PROJECT notifications only for assigned projects (NOTIF-07) ✅ 2026-05-17
+- [x] Build `components/notifications/notification-bell.tsx` — Client Component (NOTIF-02, NOTIF-08, NOTIF-09):
+  - Unread count badge on bell icon ✅ 2026-05-17
+  - **CRITICAL** Polling every 30 seconds via `setInterval` + Server Action call (NOTIF-08, NOTIF-09) ✅ 2026-05-17
+  - Only count is polled — not full list (NOTIF-10) ✅ 2026-05-17
+- [x] Build bell dropdown: latest 5 unread with type icon, message, timestamp (NOTIF-03) ✅ 2026-05-17
+- [x] Create `app/(dashboard)/dashboard/notifications/page.tsx` (NOTIF-04):
+  - Full notification list with filter tabs: All / Unread / by Type ✅ 2026-05-17
+  - "Mark all as read" button (NOTIF-05) ✅ 2026-05-17
 
 ### 9.4 — Integrate Notifications Into All Triggers
 
-- [ ] Invitation accepted/rejected → INVITATION notification (NOTIF table row 1)
-- [ ] Project status change → PROJECT notification (NOTIF table row 2)
-- [ ] Task assigned → TASK notification (NOTIF table row 3)
-- [ ] @mention in comment → TASK notification (NOTIF table row 3, NOTIF-11)
-- [ ] Team member added/removed → TEAM notification (NOTIF table row 4)
-- [ ] Phase status change → PHASE notification (NOTIF table row 5)
-- [ ] Client added/updated → CLIENT notification (NOTIF table row 6)
-- [ ] Production underperformance → PRODUCTION notification (NOTIF table row 7)
-- [ ] Lane created/deleted → LANE notification (NOTIF table row 8)
-- [ ] Tag created/deleted → TAG notification (NOTIF table row 9)
-- [ ] Trial warnings (day 30, 53, 57) → GENERAL notification (NOTIF table row 10)
+- [x] Invitation accepted/rejected → INVITATION notification (NOTIF table row 1) ✅ 2026-05-17
+- [x] Project status change → PROJECT notification (NOTIF table row 2) ✅ 2026-05-17
+- [x] Task assigned → TASK notification (NOTIF table row 3) ✅ 2026-05-17
+- [x] @mention in comment → TASK notification (NOTIF table row 3, NOTIF-11) ✅ 2026-05-17
+- [x] Team member added/removed → TEAM notification (NOTIF table row 4) ✅ 2026-05-17
+- [x] Phase status change → PHASE notification (NOTIF table row 5) ✅ 2026-05-17
+- [x] Client added/updated → CLIENT notification (NOTIF table row 6) ✅ 2026-05-17
+- [x] Production underperformance → PRODUCTION notification (NOTIF table row 7) ✅ 2026-05-17
+- [x] Lane created/deleted → LANE notification (NOTIF table row 8) ✅ 2026-05-17
+- [x] Tag created/deleted → TAG notification (NOTIF table row 9) ✅ 2026-05-17
+- [x] Trial warnings (day 30, 7, 3) → GENERAL notification (NOTIF table row 10) ✅ 2026-05-17
 
 ---
 
@@ -1059,9 +1059,9 @@
 | 8         | Kanban Board & Tasks                      | 21      | `[x]`  |
 | —         | **Gantt Feature Upgrade (Post-M7)**       | **18**  | `[x]`  |
 | —         | **Kanban Revamp (Post-M8)**               | **7**   | `[x]`  |
-| 9         | Production, Time Tracking & Notifications | 18      | `[ ]`  |
+| 9         | Production, Time Tracking & Notifications | 18      | `[x]`  |
 | 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **198** | 11/13  |
+| **TOTAL** |                                           | **198** | 12/13  |
 
 ---
 

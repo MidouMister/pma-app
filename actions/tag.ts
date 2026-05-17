@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { tagSchema } from "@/lib/validators"
 import { unitTagsTag, unitTasksTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function createTag(data: unknown) {
   try {
@@ -56,6 +57,25 @@ export async function createTag(data: unknown) {
       },
     })
 
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "TAG",
+        message: `Le tag ${validData.name} a été créé`,
+        targetRole: "OWNER",
+      })
+    } catch {}
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "TAG",
+        message: `Le tag ${validData.name} a été créé`,
+        targetRole: "ADMIN",
+      })
+    } catch {}
+
     revalidateTag(unitTagsTag(validData.unitId), "max")
     return { success: true, tag }
   } catch (error) {
@@ -101,6 +121,25 @@ export async function deleteTag(tagId: string) {
     })
 
     await prisma.tag.delete({ where: { id: tagId } })
+
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "TAG",
+        message: `Le tag ${tag.name} a été supprimé`,
+        targetRole: "OWNER",
+      })
+    } catch {}
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "TAG",
+        message: `Le tag ${tag.name} a été supprimé`,
+        targetRole: "ADMIN",
+      })
+    } catch {}
 
     revalidateTag(unitTagsTag(tag.unitId), "max")
     revalidateTag(unitTasksTag(tag.unitId), "max")

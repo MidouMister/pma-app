@@ -417,7 +417,10 @@ export function TaskDetailModal({
             </TabsContent>
 
             <TabsContent value="time">
-              <TaskTimeEntries timeEntries={data?.timeEntries} />
+              <TaskTimeEntries
+                taskId={task.id}
+                timeEntries={data?.timeEntries}
+              />
             </TabsContent>
           </Tabs>
         </div>

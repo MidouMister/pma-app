@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { taskSchema, taskUpdateSchema } from "@/lib/validators"
 import { unitTasksTag, userTasksTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function createTask(data: unknown) {
   try {
@@ -125,17 +126,18 @@ export async function createTask(data: unknown) {
       },
     })
 
-    if (validData.assignedUserId && validData.assignedUserId !== userId) {
-      await prisma.notification.create({
-        data: {
-          message: `Nouvelle tâche assignée: "${task.title}"`,
-          companyId: user.companyId,
+    if (validData.assignedUserId && validData.assignedUserId !== user.id) {
+      try {
+        await createNotification({
+          companyId: user.companyId!,
           unitId: validData.unitId,
-          userId: validData.assignedUserId,
           type: "TASK",
-          targetUserId: userId,
-        },
-      })
+          message: `Vous avez été assigné à la tâche "${task.title}"`,
+          targetUserId: validData.assignedUserId,
+        })
+      } catch {
+        // Notification failure should not block the mutation
+      }
     }
 
     revalidateTag(unitTasksTag(validData.unitId), "max")
@@ -205,6 +207,8 @@ export async function updateTask(data: unknown) {
       }
     }
 
+    const prevAssignedUserId = task.assignedUserId
+
     await prisma.task.update({
       where: { id },
       data: {
@@ -217,14 +221,25 @@ export async function updateTask(data: unknown) {
       },
     })
 
-    revalidateTag(unitTasksTag(task.unitId), "max")
-    if (task.assignedUserId) {
-      revalidateTag(userTasksTag(task.assignedUserId), "max")
+    if (fields.assignedUserId && fields.assignedUserId !== prevAssignedUserId) {
+      try {
+        await createNotification({
+          companyId: user.companyId!,
+          unitId: task.unitId,
+          type: "TASK",
+          message: `Vous avez été assigné à la tâche "${task.title}"`,
+          targetUserId: fields.assignedUserId,
+        })
+      } catch {
+        // Notification failure should not block the mutation
+      }
     }
-    if (
-      fields.assignedUserId &&
-      fields.assignedUserId !== task.assignedUserId
-    ) {
+
+    revalidateTag(unitTasksTag(task.unitId), "max")
+    if (prevAssignedUserId) {
+      revalidateTag(userTasksTag(prevAssignedUserId), "max")
+    }
+    if (fields.assignedUserId && fields.assignedUserId !== prevAssignedUserId) {
       revalidateTag(userTasksTag(fields.assignedUserId), "max")
     }
     return { success: true }

@@ -8,6 +8,7 @@ import { isMutationAllowed } from "@/lib/subscription"
 import { formatCurrency } from "@/lib/format"
 import { phaseSchema, updatePhaseSchema } from "@/lib/validators"
 import { projectPhasesTag, projectGanttTag, projectTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 async function recalculatePhaseProgress(phaseId: string) {
   const subPhases = await prisma.subPhase.findMany({ where: { phaseId } })
@@ -263,6 +264,36 @@ export async function updatePhase(data: unknown) {
     })
 
     await recalculatePhaseProgress(phase.id)
+
+    if (validData.status && validData.status !== phase.status) {
+      const statusLabels: Record<string, string> = {
+        New: "Nouveau",
+        InProgress: "En cours",
+        Pause: "En pause",
+        Complete: "Terminé",
+      }
+      const statusMsg = statusLabels[validData.status] ?? validData.status
+
+      try {
+        await createNotification({
+          companyId: user.companyId!,
+          unitId: phase.Project.unitId,
+          type: "PHASE",
+          message: `La phase ${phase.name} est passée à ${statusMsg}`,
+          targetRole: "OWNER",
+        })
+      } catch {}
+
+      try {
+        await createNotification({
+          companyId: user.companyId!,
+          unitId: phase.Project.unitId,
+          type: "PHASE",
+          message: `La phase ${phase.name} est passée à ${statusMsg}`,
+          targetRole: "ADMIN",
+        })
+      } catch {}
+    }
 
     revalidateTag(projectPhasesTag(phase.Project.id), "max")
     revalidateTag(projectGanttTag(phase.Project.id), "max")

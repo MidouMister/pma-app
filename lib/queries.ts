@@ -254,6 +254,30 @@ export async function getUnitProductions(unitId: string) {
   })
 }
 
+export async function getUnitProductionOverview(
+  unitId: string,
+  companyId: string
+) {
+  "use cache"
+  cacheTag(unitProductionsTag(unitId))
+  cacheLife(MINUTES)
+
+  return prisma.phase.findMany({
+    where: { Project: { unitId, companyId } },
+    include: {
+      Project: { select: { id: true, name: true } },
+      Product: {
+        include: {
+          Productions: {
+            orderBy: { date: "desc" },
+          },
+        },
+      },
+    },
+    orderBy: [{ Project: { name: "asc" } }, { startDate: "asc" }],
+  })
+}
+
 export async function getCompanyDashboard(companyId: string) {
   "use cache"
   cacheTag(companyTag(companyId))

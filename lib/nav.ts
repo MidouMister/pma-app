@@ -54,6 +54,11 @@ export function getNavigation(
         url: `/company/${companyId}/settings`,
         icon: Settings,
       },
+      {
+        title: "Notifications",
+        url: `/dashboard/notifications`,
+        icon: Bell,
+      },
     ]
   }
 
@@ -94,6 +99,11 @@ export function getNavigation(
         title: "Paramètres",
         url: `/unite/${unitId}/settings`,
         icon: Settings,
+      },
+      {
+        title: "Notifications",
+        url: `/dashboard/notifications`,
+        icon: Bell,
       },
     ]
   }

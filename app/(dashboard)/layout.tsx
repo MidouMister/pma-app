@@ -1,8 +1,11 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
+import { subDays } from "date-fns"
 import { getCurrentUser } from "@/lib/auth"
 import { getAllUnits } from "@/lib/queries"
+import { prisma } from "@/lib/prisma"
+import { createNotification } from "@/actions/notification"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -30,6 +33,47 @@ async function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     redirect("/onboarding")
+  }
+
+  // Trial warning notifications
+  if (user.companyId && user.company?.subscription?.status === "TRIAL") {
+    const { endAt } = user.company.subscription
+    const now = new Date()
+    const daysRemaining = Math.ceil(
+      (endAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    )
+
+    const THRESHOLDS = [
+      { days: 30, message: "Votre période d'essai expire dans 30 jours" },
+      { days: 7, message: "Votre période d'essai expire dans 7 jours" },
+      { days: 3, message: "Votre période d'essai se termine dans 3 jours" },
+    ] as const
+
+    for (const { days, message } of THRESHOLDS) {
+      if (daysRemaining === days) {
+        try {
+          const existing = await prisma.notification.findFirst({
+            where: {
+              companyId: user.companyId,
+              type: "GENERAL",
+              message: { contains: `${days} jours` },
+              createdAt: { gte: subDays(now, 1) },
+            },
+          })
+
+          if (!existing) {
+            await createNotification({
+              companyId: user.companyId,
+              type: "GENERAL",
+              message,
+              targetRole: "OWNER",
+            })
+          }
+        } catch {
+          // Silent fail
+        }
+      }
+    }
   }
 
   const workspaces: WorkspaceItem[] = []

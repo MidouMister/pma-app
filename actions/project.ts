@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { projectSchema, updateProjectSchema } from "@/lib/validators"
 import { unitProjectsTag, projectTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function createProject(data: unknown) {
   try {
@@ -215,6 +216,52 @@ export async function updateProject(data: unknown) {
         ...(validData.unitId !== undefined && { unitId: validData.unitId }),
       },
     })
+
+    if (validData.status && validData.status !== project.status) {
+      const statusLabels: Record<string, string> = {
+        New: "Nouveau",
+        InProgress: "En cours",
+        Pause: "En pause",
+        Complete: "Terminé",
+      }
+      const statusMsg = statusLabels[validData.status] ?? validData.status
+
+      try {
+        await createNotification({
+          companyId: user.companyId!,
+          unitId: project.unitId,
+          type: "PROJECT",
+          message: `Le projet ${project.name} est passé à ${statusMsg}`,
+          targetRole: "OWNER",
+        })
+      } catch {}
+
+      try {
+        await createNotification({
+          companyId: user.companyId!,
+          unitId: project.unitId,
+          type: "PROJECT",
+          message: `Le projet ${project.name} est passé à ${statusMsg}`,
+          targetRole: "ADMIN",
+        })
+      } catch {}
+
+      const teamMembers = await prisma.teamMember.findMany({
+        where: { team: { projectId: project.id } },
+        select: { userId: true },
+      })
+      for (const member of teamMembers) {
+        try {
+          await createNotification({
+            companyId: user.companyId!,
+            unitId: project.unitId,
+            type: "PROJECT",
+            message: `Le projet ${project.name} est passé à ${statusMsg}`,
+            targetUserId: member.userId,
+          })
+        } catch {}
+      }
+    }
 
     revalidateTag(projectTag(project.id), "max")
     revalidateTag(unitProjectsTag(project.unitId), "max")

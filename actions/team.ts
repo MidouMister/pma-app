@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { addTeamMemberSchema } from "@/lib/validators"
 import { projectTeamTag, userProjectsTag, companyTeamTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 export async function addTeamMember(data: unknown) {
   try {
@@ -99,6 +100,18 @@ export async function addTeamMember(data: unknown) {
       },
     })
 
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "TEAM",
+        message: `Vous avez été ajouté au projet ${team.project.name}`,
+        targetUserId: validData.userId,
+      })
+    } catch {
+      // Notification failure should not block the mutation
+    }
+
     revalidateTag(projectTeamTag(team.project.id), "max")
     revalidateTag(userProjectsTag(validData.userId), "max")
     revalidateTag(companyTeamTag(user.companyId), "max")
@@ -169,6 +182,18 @@ export async function removeTeamMember(memberId: string) {
     await prisma.teamMember.delete({
       where: { id: memberId },
     })
+
+    try {
+      await createNotification({
+        companyId: user.companyId!,
+        unitId: user.unitId ?? undefined,
+        type: "TEAM",
+        message: `Vous avez été retiré du projet ${teamMember.team.project.name}`,
+        targetUserId: teamMember.userId,
+      })
+    } catch {
+      // Notification failure should not block the mutation
+    }
 
     revalidateTag(projectTeamTag(teamMember.team.project.id), "max")
     revalidateTag(userProjectsTag(teamMember.userId), "max")

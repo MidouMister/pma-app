@@ -6,6 +6,7 @@ import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { unitTasksTag, userTasksTag } from "@/lib/cache"
+import { createNotification } from "@/actions/notification"
 
 const MENTION_REGEX = /@(\w+(?:\s+\w+)*)/g
 
@@ -94,16 +95,17 @@ export async function createComment(taskId: string, body: string) {
             })
 
             // Also create a Notification
-            await prisma.notification.create({
-              data: {
-                message: `${user.name} vous a mentionné dans "${task.title}"`,
-                companyId: user.companyId,
-                unitId: task.unitId,
-                userId: mentionedUser.id,
+            try {
+              await createNotification({
+                companyId: user.companyId!,
+                unitId: task.unitId ?? undefined,
                 type: "TASK",
-                targetUserId: user.id,
-              },
-            })
+                message: `${user.name} vous a mentionné dans "${task.title}"`,
+                targetUserId: mentionedUser.id,
+              })
+            } catch {
+              // Notification failure should not block the mutation
+            }
           } catch {
             // Ignore unique constraint violations (duplicate mentions)
           }

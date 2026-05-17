@@ -5,17 +5,20 @@ import {
   getProjectById,
   getProjectDocuments,
   getGanttData,
+  getProjectTeam,
   isProjectMember,
 } from "@/lib/queries"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
 import { ProjectOverview } from "@/components/project/project-overview"
 import { ProjectGantt } from "@/components/project/project-gantt"
-import { ProjectProductionPlaceholder } from "@/components/project/project-production-placeholder"
+import { ProductionTab } from "@/components/project/production/production-tab"
 import { ProjectTasksPlaceholder } from "@/components/project/project-tasks-placeholder"
-import { ProjectTimeTrackingPlaceholder } from "@/components/project/project-time-tracking-placeholder"
+import { TimeTrackingTab } from "@/components/project/time-tracking/time-tracking-tab"
 import { ProjectDocuments } from "@/components/project/project-documents"
 import { PhaseList } from "@/components/project/phase-list"
+import { EmptyState } from "@/components/shared/empty-state"
+import { PackageOpen } from "lucide-react"
 
 interface ProjectDetailPageProps {
   params: Promise<{ unitId: string; projectId: string }>
@@ -55,6 +58,12 @@ export default async function ProjectDetailPage({
 
   const documents = await getProjectDocuments(projectId)
   const { phases, markers } = await getGanttData(projectId)
+  const teamMembers = await getProjectTeam(projectId)
+  const mappedTeamMembers = teamMembers.map((tm) => ({
+    id: tm.user.id,
+    name: tm.user.name,
+    avatarUrl: tm.user.avatarUrl,
+  }))
 
   const canEdit = user.role === "OWNER" || user.role === "ADMIN"
 
@@ -107,7 +116,28 @@ export default async function ProjectDetailPage({
         </TabsContent>
 
         <TabsContent value="production">
-          <ProjectProductionPlaceholder projectId={project.id} />
+          <div className="space-y-6">
+            {project.phases && project.phases.length > 0 ? (
+              project.phases.map((phase) => (
+                <ProductionTab
+                  key={phase.id}
+                  projectId={project.id}
+                  phaseId={phase.id}
+                  phaseMontantHT={phase.montantHT}
+                  canEdit={canEdit}
+                  productionAlertThreshold={
+                    user.company?.productionAlertThreshold ?? 80
+                  }
+                />
+              ))
+            ) : (
+              <EmptyState
+                title="Aucune phase"
+                description="Créez d'abord des phases pour pouvoir suivre la production."
+                icon={<PackageOpen className="size-6" />}
+              />
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="tasks">
@@ -115,7 +145,13 @@ export default async function ProjectDetailPage({
         </TabsContent>
 
         <TabsContent value="timetracking">
-          <ProjectTimeTrackingPlaceholder projectId={project.id} />
+          <TimeTrackingTab
+            projectId={project.id}
+            projectName={project.name}
+            canEdit={canEdit}
+            userId={user.id}
+            teamMembers={mappedTeamMembers}
+          />
         </TabsContent>
 
         <TabsContent value="documents">
