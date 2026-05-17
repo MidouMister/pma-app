@@ -13,7 +13,7 @@ import { GanttSidebarContent } from "./gantt/gantt-sidebar-content"
 import { GanttTimelineContent } from "./gantt/gantt-timeline-content"
 import { GanttDialogs } from "./gantt/gantt-dialogs"
 import type { TimelineActions } from "./gantt/gantt-timeline-content"
-import type { ProjectGanttProps } from "./gantt/types"
+import type { ProjectGanttProps } from "@/lib/types"
 
 export function ProjectGantt(props: ProjectGanttProps) {
   const {

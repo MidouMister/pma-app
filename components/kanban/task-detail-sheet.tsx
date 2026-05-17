@@ -37,7 +37,7 @@ import { getTaskDetailsData } from "@/actions/task-details"
 import { createComment } from "@/actions/comment"
 import { completeTask, updateTask, deleteTask } from "@/actions/task"
 
-import { type TaskDetailData } from "./types"
+import { type TaskDetailData } from "@/lib/types"
 import { TaskMetadata } from "./task-metadata"
 import { TaskComments } from "./task-comments"
 import { TaskTimeEntries } from "./task-time-entries"

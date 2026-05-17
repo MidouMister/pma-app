@@ -20,7 +20,7 @@ import {
   type EditingPhase,
   type EditingSubPhase,
   type EditingMarker,
-} from "./types"
+} from "@/lib/types"
 
 export function useGanttState({
   phases,

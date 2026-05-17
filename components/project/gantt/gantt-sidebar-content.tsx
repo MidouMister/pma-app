@@ -4,7 +4,7 @@ import { ChevronRight, ChevronDown } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { GanttContext } from "@/components/kibo-ui/gantt"
 import { cn } from "@/lib/utils"
-import { type GanttPhaseFeature, type PhaseData } from "./types"
+import { type GanttPhaseFeature, type PhaseData } from "@/lib/types"
 
 interface GanttSidebarContentProps {
   filteredFeatures: GanttPhaseFeature[]

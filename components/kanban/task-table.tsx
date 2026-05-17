@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Eye,
   List,
+  MessageSquare,
   Pencil,
   Trash2,
 } from "lucide-react"
@@ -85,11 +86,10 @@ interface TaskTableProps {
 const columnLabels: Record<string, string> = {
   laneName: "Statut",
   title: "Titre",
-  projectName: "Projet",
-  phaseName: "Phase",
   assignedUserName: "Assigné",
   dueDate: "Échéance",
   tags: "Tags",
+  commentCount: "Commentaires",
   complete: "Terminé",
   actions: "Actions",
 }
@@ -168,35 +168,18 @@ export function TaskTable({
         ),
       },
       {
-        accessorKey: "projectName",
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            className="px-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Projet
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
-      },
-      {
-        accessorKey: "phaseName",
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            className="px-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Phase
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {row.original.phaseName ?? "-"}
-          </span>
-        ),
+        id: "commentCount",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const count = row.original.commentCount
+          if (count === 0) return null
+          return (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MessageSquare className="size-3" />
+              <span>{count}</span>
+            </div>
+          )
+        },
       },
       {
         accessorKey: "assignedUserName",
@@ -495,7 +478,7 @@ export function TaskTable({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="default" size="sm" className="shadow-sm">
                 <Eye className="size-3" />
                 Colonnes
                 <ChevronDown className="size-3" />

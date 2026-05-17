@@ -20,7 +20,7 @@ import {
   type GanttPhaseFeature,
   type PhaseData,
   type MarkerData,
-} from "./types"
+} from "@/lib/types"
 
 export interface TimelineActions {
   onEditPhase: (phaseId: string) => void

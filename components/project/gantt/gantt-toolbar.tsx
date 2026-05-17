@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { type Range } from "@/components/kibo-ui/gantt"
-import { RANGES } from "./types"
+import { RANGES } from "@/lib/types"
 
 interface GanttToolbarProps {
   searchQuery: string

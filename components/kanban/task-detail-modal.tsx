@@ -61,7 +61,7 @@ import { DetailModal } from "@/components/shared/detail-modal"
 import { cn } from "@/lib/utils"
 import { formatRelativeDueDate } from "@/lib/format"
 
-import { type TaskDetailData } from "./types"
+import { type TaskDetailData } from "@/lib/types"
 import { TaskComments } from "./task-comments"
 import { TaskTimeEntries } from "./task-time-entries"
 

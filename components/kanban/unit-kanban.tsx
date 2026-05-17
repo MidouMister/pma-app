@@ -608,13 +608,13 @@ export function UnitKanban({
 
           {canEdit && (
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() => {
                 setEditingLane(null)
                 setLaneDialogOpen(true)
               }}
-              className="h-9"
+              className="h-9 shadow-sm"
               aria-label="Ajouter une colonne"
             >
               <Plus className="size-4" />
@@ -696,7 +696,6 @@ export function UnitKanban({
                         <TaskCard
                           key={task.id}
                           task={task}
-                          laneColor={lane.color ?? "#94a3b8"}
                           canEdit={canEdit}
                           onComplete={handleComplete}
                           onClick={() => setSelectedTask(task)}
@@ -712,9 +711,9 @@ export function UnitKanban({
                   {canEdit && (
                     <div className="p-2">
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/40 bg-transparent text-xs text-muted-foreground/60 transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-xs shadow-sm"
                         onClick={() => {
                           setTaskDialogLaneId(lane.id)
                           setTaskDialogOpen(true)

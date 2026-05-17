@@ -8,10 +8,10 @@ import { Loader2, Send } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 
-import { type TaskComment, type CurrentUser } from "./types"
+import { type KanbanTaskComment, type CurrentUser } from "@/lib/types"
 
 interface TaskCommentsProps {
-  comments: TaskComment[] | undefined
+  comments: KanbanTaskComment[] | undefined
   isLoading: boolean
   currentUser: CurrentUser | null
   newComment: string

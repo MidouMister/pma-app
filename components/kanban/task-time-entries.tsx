@@ -6,10 +6,10 @@ import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 
-import { type TimeEntry } from "./types"
+import { type KanbanTimeEntry } from "@/lib/types"
 
 interface TaskTimeEntriesProps {
-  timeEntries: TimeEntry[] | undefined
+  timeEntries: KanbanTimeEntry[] | undefined
 }
 
 export const TaskTimeEntries: FC<TaskTimeEntriesProps> = ({ timeEntries }) => {

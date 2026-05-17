@@ -18,7 +18,7 @@ import {
   type EditingPhase,
   type EditingSubPhase,
   type EditingMarker,
-} from "./types"
+} from "@/lib/types"
 
 interface PhaseDialogGroup {
   open: boolean

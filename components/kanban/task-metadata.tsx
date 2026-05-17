@@ -27,14 +27,14 @@ import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
-import { type TeamMember, type TaskTag } from "./types"
+import { type KanbanTeamMember, type TaskTag } from "@/lib/types"
 
 interface TaskMetadataProps {
   assignedUserId: string | null | undefined
   assignedUserName: string | null | undefined
   dueDate: Date | null
   tags: { id: string; name: string; color: string }[]
-  teamMembers: TeamMember[] | undefined
+  teamMembers: KanbanTeamMember[] | undefined
   unitTags: TaskTag[] | undefined
   taskTagIds: string[]
   onUpdate: (fields: Record<string, unknown>) => void

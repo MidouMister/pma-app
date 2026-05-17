@@ -15,7 +15,6 @@ import {
 import { KanbanCard } from "@/components/kibo-ui/kanban"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -43,7 +42,6 @@ interface TaskCardProps {
     column: string
     commentCount?: number
   }
-  laneColor: string
   canEdit: boolean
   onComplete: (taskId: string) => void
   onClick: () => void
@@ -53,7 +51,6 @@ interface TaskCardProps {
 
 export function TaskCard({
   task,
-  laneColor,
   canEdit,
   onComplete,
   onClick,
@@ -96,26 +93,32 @@ export function TaskCard({
       )}
     >
       <div className="flex flex-col gap-3 p-3">
-        {/* Status badge row */}
+        {/* Tags row */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <div
-              className="size-2 rounded-full"
-              style={{ backgroundColor: laneColor }}
-            />
-            <span
-              className={cn(
-                "text-[11px] font-medium",
-                task.complete ? "text-emerald-600" : "text-muted-foreground"
-              )}
-            >
-              {task.complete ? "Terminé" : "En cours"}
-            </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {task.tagNames.length > 0
+              ? task.tagNames.map((tag, i) => (
+                  <span
+                    key={`${tag}-${i}`}
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{
+                      backgroundColor: (task.tagColors[i] ?? "#6b7280") + "20",
+                      color: task.tagColors[i] ?? "#6b7280",
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))
+              : !task.complete && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Aucun tag
+                  </span>
+                )}
           </div>
 
           {/* Mobile kebab menu - always visible on touch */}
           {(onEdit || onDelete) && (
-            <div className="md:hidden">
+            <div className="shrink-0 md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -186,8 +189,8 @@ export function TaskCard({
           </Avatar>
         </div>
 
-        {/* Date + Tag row */}
-        {(dateDisplay || task.tagNames.length > 0) && (
+        {/* Date + Comments row */}
+        {(dateDisplay || commentCount > 0) && (
           <div className="flex items-center justify-between">
             {dateDisplay && (
               <div
@@ -204,28 +207,16 @@ export function TaskCard({
                 <span>{dateDisplay}</span>
               </div>
             )}
-            {task.tagNames.length > 0 && (
-              <Badge
-                variant="secondary"
-                className="text-[10px]"
-                style={{
-                  backgroundColor: (task.tagColors[0] ?? "#6b7280") + "20",
-                  color: task.tagColors[0] ?? "#6b7280",
-                }}
-              >
-                {task.tagNames[0]}
-              </Badge>
+            {commentCount > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageSquare className="size-3" />
+                <span>
+                  {commentCount} Commentaire{commentCount !== 1 ? "s" : ""}
+                </span>
+              </div>
             )}
           </div>
         )}
-
-        {/* Comment count footer */}
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <MessageSquare className="size-3" />
-          <span>
-            {commentCount} Commentaire{commentCount !== 1 ? "s" : ""}
-          </span>
-        </div>
       </div>
 
       {/* Hover quick actions - desktop */}
