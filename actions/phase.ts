@@ -110,7 +110,7 @@ export async function createPhase(data: unknown) {
     if (validData.montantHT > remainingBudget) {
       return {
         success: false,
-        error: `Le montant de la phase dépasse le budget restant du projet. Budget disponible: ${formatCurrency(remainingBudget)}`,
+        error: `Le montant de la phase dépasse le montant restant du projet. Montant disponible: ${formatCurrency(remainingBudget)}`,
       }
     }
 
@@ -233,7 +233,7 @@ export async function updatePhase(data: unknown) {
     if (validData.montantHT && validData.montantHT > remainingBudget) {
       return {
         success: false,
-        error: `Le montant de la phase dépasse le budget restant du projet. Budget disponible: ${formatCurrency(remainingBudget)}`,
+        error: `Le montant de la phase dépasse le montant restant du projet. Montant disponible: ${formatCurrency(remainingBudget)}`,
       }
     }
 

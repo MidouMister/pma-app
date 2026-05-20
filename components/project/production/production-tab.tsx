@@ -106,7 +106,7 @@ export function ProductionTab({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center">
+      <div className="flex min-h-50 items-center justify-center">
         <p className="text-sm text-muted-foreground">Chargement...</p>
       </div>
     )
@@ -123,7 +123,7 @@ export function ProductionTab({
       <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/50 p-4">
         <h3 className="text-lg font-semibold text-foreground">{phaseName}</h3>
         <span className="text-sm font-medium text-muted-foreground">
-          Budget : {formatCurrency(phaseMontantHT)}
+          Montant : {formatCurrency(phaseMontantHT)}
         </span>
       </div>
 

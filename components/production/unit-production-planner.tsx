@@ -231,18 +231,16 @@ export function UnitProductionPlanner({
           <table className="w-full text-left text-sm">
             <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase">
               <tr>
-                <th className="min-w-[200px] border-b px-4 py-3">
-                  Projet / Phase
-                </th>
+                <th className="min-w-50 border-b px-4 py-3">Projet / Phase</th>
                 {MONTH_LABELS.map((m) => (
                   <th
                     key={m}
-                    className="w-[70px] border-b border-l px-2 py-3 text-center"
+                    className="w-17.5 border-b border-l px-2 py-3 text-center"
                   >
                     {m}
                   </th>
                 ))}
-                <th className="w-[80px] border-b border-l bg-muted/20 px-3 py-3 text-right">
+                <th className="w-20 border-b border-l bg-muted/20 px-3 py-3 text-right">
                   Total
                 </th>
               </tr>
@@ -304,7 +302,7 @@ export function UnitProductionPlanner({
                               }
                               disabled={!canEdit}
                               className={cn(
-                                "h-7 w-full min-w-[50px] px-1 text-center text-xs",
+                                "h-7 w-full min-w-12.5 px-1 text-center text-xs",
                                 type === "actual" && inputTaux > 0
                                   ? "border-violet-200 bg-violet-50 focus-visible:ring-violet-500"
                                   : "",
@@ -349,7 +347,7 @@ export function UnitProductionPlanner({
                               {phase.name}
                             </span>
                             <span className="mt-1 text-[10px] text-muted-foreground">
-                              Budget: {formatCurrency(phase.montantHT)}
+                              Montant: {formatCurrency(phase.montantHT)}
                             </span>
                           </div>
                         </td>
@@ -394,7 +392,7 @@ export function UnitProductionPlanner({
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <Select value={String(selectedYear)} onValueChange={handleYearChange}>
-            <SelectTrigger className="w-[140px] bg-background text-lg font-semibold">
+            <SelectTrigger className="w-35 bg-background text-lg font-semibold">
               <SelectValue placeholder="Année" />
             </SelectTrigger>
             <SelectContent>

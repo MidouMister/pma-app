@@ -81,11 +81,11 @@ export function ProductionStatsTable({
 
   return (
     <div className="w-full overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="max-h-[500px]">
+      <div className="max-h-125">
         <Table className="w-full table-fixed">
           <TableHeader className="sticky top-0 z-10 bg-muted/50 shadow-sm">
             <TableRow>
-              <TableHead className="w-[110px]">
+              <TableHead className="w-27.5">
                 <div className="flex items-center gap-2">
                   <Calendar className="size-4 text-muted-foreground" />
                   <span>Date</span>
@@ -103,19 +103,19 @@ export function ProductionStatsTable({
                   <span>Phase</span>
                 </div>
               </TableHead>
-              <TableHead className="w-[100px]">
+              <TableHead className="w-25">
                 <div className="flex items-center gap-2">
                   <Activity className="size-4 text-muted-foreground" />
                   <span>% Taux</span>
                 </div>
               </TableHead>
-              <TableHead className="w-[130px]">
+              <TableHead className="w-32.5">
                 <div className="flex items-center gap-2">
                   <DollarSign className="size-4 text-muted-foreground" />
                   <span>Montant</span>
                 </div>
               </TableHead>
-              <TableHead className="w-[60px] text-right text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              <TableHead className="w-15 text-right text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                 Actions
               </TableHead>
             </TableRow>
@@ -210,7 +210,7 @@ export function ProductionStatsTable({
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[160px]">
+                      <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={() => onEdit?.(row)}

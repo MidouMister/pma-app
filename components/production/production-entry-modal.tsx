@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Loader2, Calculator, FolderKanban, X, ChevronDown } from "lucide-react"
+import { Calculator, FolderKanban, X, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
 
 import { Controller } from "react-hook-form"
@@ -81,7 +81,7 @@ export function ProductionEntryModal({
   open,
   onOpenChange,
   phases,
-  unitId,
+
   production,
 }: ProductionEntryModalProps) {
   const [isPending, setIsPending] = useState(false)
@@ -281,7 +281,7 @@ export function ProductionEntryModal({
                             className="flex w-full min-w-0 items-start gap-2 overflow-hidden rounded-md border border-input bg-muted/40 px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             <FolderKanban className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                            <span className="min-w-0 flex-1 leading-snug break-words whitespace-normal">
+                            <span className="min-w-0 flex-1 leading-snug wrap-break-word whitespace-normal">
                               {selectedProject?.name}
                             </span>
                             {!production && (
@@ -311,7 +311,7 @@ export function ProductionEntryModal({
                         )}
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-[320px] p-0 sm:w-[480px]"
+                        className="w-[320px] p-0 sm:w-120"
                         align="start"
                       >
                         <Command>
@@ -328,7 +328,7 @@ export function ProductionEntryModal({
                                     setProjectComboboxOpen(false)
                                   }}
                                 >
-                                  <span className="text-xs leading-normal break-words whitespace-normal">
+                                  <span className="text-xs leading-normal wrap-break-word whitespace-normal">
                                     {p.name}
                                   </span>
                                 </CommandItem>

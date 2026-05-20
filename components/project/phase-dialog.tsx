@@ -177,7 +177,7 @@ export function PhaseDialog({
             step="0.01"
           />
           <p className="text-xs text-muted-foreground">
-            Budget restant disponible:{" "}
+            Montant restant disponible:{" "}
             {formatCurrency(remainingBudget - Number(formData.montantHT || 0))}
           </p>
         </div>

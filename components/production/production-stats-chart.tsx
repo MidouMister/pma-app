@@ -60,7 +60,7 @@ export function ProductionStatsChart({ data }: ProductionStatsChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[350px] items-center justify-center rounded-xl border bg-card p-8 text-muted-foreground">
+      <div className="flex h-87.5 items-center justify-center rounded-xl border bg-card p-8 text-muted-foreground">
         Graphique non disponible (aucune donnée).
       </div>
     )
@@ -71,7 +71,7 @@ export function ProductionStatsChart({ data }: ProductionStatsChartProps) {
       <h3 className="mb-4 text-sm font-medium text-muted-foreground">
         Comparaison des montants (Prévisionnel vs Réalisé)
       </h3>
-      <div className="h-[350px] w-full">
+      <div className="h-87.5 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
