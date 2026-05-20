@@ -260,3 +260,132 @@ export const createDocumentSchema = z.object({
   type: z.string().min(1, "Le type est requis").max(100),
 })
 export type CreateDocumentFormData = z.infer<typeof createDocumentSchema>
+
+export const createProductionSchema = z.object({
+  phaseId: z.string().uuid("Phase invalide"),
+  taux: z
+    .number()
+    .min(0, "Le taux doit être entre 0 et 100")
+    .max(100, "Le taux doit être entre 0 et 100"),
+  month: z.number().int().min(1, "Mois invalide").max(12, "Mois invalide"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Année invalide")
+    .max(2100, "Année invalide"),
+})
+export type CreateProductionFormData = z.infer<typeof createProductionSchema>
+
+export const updateProductionSchema = z.object({
+  id: z.string().uuid("Production invalide"),
+  taux: z
+    .number()
+    .min(0, "Le taux doit être entre 0 et 100")
+    .max(100, "Le taux doit être entre 0 et 100")
+    .optional(),
+  month: z
+    .number()
+    .int()
+    .min(1, "Mois invalide")
+    .max(12, "Mois invalide")
+    .optional(),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Année invalide")
+    .max(2100, "Année invalide")
+    .optional(),
+})
+export type UpdateProductionFormData = z.infer<typeof updateProductionSchema>
+
+export const createForecastSchema = z.object({
+  phaseId: z.string().uuid("Phase invalide"),
+  taux: z
+    .number()
+    .min(0, "Le taux doit être entre 0 et 100")
+    .max(100, "Le taux doit être entre 0 et 100"),
+  month: z.number().int().min(1, "Mois invalide").max(12, "Mois invalide"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Année invalide")
+    .max(2100, "Année invalide"),
+})
+export type CreateForecastFormData = z.infer<typeof createForecastSchema>
+
+export const bulkForecastSchema = z.object({
+  phaseId: z.string().uuid("Phase invalide"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Année invalide")
+    .max(2100, "Année invalide"),
+  forecasts: z.array(
+    z.object({
+      month: z.number().int().min(1, "Mois invalide").max(12, "Mois invalide"),
+      taux: z
+        .number()
+        .min(0, "Le taux doit être entre 0 et 100")
+        .max(100, "Le taux doit être entre 0 et 100"),
+    })
+  ),
+})
+export type BulkForecastFormData = z.infer<typeof bulkForecastSchema>
+
+export const bulkUnitForecastSchema = z.object({
+  unitId: z.string().uuid("Unité invalide"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Année invalide")
+    .max(2100, "Année invalide"),
+  phases: z.array(
+    z.object({
+      phaseId: z.string().uuid("Phase invalide"),
+      forecasts: z.array(
+        z.object({
+          month: z
+            .number()
+            .int()
+            .min(1, "Mois invalide")
+            .max(12, "Mois invalide"),
+          taux: z
+            .number()
+            .min(0, "Le taux doit être entre 0 et 100")
+            .max(100, "Le taux doit être entre 0 et 100"),
+        })
+      ),
+    })
+  ),
+})
+export type BulkUnitForecastFormData = z.infer<typeof bulkUnitForecastSchema>
+
+export const bulkUnitProductionSchema = z.object({
+  unitId: z.string().uuid("Unité invalide"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Année invalide")
+    .max(2100, "Année invalide"),
+  phases: z.array(
+    z.object({
+      phaseId: z.string().uuid("Phase invalide"),
+      productions: z.array(
+        z.object({
+          month: z
+            .number()
+            .int()
+            .min(1, "Mois invalide")
+            .max(12, "Mois invalide"),
+          taux: z
+            .number()
+            .min(0, "Le taux doit être entre 0 et 100")
+            .max(100, "Le taux doit être entre 0 et 100"),
+        })
+      ),
+    })
+  ),
+})
+export type BulkUnitProductionFormData = z.infer<
+  typeof bulkUnitProductionSchema
+>

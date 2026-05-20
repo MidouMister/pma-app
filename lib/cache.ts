@@ -21,6 +21,7 @@ export const unitLanesTag = (id: string) => `unit:${id}:lanes`
 export const unitTasksTag = (id: string) => `unit:${id}:tasks`
 export const unitTagsTag = (id: string) => `unit:${id}:tags`
 export const unitProductionsTag = (id: string) => `unit:${id}:productions`
+export const unitForecastsTag = (id: string) => `unit:${id}:forecasts`
 
 // Project
 export const projectTag = (id: string) => `project:${id}`
@@ -33,6 +34,7 @@ export const projectDocumentsTag = (id: string) => `project:${id}:documents`
 // Phase
 export const phaseTag = (id: string) => `phase:${id}`
 export const phaseProductionTag = (id: string) => `phase:${id}:production`
+export const phaseForecastsTag = (id: string) => `phase:${id}:forecasts`
 
 // User
 export const userTag = (id: string) => `user:${id}`

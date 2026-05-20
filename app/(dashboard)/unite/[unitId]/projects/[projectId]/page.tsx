@@ -123,6 +123,7 @@ export default async function ProjectDetailPage({
                   key={phase.id}
                   projectId={project.id}
                   phaseId={phase.id}
+                  phaseName={phase.name}
                   phaseMontantHT={phase.montantHT}
                   canEdit={canEdit}
                   productionAlertThreshold={

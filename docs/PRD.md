@@ -804,17 +804,50 @@ After trial: downgrade back to Starter not permitted.
 
 ### 10.9 Production Monitoring
 
-| ID      | Requirement                                                                                       | Priority  |
-| ------- | ------------------------------------------------------------------------------------------------- | --------- |
-| PROD-01 | Each Phase has at most one Product (planned baseline)                                             | Must Have |
-| PROD-02 | ADMIN creates Product: planned taux, montantProd                                                  | Must Have |
-| PROD-03 | ADMIN records Production entries (actual taux)                                                    | Must Have |
-| PROD-04 | `Production.mntProd = Phase.montantHT × (taux / 100)` — auto-calculated, never editable           | Must Have |
-| PROD-05 | Two charts: (1) Planned vs Actual rate — line, (2) Planned vs Actual amount — grouped bar         | Must Have |
-| PROD-06 | Data table: date, planned taux, actual taux, variance, variance %; red rows when actual < planned | Must Have |
-| PROD-07 | `actual taux < (Product.taux × alertThreshold / 100)` → PRODUCTION notification to OWNER          | Must Have |
-| PROD-08 | Phase Complete + milestone reached → PRODUCTION notification                                      | Must Have |
-| PROD-09 | `Company.productionAlertThreshold` default 80, range 1–100, OWNER configurable                    | Must Have |
+#### Core Concepts
+
+- **Production** = the monthly realization rate (taux de réalisation) of a Phase, based on the Phase's `montantHT` as stipulated in the project contract.
+- **Product** = auto-calculated aggregate for a Phase. `Product.taux = SUM(Production.taux)`. Never manually set.
+- **ProductionForecast** = annual production planning. OWNER/ADMIN sets expected monthly rates at the start of the year.
+- The goal is always to reach 100% realization. There is no "planned rate" — only a forecast schedule.
+
+#### Production Requirements
+
+| ID      | Requirement                                                                                                    | Priority  |
+| ------- | -------------------------------------------------------------------------------------------------------------- | --------- |
+| PROD-01 | Each Phase has at most one Product (auto-calculated aggregate — never manually created)                        | Must Have |
+| PROD-02 | `Product.taux` = `SUM(Production.taux)` — recalculated on every Production create/update/delete               | Must Have |
+| PROD-03 | `Product.montantProd` = `Phase.montantHT × (Product.taux / 100)` — auto-calculated                            | Must Have |
+| PROD-04 | Product is auto-created on first Production entry for a phase (upsert pattern)                                 | Must Have |
+| PROD-05 | ADMIN/OWNER records monthly Production entries with `month` (1–12) and `year`                                  | Must Have |
+| PROD-06 | `Production.taux` = percentage realized **this month only** (not cumulative). Range 0–100                      | Must Have |
+| PROD-07 | `Production.mntProd` = `Phase.montantHT × (taux / 100)` — auto-calculated, never editable                     | Must Have |
+| PROD-08 | One Production per phase per month — enforced by `@@unique([phaseId, month, year])`                            | Must Have |
+| PROD-09 | `Company.productionAlertThreshold` default 80, range 1–100, OWNER configurable                                 | Must Have |
+| PROD-10 | Alert: `Production.taux < ProductionForecast.taux × (alertThreshold / 100)` → PRODUCTION notification to OWNER | Must Have |
+| PROD-11 | Phase Complete + milestone reached → PRODUCTION notification                                                    | Must Have |
+
+#### Production Forecast Requirements
+
+| ID       | Requirement                                                                                                  | Priority  |
+| -------- | ------------------------------------------------------------------------------------------------------------ | --------- |
+| FORE-01  | OWNER/ADMIN establishes annual production forecast per phase, per month, at the start of the year             | Must Have |
+| FORE-02  | `ProductionForecast.taux` = expected percentage for this month. Range 0–100                                   | Must Have |
+| FORE-03  | `ProductionForecast.mntProd` = `Phase.montantHT × (taux / 100)` — auto-calculated                            | Must Have |
+| FORE-04  | Sum of monthly forecast rates does NOT need to total 100% (phases may span multiple years)                   | Must Have |
+| FORE-05  | Future month forecasts can be modified mid-year                                                               | Must Have |
+| FORE-06  | Multi-year phases: separate forecast per year (e.g., 2026: 60%, 2027: 40%)                                   | Must Have |
+| FORE-07  | One forecast per phase per month — enforced by `@@unique([phaseId, month, year])`                             | Must Have |
+| FORE-08  | Bulk creation: 12 months at once for a phase via `bulkCreateForecasts()`                                     | Must Have |
+
+#### Charts & Views
+
+| ID       | Requirement                                                                                                    | Priority  |
+| -------- | -------------------------------------------------------------------------------------------------------------- | --------- |
+| PROD-12  | Line chart: forecast curve vs actual curve per month (X-axis = months)                                         | Must Have |
+| PROD-13  | Bar chart: forecast montant vs actual montant per month                                                        | Must Have |
+| PROD-14  | Data table: month, forecast %, actual %, écart %, montant réalisé; red rows when actual < forecast × threshold | Must Have |
+| PROD-15  | Unit productions page: stat cards (total prévu, total réalisé, phases en retard), filterable table, no cumul   | Must Have |
 
 ---
 
@@ -1063,10 +1096,13 @@ After trial: downgrade back to Starter not permitted.
 - **BR-11:** `Phase.startDate` ≥ `Project.ods`. **Hard block.**
 - **BR-12:** SubPhase dates within parent Phase range. **Hard block.**
 - **BR-13:** `Production.mntProd = Phase.montantHT × (taux / 100)` — system-calculated only.
+- **BR-13b:** `Product.taux = SUM(Production.taux)` — system-calculated only, never manually set.
+- **BR-13c:** `Product.montantProd = Phase.montantHT × (Product.taux / 100)` — system-calculated only.
+- **BR-13d:** `ProductionForecast.mntProd = Phase.montantHT × (taux / 100)` — system-calculated only.
 
 ### Production Alerts
 
-- **BR-14:** `Production.taux < (Product.taux × alertThreshold / 100)` → PRODUCTION notification to OWNER on save.
+- **BR-14:** `Production.taux < (ProductionForecast.taux × alertThreshold / 100)` → PRODUCTION notification to OWNER on save. Alert compares actual vs **forecast** (not product aggregate).
 - **BR-15:** `productionAlertThreshold` default 80, range 1–100, OWNER configurable.
 
 ### User Removal
@@ -1124,8 +1160,9 @@ After trial: downgrade back to Starter not permitted.
 | `Phase`       | id, projectId, name, code, montantHT, startDate, endDate, duration (auto), status, progress (0–100), observations              | belongsTo Project; hasMany SubPhases, GanttMarkers; hasOne Product |
 | `SubPhase`    | id, phaseId, name, code, status (`TODO`/`COMPLETED`), progress, startDate, endDate                                             | belongsTo Phase                                                    |
 | `GanttMarker` | id, projectId, label, date, className                                                                                          | belongsTo Project                                                  |
-| `Product`     | id, phaseId, taux, montantProd, date                                                                                           | belongsTo Phase, hasMany Productions                               |
-| `Production`  | id, productId, phaseId, taux, mntProd (auto-calculated), date                                                                  | belongsTo Product                                                  |
+| `Product`              | id, phaseId, taux (auto: SUM), montantProd (auto)                                                    | belongsTo Phase, hasMany Productions — **auto-calculated aggregate, never manually set**               |
+| `Production`           | id, productId, phaseId, taux, mntProd (auto), month (1–12), year                                     | belongsTo Product — **monthly actual realization**                                                     |
+| `ProductionForecast`   | id, phaseId, taux, mntProd (auto), month (1–12), year                                                | belongsTo Phase — **monthly planned forecast, established annually**                                   |
 
 ### Execution & Tracking
 
@@ -1350,8 +1387,9 @@ Company/Unit Switcher at the top: selecting "Company" shows company nav; selecti
 | **Phase**                        | Major deliverable block — own budget and timeline                     |
 | **SubPhase**                     | Granular sub-task within a Phase                                      |
 | **GanttMarker**                  | Vertical milestone line on Gantt — label, date, optional CSS class    |
-| **Product**                      | Planned production baseline for a Phase (one per phase)               |
-| **Production**                   | Actual production record logged against a Product                     |
+| **Product**                      | Auto-calculated production aggregate for a Phase (one per phase). `taux = SUM(Production.taux)`. Never manually set |
+| **Production**                   | Monthly actual realization rate for a Phase. Each month records the % achieved that month (not cumulative)           |
+| **ProductionForecast**           | Monthly planned forecast for a Phase. Established annually by OWNER/ADMIN. Compared against actual for alerts       |
 | **Lane**                         | Kanban column — Unit-scoped                                           |
 | **TeamMember**                   | Junction linking a User to a Project's Team                           |
 | **Multi-Tenant**                 | One app, multiple isolated companies — isolated by `companyId`        |

@@ -3,16 +3,21 @@
 import { useState, useEffect, useCallback } from "react"
 import { Plus, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/shared/empty-state"
-import { getPhaseProduction, deleteProduction } from "@/actions/production"
-import { ProductForm } from "./product-form"
+import {
+  getPhaseProduction,
+  deleteProduction,
+  getPhaseForecasts,
+} from "@/actions/production"
+import { ForecastForm } from "./forecast-form"
 import { ProductionEntryForm } from "./production-entry-form"
 import { ProductionCharts } from "./production-charts"
 import { ProductionTable } from "./production-table"
+import { formatCurrency } from "@/lib/format"
 
 interface ProductionTabProps {
   projectId: string
   phaseId: string
+  phaseName: string
   phaseMontantHT: number
   canEdit: boolean
   productionAlertThreshold: number
@@ -21,62 +26,82 @@ interface ProductionTabProps {
 interface ProductData {
   id: string
   taux: number
-  date: Date
   montantProd: number
   Productions: Array<{
     id: string
     taux: number
     mntProd: number
-    date: Date
+    month: number
+    year: number
   }>
+}
+
+interface ForecastData {
+  id: string
+  phaseId: string
+  month: number
+  year: number
+  taux: number
+  mntProd: number
 }
 
 export function ProductionTab({
   projectId: _projectId,
   phaseId,
+  phaseName,
   phaseMontantHT,
   canEdit,
   productionAlertThreshold,
 }: ProductionTabProps) {
   const [product, setProduct] = useState<ProductData | null>(null)
+  const [forecasts, setForecasts] = useState<ForecastData[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [productFormOpen, setProductFormOpen] = useState(false)
+  const [forecastFormOpen, setForecastFormOpen] = useState(false)
   const [entryFormOpen, setEntryFormOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<{
-    id: string
-    taux: number
-    date: Date
-  } | null>(null)
   const [editingProduction, setEditingProduction] = useState<{
     id: string
     taux: number
-    date: Date
+    month: number
+    year: number
   } | null>(null)
 
   const fetchData = useCallback(async () => {
-    const result = await getPhaseProduction(phaseId)
-    if (result.success && result.data) {
-      setProduct(result.data as ProductData)
-    } else {
-      setProduct(null)
-    }
-    setIsLoading(false)
-  }, [phaseId])
+    try {
+      const [prodResult, forecastResult] = await Promise.all([
+        getPhaseProduction(phaseId),
+        getPhaseForecasts(phaseId),
+      ])
 
-  useEffect(() => {
-    getPhaseProduction(phaseId).then((result) => {
-      if (result.success && result.data) {
-        setProduct(result.data as ProductData)
+      if (prodResult.success && prodResult.data) {
+        setProduct(prodResult.data as ProductData)
       } else {
         setProduct(null)
       }
+
+      if (forecastResult.success && forecastResult.data) {
+        setForecasts(forecastResult.data as ForecastData[])
+      } else {
+        setForecasts([])
+      }
+    } catch (err) {
+      console.error("Error fetching production data:", err)
+    } finally {
       setIsLoading(false)
-    })
+    }
   }, [phaseId])
 
-  async function handleDeleteProduction(productionId: string) {
-    await deleteProduction(productionId)
+  useEffect(() => {
+    setIsLoading(true)
     fetchData()
+  }, [phaseId, fetchData])
+
+  async function handleDeleteProduction(productionId: string) {
+    const result = await deleteProduction(productionId)
+    if (result.success) {
+      fetchData()
+    } else {
+      console.error(result.error)
+    }
   }
 
   if (isLoading) {
@@ -87,77 +112,92 @@ export function ProductionTab({
     )
   }
 
-  if (!product) {
-    return (
-      <div className="space-y-4">
-        <EmptyState
-          title="Aucun plan de production"
-          description="Créez d'abord un plan de production pour cette phase afin de pouvoir suivre l'avancement réel."
-          icon={<Target className="size-6" />}
-          action={
-            canEdit
-              ? {
-                  label: "Créer le plan de production",
-                  onClick: () => setProductFormOpen(true),
-                }
-              : undefined
-          }
-        />
-
-        <ProductForm
-          open={productFormOpen}
-          onOpenChange={setProductFormOpen}
-          phaseId={phaseId}
-          phaseMontantHT={phaseMontantHT}
-          onSuccess={fetchData}
-        />
-      </div>
-    )
-  }
+  const currentYear = new Date().getFullYear()
+  const annualForecastTaux = forecasts
+    .filter((f) => f.year === currentYear)
+    .reduce((acc, f) => acc + f.taux, 0)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg border bg-card px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Taux planifié : </span>
-            <span className="font-medium">{product.taux}%</span>
+      {/* Phase Header */}
+      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/50 p-4">
+        <h3 className="text-lg font-semibold text-foreground">{phaseName}</h3>
+        <span className="text-sm font-medium text-muted-foreground">
+          Budget : {formatCurrency(phaseMontantHT)}
+        </span>
+      </div>
+
+      {/* Metrics Row */}
+      <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="rounded-lg border bg-card px-3 py-2 text-xs">
+            <span className="text-muted-foreground">Taux cumulé réel : </span>
+            <span className="font-semibold text-emerald-600">
+              {product?.taux ?? 0}%
+            </span>
+          </div>
+          <div className="rounded-lg border bg-card px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              Montant cumulé réel :{" "}
+            </span>
+            <span className="font-semibold text-primary">
+              {formatCurrency(product?.montantProd ?? 0)}
+            </span>
+          </div>
+          <div className="rounded-lg border bg-card px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              Prévision cumulée ({currentYear}) :{" "}
+            </span>
+            <span className="font-semibold text-blue-600">
+              {annualForecastTaux}%
+            </span>
           </div>
         </div>
+
         {canEdit && (
-          <Button onClick={() => setEntryFormOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            Ajouter une entrée
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setForecastFormOpen(true)}
+            >
+              <Target className="mr-2 size-4 text-blue-500" />
+              Prévisions
+            </Button>
+            <Button size="sm" onClick={() => setEntryFormOpen(true)}>
+              <Plus className="mr-2 size-4" />
+              Nouvelle production
+            </Button>
+          </div>
         )}
       </div>
 
+      {/* Production Chart */}
       <ProductionCharts
-        product={product}
-        productions={product.Productions}
+        forecasts={forecasts}
+        productions={product?.Productions ?? []}
         phaseMontantHT={phaseMontantHT}
       />
 
+      {/* Production Table */}
       <ProductionTable
-        product={product}
-        productions={product.Productions}
+        productions={product?.Productions ?? []}
+        forecasts={forecasts}
         onEdit={(prod) => {
           setEditingProduction(prod)
           setEntryFormOpen(true)
         }}
         onDelete={handleDeleteProduction}
         canEdit={canEdit}
+        productionAlertThreshold={productionAlertThreshold}
       />
 
-      <ProductForm
-        open={productFormOpen}
-        onOpenChange={(open) => {
-          setProductFormOpen(open)
-          if (!open) setEditingProduct(null)
-        }}
+      {/* Forms */}
+      <ForecastForm
+        open={forecastFormOpen}
+        onOpenChange={setForecastFormOpen}
         phaseId={phaseId}
         phaseMontantHT={phaseMontantHT}
-        product={editingProduct}
         onSuccess={fetchData}
       />
 
@@ -167,12 +207,11 @@ export function ProductionTab({
           setEntryFormOpen(open)
           if (!open) setEditingProduction(null)
         }}
-        productId={product.id}
         phaseId={phaseId}
         phaseMontantHT={phaseMontantHT}
-        productTaux={product.taux}
         productionAlertThreshold={productionAlertThreshold}
         production={editingProduction}
+        forecasts={forecasts}
         onSuccess={fetchData}
       />
     </div>

@@ -18,6 +18,7 @@ import {
   unitTasksTag,
   unitTagsTag,
   unitProductionsTag,
+  unitForecastsTag,
   projectTag,
   projectPhasesTag,
   projectGanttTag,
@@ -250,7 +251,7 @@ export async function getUnitProductions(unitId: string) {
   return prisma.production.findMany({
     where: { Phase: { Project: { unitId } } },
     include: { Phase: { select: { id: true, name: true } } },
-    orderBy: { date: "desc" },
+    orderBy: [{ year: "desc" }, { month: "desc" }],
   })
 }
 
@@ -259,19 +260,19 @@ export async function getUnitProductionOverview(
   companyId: string
 ) {
   "use cache"
-  cacheTag(unitProductionsTag(unitId))
+  cacheTag(unitProductionsTag(unitId), unitForecastsTag(unitId))
   cacheLife(MINUTES)
 
   return prisma.phase.findMany({
     where: { Project: { unitId, companyId } },
     include: {
-      Project: { select: { id: true, name: true } },
-      Product: {
-        include: {
-          Productions: {
-            orderBy: { date: "desc" },
-          },
-        },
+      Project: { select: { id: true, name: true, code: true } },
+      Product: true,
+      Production: {
+        orderBy: [{ year: "desc" }, { month: "desc" }],
+      },
+      ProductionForecasts: {
+        orderBy: [{ year: "desc" }, { month: "desc" }],
       },
     },
     orderBy: [{ Project: { name: "asc" } }, { startDate: "asc" }],
@@ -596,7 +597,7 @@ export async function getPhaseProduction(phaseId: string) {
   return prisma.production.findMany({
     where: { phaseId },
     include: { Product: true },
-    orderBy: { date: "asc" },
+    orderBy: [{ year: "asc" }, { month: "asc" }],
   })
 }
 

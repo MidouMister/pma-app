@@ -461,14 +461,21 @@ All sidebar navigation items are defined in `lib/nav.ts`. This is the single sou
 
 ## 6. Business Rules (Critical)
 
-| Rule   | Description                                                         |
-| ------ | ------------------------------------------------------------------- |
-| BR-01  | All queries scoped by `companyId`                                   |
-| BR-05  | Plan limits checked server-side before INSERT                       |
-| BR-10  | Sum of Phase.montantHT cannot exceed Project.montantHT (hard block) |
-| BR-11  | Phase.startDate must be >= Project.ods (hard block)                 |
-| BR-12  | SubPhase dates must be within parent Phase range (hard block)       |
-| SEC-02 | Role checks enforced at Server Action level, not just UI            |
+| Rule   | Description                                                                                                |
+| ------ | ---------------------------------------------------------------------------------------------------------- |
+| BR-01  | All queries scoped by `companyId`                                                                          |
+| BR-05  | Plan limits checked server-side before INSERT                                                              |
+| BR-10  | Sum of Phase.montantHT cannot exceed Project.montantHT (hard block)                                        |
+| BR-11  | Phase.startDate must be >= Project.ods (hard block)                                                        |
+| BR-12  | SubPhase dates must be within parent Phase range (hard block)                                              |
+| BR-13  | `Production.mntProd = Phase.montantHT × (taux / 100)` — system-calculated only                            |
+| BR-13b | `Product.taux = SUM(Production.taux)` — auto-calculated aggregate, **never manually set**                  |
+| BR-13c | `Product.montantProd = Phase.montantHT × (Product.taux / 100)` — auto-calculated                          |
+| BR-13d | `ProductionForecast.mntProd = Phase.montantHT × (taux / 100)` — auto-calculated                           |
+| BR-14  | Alert: `Production.taux < ProductionForecast.taux × (threshold / 100)` → PRODUCTION notification to OWNER |
+| BR-24  | One `Production` per phase per month — `@@unique([phaseId, month, year])`                                  |
+| BR-25  | One `ProductionForecast` per phase per month — `@@unique([phaseId, month, year])`                          |
+| SEC-02 | Role checks enforced at Server Action level, not just UI                                                   |
 
 ---
 

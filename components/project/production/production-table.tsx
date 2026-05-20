@@ -23,32 +23,56 @@ import {
 } from "@/components/ui/alert-dialog"
 import { EmptyState } from "@/components/shared/empty-state"
 import { formatCurrency } from "@/lib/format"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
 interface ProductionTableProps {
-  product: { taux: number } | null
   productions: Array<{
     id: string
     taux: number
     mntProd: number
-    date: Date
+    month: number
+    year: number
   }>
-  onEdit?: (production: { id: string; taux: number; date: Date }) => void
+  forecasts?: Array<{
+    month: number
+    year: number
+    taux: number
+    mntProd: number
+  }>
+  onEdit?: (production: {
+    id: string
+    taux: number
+    month: number
+    year: number
+  }) => void
   onDelete?: (id: string) => void
   canEdit?: boolean
+  productionAlertThreshold?: number
 }
 
+const MONTH_LABELS = [
+  "Janvier",
+  "Février",
+  "Mars",
+  "Avril",
+  "Mai",
+  "Juin",
+  "Juillet",
+  "Août",
+  "Septembre",
+  "Octobre",
+  "Novembre",
+  "Décembre",
+]
+
 export function ProductionTable({
-  product,
-  productions,
+  productions = [],
+  forecasts = [],
   onEdit,
   onDelete,
   canEdit = false,
+  productionAlertThreshold = 80,
 }: ProductionTableProps) {
-  if (!product) return null
-
   if (productions.length === 0) {
     return (
       <EmptyState
@@ -60,14 +84,17 @@ export function ProductionTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead className="text-right">Taux planifié (%)</TableHead>
+            <TableHead>Période</TableHead>
+            <TableHead className="text-right">Taux prévu (%)</TableHead>
             <TableHead className="text-right">Taux réel (%)</TableHead>
             <TableHead className="text-right">Écart (%)</TableHead>
+            <TableHead className="text-right font-medium">
+              Production réelle
+            </TableHead>
             <TableHead className="text-right">Écart montant</TableHead>
             {canEdit && (
               <TableHead className="w-20 text-right">Actions</TableHead>
@@ -76,34 +103,55 @@ export function ProductionTable({
         </TableHeader>
         <TableBody>
           {productions.map((prod) => {
-            const ecartTaux = prod.taux - product.taux
-            const ecartMontant =
-              prod.mntProd - (product.taux / 100) * prod.mntProd
+            const matchingForecast = forecasts.find(
+              (f) => f.month === prod.month && f.year === prod.year
+            )
+            const forecastTaux = matchingForecast?.taux ?? 0
+            const forecastMnt = matchingForecast?.mntProd ?? 0
+
+            const ecartTaux = prod.taux - forecastTaux
+            const ecartMontant = prod.mntProd - forecastMnt
+
+            // Check if it is below the warning threshold (if there was a forecast > 0)
+            const isBelowThreshold =
+              forecastTaux > 0 &&
+              prod.taux < (forecastTaux * productionAlertThreshold) / 100
+
             const isNegative = ecartTaux < 0
 
             return (
               <TableRow
                 key={prod.id}
-                className={cn(isNegative && "bg-red-50/50")}
+                className={cn(
+                  isBelowThreshold &&
+                    "text-destructive-foreground bg-destructive/5 hover:bg-destructive/10"
+                )}
               >
-                <TableCell className="font-medium">
-                  {format(new Date(prod.date), "d MMM yyyy", { locale: fr })}
+                <TableCell className="font-semibold text-foreground">
+                  {MONTH_LABELS[prod.month - 1]} {prod.year}
                 </TableCell>
-                <TableCell className="text-right">{product.taux}%</TableCell>
-                <TableCell className="text-right">{prod.taux}%</TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  {forecastTaux > 0 ? `${forecastTaux}%` : "—"}
+                </TableCell>
+                <TableCell className="text-right font-medium text-foreground">
+                  {prod.taux}%
+                </TableCell>
                 <TableCell
                   className={cn(
-                    "text-right font-medium",
-                    isNegative ? "text-red-600" : "text-emerald-600"
+                    "text-right font-semibold",
+                    isNegative ? "text-destructive" : "text-emerald-600"
                   )}
                 >
                   {ecartTaux > 0 ? "+" : ""}
                   {ecartTaux}%
                 </TableCell>
+                <TableCell className="text-right font-medium text-primary">
+                  {formatCurrency(prod.mntProd)}
+                </TableCell>
                 <TableCell
                   className={cn(
-                    "text-right font-medium",
-                    isNegative ? "text-red-600" : "text-emerald-600"
+                    "text-right font-semibold",
+                    isNegative ? "text-destructive" : "text-emerald-600"
                   )}
                 >
                   {ecartMontant > 0 ? "+" : ""}
@@ -120,7 +168,8 @@ export function ProductionTable({
                           onEdit?.({
                             id: prod.id,
                             taux: prod.taux,
-                            date: prod.date,
+                            month: prod.month,
+                            year: prod.year,
                           })
                         }
                       >

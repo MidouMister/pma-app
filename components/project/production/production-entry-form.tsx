@@ -1,51 +1,89 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { ChartNoAxesColumnIncreasing } from "lucide-react"
 import { FormModal } from "@/components/shared/form-modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { createProduction, updateProduction } from "@/actions/production"
 import { formatCurrency } from "@/lib/format"
 
 interface ProductionEntryFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  productId: string
   phaseId: string
   phaseMontantHT: number
-  productTaux: number
   productionAlertThreshold: number
-  production?: { id: string; taux: number; date: Date } | null
+  production?: { id: string; taux: number; month: number; year: number } | null
+  forecasts?: Array<{ month: number; year: number; taux: number }>
   onSuccess?: () => void
 }
+
+const MONTHS = [
+  { value: 1, label: "Janvier" },
+  { value: 2, label: "Février" },
+  { value: 3, label: "Mars" },
+  { value: 4, label: "Avril" },
+  { value: 5, label: "Mai" },
+  { value: 6, label: "Juin" },
+  { value: 7, label: "Juillet" },
+  { value: 8, label: "Août" },
+  { value: 9, label: "Septembre" },
+  { value: 10, label: "Octobre" },
+  { value: 11, label: "Novembre" },
+  { value: 12, label: "Décembre" },
+]
 
 export function ProductionEntryForm({
   open,
   onOpenChange,
-  productId,
   phaseId,
   phaseMontantHT,
-  productTaux,
   productionAlertThreshold,
   production,
+  forecasts = [],
   onSuccess,
 }: ProductionEntryFormProps) {
+  const currentYear = new Date().getFullYear()
   const [taux, setTaux] = useState(production?.taux ?? 0)
-  const [date, setDate] = useState(
-    production?.date ? toDateInputValue(production.date) : ""
+  const [month, setMonth] = useState(
+    production?.month ?? new Date().getMonth() + 1
   )
+  const [year, setYear] = useState(production?.year ?? currentYear)
   const [isPending, setIsPending] = useState(false)
+
+  // Sync state if production prop changes
+  useEffect(() => {
+    setTaux(production?.taux ?? 0)
+    setMonth(production?.month ?? new Date().getMonth() + 1)
+    setYear(production?.year ?? currentYear)
+  }, [production, currentYear])
 
   const mntProd = phaseMontantHT * (taux / 100)
 
-  const threshold = (productTaux * productionAlertThreshold) / 100
-  const showWarning = taux < threshold
+  // Find corresponding forecast to calculate the alert threshold dynamically
+  const matchingForecast = forecasts.find(
+    (f) => f.month === month && f.year === year
+  )
+  const forecastTaux = matchingForecast?.taux ?? 0
+  const threshold = (forecastTaux * productionAlertThreshold) / 100
+  const showWarning = taux < threshold && forecastTaux > 0
+
+  // Years select range (e.g. ± 5 years)
+  const yearsList = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 
   function resetForm() {
     setTaux(production?.taux ?? 0)
-    setDate(production?.date ? toDateInputValue(production.date) : "")
+    setMonth(production?.month ?? new Date().getMonth() + 1)
+    setYear(production?.year ?? currentYear)
   }
 
   const handleSubmit = useCallback(
@@ -58,15 +96,16 @@ export function ProductionEntryForm({
           const result = await updateProduction({
             id: production.id,
             taux,
-            date: new Date(date),
+            month,
+            year,
           })
           if (!result.success) throw new Error(result.error)
         } else {
           const result = await createProduction({
-            productId,
             phaseId,
             taux,
-            date: new Date(date),
+            month,
+            year,
           })
           if (!result.success) throw new Error(result.error)
         }
@@ -78,7 +117,7 @@ export function ProductionEntryForm({
         setIsPending(false)
       }
     },
-    [production, taux, date, productId, phaseId, onSuccess, onOpenChange]
+    [production, taux, month, year, phaseId, onSuccess, onOpenChange]
   )
 
   return (
@@ -113,15 +152,44 @@ export function ProductionEntryForm({
           </div>
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="entry-date">Date</Label>
-          <Input
-            id="entry-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="entry-month">Mois</Label>
+            <Select
+              value={String(month)}
+              onValueChange={(val) => setMonth(Number(val))}
+            >
+              <SelectTrigger id="entry-month">
+                <SelectValue placeholder="Mois" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((m) => (
+                  <SelectItem key={m.value} value={String(m.value)}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="entry-year">Année</Label>
+            <Select
+              value={String(year)}
+              onValueChange={(val) => setYear(Number(val))}
+            >
+              <SelectTrigger id="entry-year">
+                <SelectValue placeholder="Année" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearsList.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="rounded-lg border bg-card p-3 text-sm">
@@ -131,27 +199,29 @@ export function ProductionEntryForm({
           </span>
         </div>
 
+        {forecastTaux > 0 && (
+          <div className="flex justify-between rounded-lg border bg-muted/30 p-3 text-xs">
+            <span className="text-muted-foreground">Prévision planifiée :</span>
+            <span className="font-medium text-foreground">
+              {forecastTaux}% (
+              {formatCurrency(phaseMontantHT * (forecastTaux / 100))})
+            </span>
+          </div>
+        )}
+
         {showWarning && (
           <Alert variant="default" className="border-amber-200 bg-amber-50">
             <AlertTitle className="text-sm font-medium text-amber-800">
               Attention
             </AlertTitle>
-            <AlertDescription className="text-amber-700">
+            <AlertDescription className="text-xs text-amber-700">
               Le taux réel ({taux}%) est en dessous du seuil d&apos;alerte (
               {Math.round(threshold)}%). La production est inférieure au plan
-              prévisionnel.
+              prévisionnel ({forecastTaux}%).
             </AlertDescription>
           </Alert>
         )}
       </div>
     </FormModal>
   )
-}
-
-function toDateInputValue(date: Date): string {
-  const d = new Date(date)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
 }

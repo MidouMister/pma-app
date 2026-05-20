@@ -55,7 +55,7 @@ function SelectTrigger({
       )}
       {...props}
     >
-      {children}
+      <span className="min-w-0 flex-1 truncate text-left">{children}</span>
       <SelectPrimitive.Icon asChild>
         <HugeiconsIcon
           icon={UnfoldMoreIcon}

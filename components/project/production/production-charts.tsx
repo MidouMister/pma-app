@@ -12,48 +12,119 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 
 interface ProductionChartsProps {
-  product: { taux: number; date: Date } | null
-  productions: Array<{ taux: number; mntProd: number; date: Date }>
+  forecasts: Array<{ month: number; year: number; taux: number }>
+  productions: Array<{
+    month: number
+    year: number
+    taux: number
+    mntProd: number
+  }>
   phaseMontantHT: number
 }
 
+const MONTH_LABELS = [
+  "Jan",
+  "Fév",
+  "Mar",
+  "Avr",
+  "Mai",
+  "Juin",
+  "Juil",
+  "Août",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Déc",
+]
+
 export function ProductionCharts({
-  product,
-  productions,
+  forecasts = [],
+  productions = [],
   phaseMontantHT,
 }: ProductionChartsProps) {
   const chartData = useMemo(() => {
-    if (!product || productions.length === 0) return []
+    const periods = new Map<
+      string,
+      {
+        month: number
+        year: number
+        plannedTaux: number
+        actualTaux: number
+        plannedMnt: number
+        actualMnt: number
+      }
+    >()
 
-    const plannedMontant = phaseMontantHT * (product.taux / 100)
+    // Populate forecasts
+    forecasts.forEach((f) => {
+      const key = `${f.year}-${String(f.month).padStart(2, "0")}`
+      periods.set(key, {
+        month: f.month,
+        year: f.year,
+        plannedTaux: f.taux,
+        actualTaux: 0,
+        plannedMnt: phaseMontantHT * (f.taux / 100),
+        actualMnt: 0,
+      })
+    })
 
-    return productions.map((p) => ({
-      date: format(new Date(p.date), "d MMM", { locale: fr }),
-      plannedTaux: product.taux,
-      actualTaux: p.taux,
-      plannedMnt: plannedMontant,
-      actualMnt: p.mntProd,
-      rawDate: new Date(p.date).getTime(),
-    }))
-  }, [product, productions, phaseMontantHT])
+    // Populate actual productions
+    productions.forEach((p) => {
+      const key = `${p.year}-${String(p.month).padStart(2, "0")}`
+      const existing = periods.get(key)
+      if (existing) {
+        existing.actualTaux = p.taux
+        existing.actualMnt = p.mntProd
+      } else {
+        periods.set(key, {
+          month: p.month,
+          year: p.year,
+          plannedTaux: 0,
+          actualTaux: p.taux,
+          plannedMnt: 0,
+          actualMnt: p.mntProd,
+        })
+      }
+    })
 
-  if (!product || productions.length === 0) return null
+    // Sort periods chronologically
+    const sortedKeys = Array.from(periods.keys()).sort()
 
-  const plannedTaux = product.taux
+    return sortedKeys.map((key) => {
+      const data = periods.get(key)!
+      return {
+        period: `${MONTH_LABELS[data.month - 1]} ${data.year}`,
+        plannedTaux: data.plannedTaux,
+        actualTaux: data.actualTaux,
+        plannedMnt: data.plannedMnt,
+        actualMnt: data.actualMnt,
+      }
+    })
+  }, [forecasts, productions, phaseMontantHT])
+
+  if (chartData.length === 0) {
+    return (
+      <Card className="flex h-[200px] items-center justify-center border-dashed">
+        <p className="text-sm text-muted-foreground">
+          Aucune donnée de prévision ou de production pour alimenter les
+          graphiques.
+        </p>
+      </Card>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Taux planifié vs réel</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Taux prévisionnel vs réel
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
@@ -64,7 +135,7 @@ export function ProductionCharts({
                   className="stroke-border"
                 />
                 <XAxis
-                  dataKey="date"
+                  dataKey="period"
                   className="text-xs text-muted-foreground"
                   tickLine={false}
                   axisLine={false}
@@ -85,20 +156,14 @@ export function ProductionCharts({
                   formatter={(value: unknown, name: unknown) =>
                     [
                       `${value}%`,
-                      name === "plannedTaux" ? "Planifié" : "Réel",
+                      name === "plannedTaux" ? "Prévisionnel" : "Réel",
                     ] as [string, string]
                   }
                 />
                 <Legend
                   formatter={(value: unknown) =>
-                    value === "plannedTaux" ? "Planifié" : "Réel"
+                    value === "plannedTaux" ? "Prévisionnel" : "Réel"
                   }
-                />
-                <ReferenceLine
-                  y={plannedTaux}
-                  stroke="hsl(var(--primary))"
-                  strokeDasharray="5 5"
-                  strokeWidth={2}
                 />
                 <Line
                   type="monotone"
@@ -106,7 +171,7 @@ export function ProductionCharts({
                   stroke="hsl(221 83% 53%)"
                   strokeWidth={2}
                   strokeDasharray="5 5"
-                  dot={false}
+                  dot={{ r: 3 }}
                   name="plannedTaux"
                 />
                 <Line
@@ -125,7 +190,9 @@ export function ProductionCharts({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Montant planifié vs réel</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Montant prévisionnel vs réel
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
@@ -136,7 +203,7 @@ export function ProductionCharts({
                   className="stroke-border"
                 />
                 <XAxis
-                  dataKey="date"
+                  dataKey="period"
                   className="text-xs text-muted-foreground"
                   tickLine={false}
                   axisLine={false}
@@ -153,14 +220,18 @@ export function ProductionCharts({
                     border: "1px solid hsl(var(--border))",
                     fontSize: "13px",
                   }}
-                  formatter={(value: unknown): [string, string] => {
-                    return [formatCurrency(Number(value)), "Montant"]
+                  formatter={(
+                    value: unknown,
+                    name: unknown
+                  ): [string, string] => {
+                    const label =
+                      name === "plannedMnt" ? "Prévisionnel" : "Réel"
+                    return [formatCurrency(Number(value)), label]
                   }}
-                  labelFormatter={(label: unknown) => `Date : ${String(label)}`}
                 />
                 <Legend
                   formatter={(value: unknown) =>
-                    value === "plannedMnt" ? "Planifié" : "Réel"
+                    value === "plannedMnt" ? "Prévisionnel" : "Réel"
                   }
                 />
                 <Bar

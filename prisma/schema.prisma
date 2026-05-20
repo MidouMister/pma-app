@@ -302,6 +302,7 @@ model Phase {
   SubPhases SubPhase[]
   Task      Task[]
   Production Production[]
+  ProductionForecasts ProductionForecast[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -348,27 +349,50 @@ model GanttMarker {
 
 model Product {
   id          String       @id @default(uuid())
-  date        DateTime
-  taux        Float
-  montantProd Float
-  Phase       Phase        @relation(fields: [phaseId], references: [id])
+  taux        Float        @default(0)
+  montantProd Float        @default(0)
+  Phase       Phase        @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   phaseId     String       @unique
-  Productions Production[] @relation("ProductProductions")
+  Productions Production[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([phaseId])
 }
 
 model Production {
   id        String   @id @default(uuid())
-  date      DateTime
+  month     Int
+  year      Int
   taux      Float
   mntProd   Float
   phaseId   String
-  Phase     Phase    @relation(fields: [phaseId], references: [id])
-  Product   Product  @relation("ProductProductions", fields: [productId], references: [id], onDelete: Cascade)
+  Phase     Phase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([phaseId, month, year])
   @@index([productId])
+  @@index([phaseId])
+}
+
+model ProductionForecast {
+  id        String   @id @default(uuid())
+  month     Int
+  year      Int
+  taux      Float
+  mntProd   Float
+  phaseId   String
+  Phase     Phase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([phaseId, month, year])
   @@index([phaseId])
 }
 
