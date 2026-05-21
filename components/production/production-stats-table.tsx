@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useTransition } from "react"
+import React, { useTransition, useState, useMemo } from "react"
 import { toast } from "sonner"
 import { deleteProduction } from "@/actions/production"
 import {
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
 import { FlatProductionStat } from "./production-stats-dashboard"
 import { formatCurrency } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -31,6 +31,7 @@ import {
   MoreHorizontal,
   Edit,
   Trash,
+  Search,
 } from "lucide-react"
 
 interface ProductionStatsTableProps {
@@ -58,6 +59,19 @@ export function ProductionStatsTable({
   onEdit,
 }: ProductionStatsTableProps) {
   const [isPending, startTransition] = useTransition()
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredData = useMemo(() => {
+    if (!searchQuery) return data
+    const query = searchQuery.toLowerCase()
+    return data.filter(
+      (row) =>
+        row.projectName.toLowerCase().includes(query) ||
+        row.phaseName.toLowerCase().includes(query) ||
+        row.projectCode.toLowerCase().includes(query) ||
+        row.phaseCode.toLowerCase().includes(query)
+    )
+  }, [data, searchQuery])
 
   const handleDelete = (productionId: string | undefined) => {
     if (!productionId) return
@@ -80,10 +94,21 @@ export function ProductionStatsTable({
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="max-h-125">
-        <Table className="w-full table-fixed">
-          <TableHeader className="sticky top-0 z-10 bg-muted/50 shadow-sm">
+    <div className="flex w-full flex-col gap-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher par projet, phase ou code..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 bg-card"
+        />
+      </div>
+
+      <div className="w-full overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="max-h-125 overflow-auto">
+          <Table className="w-full">
+            <TableHeader className="sticky top-0 z-10 bg-muted/50 shadow-sm">
             <TableRow>
               <TableHead className="w-27.5">
                 <div className="flex items-center gap-2">
@@ -91,25 +116,19 @@ export function ProductionStatsTable({
                   <span>Date</span>
                 </div>
               </TableHead>
-              <TableHead className="w-[32%] min-w-0">
+              <TableHead className="min-w-[300px]">
                 <div className="flex items-center gap-2">
                   <BookText className="size-4 text-muted-foreground" />
-                  <span>Projet</span>
+                  <span>Projet & Phase</span>
                 </div>
               </TableHead>
-              <TableHead className="w-[27%] min-w-0">
-                <div className="flex items-center gap-2">
-                  <Folder className="size-4 text-muted-foreground" />
-                  <span>Phase</span>
-                </div>
-              </TableHead>
-              <TableHead className="w-25">
+              <TableHead className="w-40">
                 <div className="flex items-center gap-2">
                   <Activity className="size-4 text-muted-foreground" />
-                  <span>% Taux</span>
+                  <span>Avancement (%)</span>
                 </div>
               </TableHead>
-              <TableHead className="w-32.5">
+              <TableHead className="w-36">
                 <div className="flex items-center gap-2">
                   <DollarSign className="size-4 text-muted-foreground" />
                   <span>Montant</span>
@@ -121,9 +140,18 @@ export function ProductionStatsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((row) => {
-              const isUnderperforming =
+            {filteredData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  Aucun résultat pour cette recherche.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredData.map((row) => {
+                const isUnderperforming =
                 row.actualTaux > 0 && row.actualTaux < row.forecastTaux * 0.8
+              const varianceTaux = row.actualTaux - row.forecastTaux
+              const varianceText = varianceTaux > 0 ? `+${varianceTaux}%` : `${varianceTaux}%`
 
               return (
                 <TableRow key={row.id} className="hover:bg-muted/30">
@@ -136,70 +164,73 @@ export function ProductionStatsTable({
                     </div>
                   </TableCell>
                   <TableCell className="min-w-0">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="mt-0.5 shrink-0 rounded-md bg-blue-500/10 p-1.5 text-blue-500">
-                        <BookText className="size-4" />
-                      </div>
-                      <div className="flex w-full min-w-0 flex-col gap-1">
-                        <span
-                          className="block truncate text-sm font-semibold"
-                          title={row.projectName}
-                        >
+                    <div className="flex min-w-0 flex-col gap-2 py-1">
+                      {/* Project */}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <BookText className="size-4 shrink-0 text-blue-500" />
+                        <span className="text-sm font-semibold text-foreground break-words whitespace-normal" title={row.projectName}>
                           {row.projectName}
                         </span>
-                        <span className="w-fit truncate rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
-                          Code: {row.projectCode}
+                        <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
+                          {row.projectCode}
                         </span>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="min-w-0">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="mt-0.5 shrink-0 rounded-md bg-muted p-1.5 text-muted-foreground">
-                        <Folder className="size-4" />
-                      </div>
-                      <div className="flex w-full min-w-0 flex-col gap-1">
-                        <span
-                          className="block truncate text-sm font-medium"
-                          title={row.phaseName}
-                        >
+                      {/* Phase */}
+                      <div className="ml-1.5 flex min-w-0 items-center gap-2 border-l-2 border-muted pl-2">
+                        <Folder className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground break-words whitespace-normal" title={row.phaseName}>
                           {row.phaseName}
                         </span>
-                        <span className="w-fit truncate rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                          Code: {row.phaseCode}
+                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                          {row.phaseCode}
                         </span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress
-                        value={row.actualTaux}
-                        className={cn(
-                          "h-1.5 flex-1 shrink-0",
-                          isUnderperforming
-                            ? "bg-destructive/20 [&>div]:bg-destructive"
-                            : "bg-blue-500/20 [&>div]:bg-blue-500"
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "min-w-[3ch] shrink-0 text-xs font-bold",
-                          isUnderperforming
-                            ? "text-destructive"
-                            : "text-blue-500"
-                        )}
-                      >
-                        {row.actualTaux}%
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-2 pr-2">
+                        <span
+                          className={cn(
+                            "text-sm font-bold",
+                            isUnderperforming
+                              ? "text-destructive"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          )}
+                        >
+                          {row.actualTaux}%
+                        </span>
+                        <span
+                          className={cn(
+                            "inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold transition-colors",
+                            varianceTaux >= 0
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                              : "bg-destructive/10 text-destructive"
+                          )}
+                          title="Écart avec le prévisionnel"
+                        >
+                          {varianceText}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        Prévu: {row.forecastTaux}%
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div
-                      className="flex items-center gap-1.5 truncate text-xs font-semibold text-emerald-500"
-                      title={formatCurrency(row.actualMnt)}
-                    >
-                      {formatCurrency(row.actualMnt)}
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className="truncate text-sm font-semibold text-foreground"
+                        title={formatCurrency(row.actualMnt)}
+                      >
+                        {formatCurrency(row.actualMnt)}
+                      </span>
+                      <span
+                        className="truncate text-[10px] font-medium text-muted-foreground"
+                        title={`Prévu: ${formatCurrency(row.forecastMnt)}`}
+                      >
+                        Prévu: {formatCurrency(row.forecastMnt)}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -231,10 +262,12 @@ export function ProductionStatsTable({
                   </TableCell>
                 </TableRow>
               )
-            })}
+            })
+          )}
           </TableBody>
         </Table>
       </div>
+    </div>
     </div>
   )
 }

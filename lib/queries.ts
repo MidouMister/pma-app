@@ -25,7 +25,6 @@ import {
   projectTeamTag,
   projectTimeTag,
   projectDocumentsTag,
-  phaseProductionTag,
   userTag,
   userTasksTag,
   userProjectsTag,
@@ -241,17 +240,6 @@ export async function getUnitTags(unitId: string) {
   return prisma.tag.findMany({
     where: { unitId },
     orderBy: { name: "asc" },
-  })
-}
-
-export async function getUnitProductions(unitId: string) {
-  "use cache"
-  cacheTag(unitProductionsTag(unitId))
-  cacheLife(MINUTES)
-  return prisma.production.findMany({
-    where: { Phase: { Project: { unitId } } },
-    include: { Phase: { select: { id: true, name: true } } },
-    orderBy: [{ year: "desc" }, { month: "desc" }],
   })
 }
 
@@ -587,17 +575,6 @@ export async function getProjectDocuments(projectId: string) {
   return prisma.projectDocument.findMany({
     where: { projectId },
     orderBy: { createdAt: "desc" },
-  })
-}
-
-export async function getPhaseProduction(phaseId: string) {
-  "use cache"
-  cacheTag(phaseProductionTag(phaseId))
-  cacheLife(MINUTES)
-  return prisma.production.findMany({
-    where: { phaseId },
-    include: { Product: true },
-    orderBy: [{ year: "asc" }, { month: "asc" }],
   })
 }
 

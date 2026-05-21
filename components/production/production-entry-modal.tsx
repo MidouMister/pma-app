@@ -90,6 +90,7 @@ export function ProductionEntryModal({
   const yearsList = Array.from({ length: 7 }, (_, i) => currentYear - 2 + i)
 
   const form = useForm<z.infer<typeof formSchema>>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema as any) as any,
     defaultValues: {
       projectId: "",
@@ -249,6 +250,7 @@ export function ProductionEntryModal({
       }
       size="lg"
       isPending={isPending}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onSubmit={form.handleSubmit(onSubmit as any)}
       onReset={() => form.reset()}
       submitLabel={production ? "Enregistrer" : "Ajouter"}

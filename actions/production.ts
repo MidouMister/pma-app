@@ -427,7 +427,7 @@ export async function getPhaseProduction(
   }
 }
 
-export async function getUnitProductions(unitId: string) {
+export async function deleteProduct(phaseId: string) {
   try {
     const { userId } = await auth()
     if (!userId) return { success: false, error: "Non autorisé" }
@@ -441,32 +441,89 @@ export async function getUnitProductions(unitId: string) {
       return { success: false, error: "Accès refusé" }
     }
 
-    const unit = await prisma.unit.findFirst({
-      where: { id: unitId, companyId: user.companyId },
-    })
-    if (!unit) {
-      return { success: false, error: "Unité introuvable" }
+    const subscription = user.company?.subscription
+    if (subscription && !isMutationAllowed(subscription.status)) {
+      return {
+        success: false,
+        error: "Votre abonnement est en lecture seule.",
+      }
     }
 
-    const productions = await prisma.production.findMany({
-      where: { Phase: { Project: { unitId } } },
-      include: {
-        Phase: {
-          select: {
-            id: true,
-            name: true,
-            montantHT: true,
-            Project: { select: { id: true, name: true } },
-          },
-        },
-        Product: true,
-      },
-      orderBy: [{ year: "desc" }, { month: "desc" }],
+    const phase = await prisma.phase.findFirst({
+      where: { id: phaseId },
+      include: { Project: { select: { companyId: true, unitId: true } } },
     })
 
-    return { success: true, data: productions }
+    if (!phase || phase.Project.companyId !== user.companyId) {
+      return { success: false, error: "Phase introuvable" }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.production.deleteMany({
+        where: { phaseId },
+      })
+      await tx.product.deleteMany({
+        where: { phaseId },
+      })
+    })
+
+    revalidateTag(phaseProductionTag(phaseId), "max")
+    revalidateTag(unitProductionsTag(phase.Project.unitId), "max")
+
+    return { success: true }
   } catch (error) {
-    console.error("getUnitProductions error:", error)
+    console.error("deleteProduct error:", error)
+    return { success: false, error: "Une erreur est survenue" }
+  }
+}
+
+export async function deleteProductionForecast(forecastId: string) {
+  try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Non autorisé" }
+
+    const user = await getCurrentUser()
+    if (!user || !user.companyId) {
+      return { success: false, error: "Utilisateur non trouvé" }
+    }
+
+    if (user.role !== "OWNER" && user.role !== "ADMIN") {
+      return { success: false, error: "Accès refusé" }
+    }
+
+    const subscription = user.company?.subscription
+    if (subscription && !isMutationAllowed(subscription.status)) {
+      return {
+        success: false,
+        error: "Votre abonnement est en lecture seule.",
+      }
+    }
+
+    const forecast = await prisma.productionForecast.findFirst({
+      where: { id: forecastId },
+      include: {
+        Phase: {
+          include: {
+            Project: { select: { companyId: true, unitId: true } },
+          },
+        },
+      },
+    })
+
+    if (!forecast || forecast.Phase.Project.companyId !== user.companyId) {
+      return { success: false, error: "Prévision introuvable" }
+    }
+
+    await prisma.productionForecast.delete({
+      where: { id: forecastId },
+    })
+
+    revalidateTag(phaseForecastsTag(forecast.phaseId), "max")
+    revalidateTag(unitForecastsTag(forecast.Phase.Project.unitId), "max")
+
+    return { success: true }
+  } catch (error) {
+    console.error("deleteProductionForecast error:", error)
     return { success: false, error: "Une erreur est survenue" }
   }
 }

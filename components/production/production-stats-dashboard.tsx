@@ -5,7 +5,7 @@ import { ProductionStatsTable } from "./production-stats-table"
 import { ProductionStatsChart } from "./production-stats-chart"
 import { ProductionEntryModal } from "./production-entry-modal"
 import { Button } from "@/components/ui/button"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, AlertTriangle, TrendingUp, DollarSign } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -14,7 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { exportToExcel } from "@/lib/excel-export"
-import { PhaseData } from "./types" // I'll extract PhaseData to types.ts later
+import { PhaseData } from "./types" 
+import { StatCard } from "@/components/shared/stat-card"
+import { formatCurrency } from "@/lib/format"
 
 export interface FlatProductionStat {
   id: string
@@ -155,6 +157,29 @@ export function ProductionStatsDashboard({
     "Décembre",
   ]
 
+  // Compute Stats
+  const { totalForecast, totalActual, delayedPhasesCount } = useMemo(() => {
+    let forecast = 0
+    let actual = 0
+    const delayedPhases = new Set<string>()
+
+    filteredData.forEach(row => {
+      forecast += row.forecastMnt
+      actual += row.actualMnt
+      
+      // Threshold for delay alert is 80% (configurable globally but hardcoded to 80% for now per BR-14 implementation context)
+      if (row.forecastTaux > 0 && row.actualTaux < row.forecastTaux * 0.8) {
+        delayedPhases.add(row.phaseId)
+      }
+    })
+
+    return {
+      totalForecast: forecast,
+      totalActual: actual,
+      delayedPhasesCount: delayedPhases.size
+    }
+  }, [filteredData])
+
   const handleExport = () => {
     exportToExcel(filteredData, companyName, unitName)
   }
@@ -255,6 +280,29 @@ export function ProductionStatsDashboard({
             Ajouter
           </Button>
         </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Montant total prévu"
+          value={formatCurrency(totalForecast)}
+          icon={<DollarSign className="size-4" />}
+          accent="default"
+        />
+        <StatCard
+          label="Montant total réalisé"
+          value={formatCurrency(totalActual)}
+          icon={<TrendingUp className="size-4" />}
+          accent="success"
+        />
+        <StatCard
+          label="Phases en retard"
+          value={String(delayedPhasesCount)}
+          description="Taux réel < 80% du prévisionnel"
+          icon={<AlertTriangle className="size-4" />}
+          accent="warning"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
