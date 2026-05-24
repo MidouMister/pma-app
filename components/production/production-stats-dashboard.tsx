@@ -5,7 +5,13 @@ import { ProductionStatsTable } from "./production-stats-table"
 import { ProductionStatsChart } from "./production-stats-chart"
 import { ProductionEntryModal } from "./production-entry-modal"
 import { Button } from "@/components/ui/button"
-import { Plus, Download, AlertTriangle, TrendingUp, DollarSign } from "lucide-react"
+import {
+  Plus,
+  Download,
+  AlertTriangle,
+  TrendingUp,
+  DollarSign,
+} from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -14,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { exportToExcel } from "@/lib/excel-export"
-import { PhaseData } from "./types" 
+import { PhaseData } from "./types"
 import { StatCard } from "@/components/shared/stat-card"
 import { formatCurrency } from "@/lib/format"
 
@@ -163,10 +169,10 @@ export function ProductionStatsDashboard({
     let actual = 0
     const delayedPhases = new Set<string>()
 
-    filteredData.forEach(row => {
+    filteredData.forEach((row) => {
       forecast += row.forecastMnt
       actual += row.actualMnt
-      
+
       // Threshold for delay alert is 80% (configurable globally but hardcoded to 80% for now per BR-14 implementation context)
       if (row.forecastTaux > 0 && row.actualTaux < row.forecastTaux * 0.8) {
         delayedPhases.add(row.phaseId)
@@ -176,7 +182,7 @@ export function ProductionStatsDashboard({
     return {
       totalForecast: forecast,
       totalActual: actual,
-      delayedPhasesCount: delayedPhases.size
+      delayedPhasesCount: delayedPhases.size,
     }
   }, [filteredData])
 

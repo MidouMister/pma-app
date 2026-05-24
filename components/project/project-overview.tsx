@@ -33,6 +33,7 @@ interface SimpleProject {
     name: string
     progress: number
     montantHT: number
+    Product?: { taux: number } | null
   }>
   team?: {
     members?: Array<{
@@ -78,11 +79,18 @@ export function ProjectOverview({
     (sum, p) => sum + p.montantHT,
     0
   )
+  // Use production progress (Product.taux) when available, fall back to subphase progress
+  const getPhaseProgress = (p: {
+    progress: number
+    montantHT: number
+    Product?: { taux: number } | null
+  }) =>
+    p.Product?.taux !== undefined ? Math.round(p.Product.taux) : p.progress
   const progress =
     totalMontantHT > 0
       ? Math.round(
           (project.phases ?? []).reduce(
-            (sum, p) => sum + p.progress * p.montantHT,
+            (sum, p) => sum + getPhaseProgress(p) * p.montantHT,
             0
           ) / totalMontantHT
         )
@@ -135,9 +143,9 @@ export function ProjectOverview({
                 <div key={phase.id} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span>{phase.name}</span>
-                    <span>{phase.progress}%</span>
+                    <span>{getPhaseProgress(phase)}%</span>
                   </div>
-                  <Progress value={phase.progress} className="h-1" />
+                  <Progress value={getPhaseProgress(phase)} className="h-1" />
                 </div>
               ))}
             </div>

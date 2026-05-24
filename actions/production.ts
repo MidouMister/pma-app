@@ -18,55 +18,12 @@ import {
   unitProductionsTag,
   unitForecastsTag,
   phaseForecastsTag,
+  projectTag,
+  projectPhasesTag,
 } from "@/lib/cache"
 import { createNotification } from "@/actions/notification"
 
-function calcMontant(montantHT: number, taux: number) {
-  return montantHT * (taux / 100)
-}
-
-/**
- * Internal helper to recalculate the Product aggregate for a Phase.
- * Calculates Product.taux = SUM(Production.taux) and updates Product.montantProd.
- */
-async function recalculateProduct(
-  phaseId: string,
-  tx?: Prisma.TransactionClient
-) {
-  const client = tx || prisma
-
-  const phase = await client.phase.findUnique({
-    where: { id: phaseId },
-    select: { montantHT: true },
-  })
-
-  if (!phase) {
-    throw new Error("Phase introuvable")
-  }
-
-  const productions = await client.production.findMany({
-    where: { phaseId },
-    select: { taux: true },
-  })
-
-  const totalTaux = productions.reduce((sum, p) => sum + p.taux, 0)
-  const totalMontantProd = calcMontant(phase.montantHT, totalTaux)
-
-  const product = await client.product.upsert({
-    where: { phaseId },
-    create: {
-      phaseId,
-      taux: totalTaux,
-      montantProd: totalMontantProd,
-    },
-    update: {
-      taux: totalTaux,
-      montantProd: totalMontantProd,
-    },
-  })
-
-  return product
-}
+import { calcMontant, recalculateProduct } from "@/lib/production-utils"
 
 export async function createProduction(data: unknown) {
   try {
@@ -103,7 +60,7 @@ export async function createProduction(data: unknown) {
     const phase = await prisma.phase.findFirst({
       where: { id: phaseId },
       include: {
-        Project: { select: { companyId: true, unitId: true } },
+        Project: { select: { id: true, companyId: true, unitId: true } },
       },
     })
 
@@ -189,6 +146,8 @@ export async function createProduction(data: unknown) {
 
     revalidateTag(phaseProductionTag(phaseId), "max")
     revalidateTag(unitProductionsTag(phase.Project.unitId), "max")
+    revalidateTag(projectTag(phase.Project.id), "max")
+    revalidateTag(projectPhasesTag(phase.Project.id), "max")
 
     return { success: true, productionId: result.id }
   } catch (error) {
@@ -234,7 +193,7 @@ export async function updateProduction(data: unknown) {
       include: {
         Phase: {
           include: {
-            Project: { select: { companyId: true, unitId: true } },
+            Project: { select: { id: true, companyId: true, unitId: true } },
           },
         },
       },
@@ -315,6 +274,8 @@ export async function updateProduction(data: unknown) {
 
     revalidateTag(phaseProductionTag(production.phaseId), "max")
     revalidateTag(unitProductionsTag(production.Phase.Project.unitId), "max")
+    revalidateTag(projectTag(production.Phase.Project.id), "max")
+    revalidateTag(projectPhasesTag(production.Phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -350,7 +311,7 @@ export async function deleteProduction(productionId: string) {
       include: {
         Phase: {
           include: {
-            Project: { select: { companyId: true, unitId: true } },
+            Project: { select: { id: true, companyId: true, unitId: true } },
           },
         },
       },
@@ -369,6 +330,8 @@ export async function deleteProduction(productionId: string) {
 
     revalidateTag(phaseProductionTag(production.phaseId), "max")
     revalidateTag(unitProductionsTag(production.Phase.Project.unitId), "max")
+    revalidateTag(projectTag(production.Phase.Project.id), "max")
+    revalidateTag(projectPhasesTag(production.Phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -451,7 +414,9 @@ export async function deleteProduct(phaseId: string) {
 
     const phase = await prisma.phase.findFirst({
       where: { id: phaseId },
-      include: { Project: { select: { companyId: true, unitId: true } } },
+      include: {
+        Project: { select: { id: true, companyId: true, unitId: true } },
+      },
     })
 
     if (!phase || phase.Project.companyId !== user.companyId) {
@@ -469,6 +434,8 @@ export async function deleteProduct(phaseId: string) {
 
     revalidateTag(phaseProductionTag(phaseId), "max")
     revalidateTag(unitProductionsTag(phase.Project.unitId), "max")
+    revalidateTag(projectTag(phase.Project.id), "max")
+    revalidateTag(projectPhasesTag(phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -520,6 +487,7 @@ export async function deleteProductionForecast(forecastId: string) {
 
     revalidateTag(phaseForecastsTag(forecast.phaseId), "max")
     revalidateTag(unitForecastsTag(forecast.Phase.Project.unitId), "max")
+    revalidateTag(phaseProductionTag(forecast.phaseId), "max")
 
     return { success: true }
   } catch (error) {
@@ -566,7 +534,9 @@ export async function bulkCreateForecasts(data: unknown) {
 
     const phase = await prisma.phase.findFirst({
       where: { id: phaseId },
-      include: { Project: { select: { companyId: true, unitId: true } } },
+      include: {
+        Project: { select: { id: true, companyId: true, unitId: true } },
+      },
     })
 
     if (!phase || phase.Project.companyId !== user.companyId) {
@@ -602,6 +572,9 @@ export async function bulkCreateForecasts(data: unknown) {
 
     revalidateTag(phaseForecastsTag(phaseId), "max")
     revalidateTag(unitForecastsTag(phase.Project.unitId), "max")
+    revalidateTag(phaseProductionTag(phaseId), "max")
+    revalidateTag(projectTag(phase.Project.id), "max")
+    revalidateTag(projectPhasesTag(phase.Project.id), "max")
 
     return { success: true }
   } catch (error) {
@@ -697,6 +670,11 @@ export async function bulkUpdateUnitForecasts(data: unknown) {
     await prisma.$transaction(operations)
 
     revalidateTag(unitForecastsTag(unitId), "max")
+    // Revalidate per-phase forecast tags so phase-level cached queries are fresh
+    for (const pid of phaseIds) {
+      revalidateTag(phaseForecastsTag(pid), "max")
+      revalidateTag(phaseProductionTag(pid), "max")
+    }
 
     return { success: true }
   } catch (error) {
@@ -758,12 +736,16 @@ export async function bulkUpdateUnitProductions(data: unknown) {
         id: true,
         name: true,
         montantHT: true,
-        Project: { select: { name: true } },
+        Project: { select: { id: true, name: true } },
       },
     })
 
     const phaseMap = new Map<string, (typeof dbPhases)[0]>()
     dbPhases.forEach((p) => phaseMap.set(p.id, p))
+
+    // Collect unique project IDs for cache invalidation
+    const projectIds = new Set<string>()
+    dbPhases.forEach((p) => projectIds.add(p.Project.id))
 
     const forecasts = await prisma.productionForecast.findMany({
       where: { phaseId: { in: phaseIds }, year },
@@ -855,6 +837,15 @@ export async function bulkUpdateUnitProductions(data: unknown) {
     }
 
     revalidateTag(unitProductionsTag(unitId), "max")
+
+    // Revalidate per-phase and per-project tags
+    for (const phaseId of phaseIds) {
+      revalidateTag(phaseProductionTag(phaseId), "max")
+    }
+    for (const projectId of projectIds) {
+      revalidateTag(projectTag(projectId), "max")
+      revalidateTag(projectPhasesTag(projectId), "max")
+    }
 
     return { success: true }
   } catch (error) {

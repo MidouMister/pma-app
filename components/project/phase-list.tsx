@@ -49,6 +49,14 @@ interface Phase {
   obs: string | null
   progress: number
   SubPhases: SubPhase[]
+  Product?: { taux: number } | null
+}
+
+// Use production progress (Product.taux) when available, fall back to subphase progress
+function getPhaseProgress(phase: Phase) {
+  return phase.Product?.taux !== undefined
+    ? Math.round(phase.Product.taux)
+    : phase.progress
 }
 
 interface SubPhase {
@@ -202,8 +210,13 @@ export function PhaseList({
                         {statusLabels[phase.status] || phase.status}
                       </Badge>
                       <div className="flex w-24 items-center gap-1">
-                        <Progress value={phase.progress} className="h-2" />
-                        <span className="text-xs">{phase.progress}%</span>
+                        <Progress
+                          value={getPhaseProgress(phase)}
+                          className="h-2"
+                        />
+                        <span className="text-xs">
+                          {getPhaseProgress(phase)}%
+                        </span>
                       </div>
                       {canEdit && (
                         <DropdownMenu>

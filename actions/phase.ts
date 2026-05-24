@@ -7,7 +7,15 @@ import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { formatCurrency } from "@/lib/format"
 import { phaseSchema, updatePhaseSchema } from "@/lib/validators"
-import { projectPhasesTag, projectGanttTag, projectTag } from "@/lib/cache"
+import {
+  projectPhasesTag,
+  projectGanttTag,
+  projectTag,
+  phaseProductionTag,
+  unitProductionsTag,
+  unitForecastsTag,
+} from "@/lib/cache"
+import { recalculateProduct } from "@/lib/production-utils"
 import { createNotification } from "@/actions/notification"
 
 async function recalculatePhaseProgress(phaseId: string) {
@@ -265,6 +273,17 @@ export async function updatePhase(data: unknown) {
 
     await recalculatePhaseProgress(phase.id)
 
+    // If montantHT changed, recalculate Product.montantProd and invalidate production caches
+    if (
+      validData.montantHT !== undefined &&
+      validData.montantHT !== phase.montantHT
+    ) {
+      await recalculateProduct(phase.id)
+      revalidateTag(phaseProductionTag(phase.id), "max")
+      revalidateTag(unitProductionsTag(phase.Project.unitId), "max")
+      revalidateTag(unitForecastsTag(phase.Project.unitId), "max")
+    }
+
     if (validData.status && validData.status !== phase.status) {
       const statusLabels: Record<string, string> = {
         New: "Nouveau",
@@ -368,6 +387,8 @@ export async function deletePhase(phaseId: string) {
 
     revalidateTag(projectPhasesTag(phase.Project.id), "max")
     revalidateTag(projectGanttTag(phase.Project.id), "max")
+    revalidateTag(unitProductionsTag(phase.Project.unitId), "max")
+    revalidateTag(unitForecastsTag(phase.Project.unitId), "max")
 
     return { success: true }
   } catch (error) {

@@ -461,7 +461,10 @@ export async function getProjectById(projectId: string) {
         },
       },
       phases: {
-        include: { SubPhases: true },
+        include: {
+          SubPhases: true,
+          Product: { select: { taux: true } },
+        },
         orderBy: { startDate: "asc" },
       },
       team: {
@@ -502,7 +505,10 @@ export async function getGanttData(projectId: string) {
   const [phases, markers] = await Promise.all([
     prisma.phase.findMany({
       where: { projectId },
-      include: { SubPhases: true },
+      include: {
+        SubPhases: true,
+        Product: { select: { taux: true } },
+      },
       orderBy: { startDate: "asc" },
     }),
     prisma.ganttMarker.findMany({
