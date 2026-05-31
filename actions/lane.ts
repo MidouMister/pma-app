@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
-import { laneSchema } from "@/lib/validators"
+import { laneSchema, updateLaneSchema } from "@/lib/validators"
 import { unitLanesTag } from "@/lib/cache"
 import { createNotification } from "@/actions/notification"
 
@@ -114,17 +114,20 @@ export async function updateLane(data: unknown) {
       }
     }
 
-    const { id, name, color } = data as {
-      id: string
-      name?: string
-      color?: string | null
+    const validation = updateLaneSchema.safeParse(data)
+    if (!validation.success) {
+      return {
+        success: false,
+        error: validation.error.issues[0]?.message ?? "Données invalides",
+      }
     }
 
+    const { id, name, color } = validation.data
+
     const lane = await prisma.lane.findFirst({
-      where: { id },
-      include: { Unit: true },
+      where: { id, companyId: user.companyId },
     })
-    if (!lane || lane.Unit.companyId !== user.companyId) {
+    if (!lane) {
       return { success: false, error: "Colonne introuvable" }
     }
 
@@ -167,10 +170,10 @@ export async function deleteLane(laneId: string) {
     }
 
     const lane = await prisma.lane.findFirst({
-      where: { id: laneId },
-      include: { Unit: true, _count: { select: { Tasks: true } } },
+      where: { id: laneId, companyId: user.companyId },
+      include: { _count: { select: { Tasks: true } } },
     })
-    if (!lane || lane.Unit.companyId !== user.companyId) {
+    if (!lane) {
       return { success: false, error: "Colonne introuvable" }
     }
 

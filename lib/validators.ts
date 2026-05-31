@@ -203,6 +203,13 @@ export type TeamMemberFormData = z.infer<typeof teamMemberSchema>
 export type LaneFormData = z.infer<typeof laneSchema>
 export type TagFormData = z.infer<typeof tagSchema>
 
+export const updateLaneSchema = z.object({
+  id: z.string().uuid("ID de colonne invalide"),
+  name: z.string().min(1, "Le nom est requis").max(255).optional(),
+  color: z.string().max(20).optional().nullable(),
+})
+export type UpdateLaneFormData = z.infer<typeof updateLaneSchema>
+
 export const updateProjectSchema = projectSchema
   .partial()
   .extend({ id: z.string().uuid("Projet invalide") })

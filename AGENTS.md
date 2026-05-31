@@ -572,6 +572,7 @@ The task form uses `<FormModal>` (from `components/shared/`) with 4 `<FormSectio
 - Submit logic extracted into `buildActionPayload()` helper
 - **Reset:** `resetForm()` callback clears all state when dialog closes
 - **Key prop:** `unit-kanban.tsx` passes `key={editingTask?.id ?? "create"}` to force remount on mode switch
+- **Filter-driven defaults:** `TaskDialog` accepts `defaultProjectId`, `defaultPhaseId`, `defaultSubPhaseId` props to pre-fill fields from the Kanban filter bar. When the filter bar has a project active and the user clicks "Ajouter une tâche", the dialog auto-selects that project/phase/subPhase. The initial state logic cascades: (1) existing task values, (2) smart single-phase auto-select, (3) filter-bar defaults via props.
 
 ### 6.8 Lane Dialog Structure
 

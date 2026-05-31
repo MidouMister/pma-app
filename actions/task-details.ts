@@ -12,7 +12,7 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
 
   const user = await prisma.user.findUnique({
     where: { clerkId: userId },
-    select: { companyId: true },
+    select: { id: true, companyId: true, role: true },
   })
 
   if (!user?.companyId) {
@@ -27,6 +27,19 @@ export async function getTaskDetailsData(taskId: string, projectId: string) {
 
   if (!task || task.companyId !== user.companyId) {
     throw new Error("Task not found or unauthorized")
+  }
+
+  // If USER, verify they are in the project team
+  if (user.role === "USER") {
+    const isMember = await prisma.teamMember.findFirst({
+      where: {
+        userId: user.id,
+        team: { projectId },
+      },
+    })
+    if (!isMember) {
+      throw new Error("Unauthorized project member access")
+    }
   }
 
   // 1. Fetch Comments

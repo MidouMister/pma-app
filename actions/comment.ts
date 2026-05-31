@@ -37,6 +37,19 @@ export async function createComment(taskId: string, body: string) {
       return { success: false, error: "Tâche introuvable" }
     }
 
+    // If USER, verify they are in the project team
+    if (user.role === "USER") {
+      const isMember = await prisma.teamMember.findFirst({
+        where: {
+          userId: user.id,
+          team: { projectId: task.projectId },
+        },
+      })
+      if (!isMember) {
+        return { success: false, error: "Accès refusé: vous ne faites pas partie de ce projet." }
+      }
+    }
+
     // Create the comment
     const comment = await prisma.taskComment.create({
       data: {
@@ -143,6 +156,7 @@ export async function updateComment(commentId: string, body: string) {
     // Find comment
     const comment = await prisma.taskComment.findFirst({
       where: { id: commentId, companyId: user.companyId },
+      include: { Task: true },
     })
     if (!comment) {
       return { success: false, error: "Commentaire introuvable" }
@@ -151,6 +165,19 @@ export async function updateComment(commentId: string, body: string) {
     // Only author can edit (or ADMIN/OWNER)
     if (comment.authorId !== user.id && user.role === "USER") {
       return { success: false, error: "Accès refusé" }
+    }
+
+    // If USER, verify they are in the project team
+    if (user.role === "USER") {
+      const isMember = await prisma.teamMember.findFirst({
+        where: {
+          userId: user.id,
+          team: { projectId: comment.Task.projectId },
+        },
+      })
+      if (!isMember) {
+        return { success: false, error: "Accès refusé" }
+      }
     }
 
     // Get the task to find its unitId for revalidation
@@ -195,6 +222,7 @@ export async function deleteComment(commentId: string) {
     // Find comment
     const comment = await prisma.taskComment.findFirst({
       where: { id: commentId, companyId: user.companyId },
+      include: { Task: true },
     })
     if (!comment) {
       return { success: false, error: "Commentaire introuvable" }
@@ -203,6 +231,19 @@ export async function deleteComment(commentId: string) {
     // Only author can delete (or ADMIN/OWNER)
     if (comment.authorId !== user.id && user.role === "USER") {
       return { success: false, error: "Accès refusé" }
+    }
+
+    // If USER, verify they are in the project team
+    if (user.role === "USER") {
+      const isMember = await prisma.teamMember.findFirst({
+        where: {
+          userId: user.id,
+          team: { projectId: comment.Task.projectId },
+        },
+      })
+      if (!isMember) {
+        return { success: false, error: "Accès refusé" }
+      }
     }
 
     // Delete mentions first (cascade should handle this, but being explicit)

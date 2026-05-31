@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useTransition, useCallback } from "react"
+import { useState, useTransition, useCallback, type ReactNode } from "react"
 import { createLane, updateLane, deleteLane } from "@/actions/lane"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FormModal } from "@/components/shared/form-modal"
-import { Columns3 } from "lucide-react"
+import { Columns3, Plus } from "lucide-react"
 
 export interface LaneDialogProps {
   lane?: {
@@ -19,6 +19,7 @@ export interface LaneDialogProps {
   onSuccess?: () => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  trigger?: ReactNode
 }
 
 export function LaneDialog({
@@ -27,6 +28,7 @@ export function LaneDialog({
   onSuccess,
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
+  trigger,
 }: LaneDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -96,6 +98,16 @@ export function LaneDialog({
       onReset={resetForm}
       submitLabel={isEdit ? "Enregistrer" : "Créer"}
       submitPendingLabel={isEdit ? "Enregistrement..." : "Création..."}
+      trigger={
+        trigger !== undefined ? trigger : (
+          externalOpen === undefined ? (
+            <Button className="gap-2">
+              <Plus className="size-4" />
+              {isEdit ? "Modifier" : "Nouvelle colonne"}
+            </Button>
+          ) : undefined
+        )
+      }
     >
       <div className="flex flex-col gap-4 py-4">
         <div>

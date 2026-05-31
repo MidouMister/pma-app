@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useTransition } from "react"
+import { useState, useEffect, useTransition, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,6 +44,7 @@ import {
   FolderKanban,
   Layers,
   ListTodo,
+  Loader2,
   Pencil,
   Plus,
   Tag,
@@ -115,6 +116,8 @@ export function TaskDetailModal({
   const [dueDate, setDueDate] = useState<Date | null>(null)
   const [newComment, setNewComment] = useState("")
   const [activeTab, setActiveTab] = useState("activity")
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!task || !isOpen) return
@@ -145,16 +148,21 @@ export function TaskDetailModal({
 
   const handleUpdateTask = (fields: Record<string, unknown>) => {
     if (!task || !canEdit) return
+    setSaveStatus("saving")
     startTransition(async () => {
       try {
         const result = await updateTask({ id: task.id, ...fields })
         if (result.success) {
-          toast.success("Tâche mise à jour")
+          setSaveStatus("saved")
+          if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+          saveTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000)
           onTaskUpdated?.()
         } else {
+          setSaveStatus("idle")
           toast.error(result.error || "Erreur lors de la mise à jour")
         }
       } catch (error) {
+        setSaveStatus("idle")
         toast.error(
           error instanceof Error ? error.message : "Une erreur est survenue"
         )
@@ -326,18 +334,29 @@ export function TaskDetailModal({
       }
       size="2xl"
     >
-      {/* Editable title */}
-      {canEdit ? (
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => title !== task.title && handleUpdateTask({ title })}
-          className="mb-2 h-auto border-none bg-transparent p-0 text-2xl font-bold shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0"
-          placeholder="Titre de la tâche"
-        />
-      ) : (
-        <h2 className="mb-2 text-2xl font-bold">{task.title}</h2>
-      )}
+      {/* Editable title with save indicator */}
+      <div className="relative mb-2">
+        {canEdit ? (
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => title !== task.title && handleUpdateTask({ title })}
+            className="h-auto border-none bg-transparent p-0 pr-8 text-2xl font-bold shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0"
+            placeholder="Titre de la tâche"
+          />
+        ) : (
+          <h2 className="text-2xl font-bold">{task.title}</h2>
+        )}
+        {saveStatus !== "idle" && (
+          <span className="absolute top-1/2 right-0 -translate-y-1/2">
+            {saveStatus === "saving" ? (
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Check className="size-4 text-emerald-500 animate-in fade-in" />
+            )}
+          </span>
+        )}
+      </div>
 
       {/* Breadcrumb */}
       <div className="mb-6 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
@@ -413,6 +432,11 @@ export function TaskDetailModal({
                 isPending={isPending}
                 onCommentChange={setNewComment}
                 onAddComment={handleAddComment}
+                mentionableUsers={data?.teamMembers?.map((tm) => ({
+                  id: tm.user.id,
+                  name: tm.user.name ?? "",
+                  avatarUrl: tm.user.avatarUrl,
+                }))}
               />
             </TabsContent>
 

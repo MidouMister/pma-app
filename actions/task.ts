@@ -49,6 +49,14 @@ export async function createTask(data: unknown) {
       return { success: false, error: "Projet introuvable" }
     }
 
+    // Verify unit matches project's unit
+    if (project.unitId !== validData.unitId) {
+      return {
+        success: false,
+        error: "L'unité spécifiée ne correspond pas à celle du projet.",
+      }
+    }
+
     // Check Plan.maxTasksPerProject limit
     const plan = user.company?.subscription?.Plan
     if (plan && plan.maxTasksPerProject) {
@@ -97,6 +105,7 @@ export async function createTask(data: unknown) {
       where: {
         laneId: validData.laneId ?? null,
         unitId: validData.unitId,
+        companyId: user.companyId,
       },
       _max: { order: true },
     })
@@ -184,10 +193,9 @@ export async function updateTask(data: unknown) {
     const { id, ...fields } = validation.data
 
     const task = await prisma.task.findFirst({
-      where: { id },
-      include: { Project: true },
+      where: { id, companyId: user.companyId },
     })
-    if (!task || task.Project.companyId !== user.companyId) {
+    if (!task) {
       return { success: false, error: "Tâche introuvable" }
     }
 
@@ -259,13 +267,14 @@ export async function moveTask(
     if (!userId) return { success: false, error: "Non autorisé" }
 
     const user = await getCurrentUser()
-    if (!user) return { success: false, error: "Utilisateur non trouvé" }
+    if (!user || !user.companyId) {
+      return { success: false, error: "Utilisateur non trouvé" }
+    }
 
     const task = await prisma.task.findFirst({
-      where: { id: taskId },
-      include: { Project: true },
+      where: { id: taskId, companyId: user.companyId },
     })
-    if (!task || task.Project.companyId !== user.companyId) {
+    if (!task) {
       return { success: false, error: "Tâche introuvable" }
     }
 
@@ -280,7 +289,7 @@ export async function moveTask(
     await prisma.task.update({
       where: { id: taskId },
       data: {
-        ...(laneId !== undefined && { laneId }),
+        ...(laneId != null && { laneId }),
         order: newOrder,
       },
     })
@@ -302,13 +311,14 @@ export async function completeTask(taskId: string) {
     if (!userId) return { success: false, error: "Non autorisé" }
 
     const user = await getCurrentUser()
-    if (!user) return { success: false, error: "Utilisateur non trouvé" }
+    if (!user || !user.companyId) {
+      return { success: false, error: "Utilisateur non trouvé" }
+    }
 
     const task = await prisma.task.findFirst({
-      where: { id: taskId },
-      include: { Project: true },
+      where: { id: taskId, companyId: user.companyId },
     })
-    if (!task || task.Project.companyId !== user.companyId) {
+    if (!task) {
       return { success: false, error: "Tâche introuvable" }
     }
 
@@ -359,10 +369,9 @@ export async function deleteTask(taskId: string) {
     }
 
     const task = await prisma.task.findFirst({
-      where: { id: taskId },
-      include: { Project: true },
+      where: { id: taskId, companyId: user.companyId },
     })
-    if (!task || task.Project.companyId !== user.companyId) {
+    if (!task) {
       return { success: false, error: "Tâche introuvable" }
     }
 

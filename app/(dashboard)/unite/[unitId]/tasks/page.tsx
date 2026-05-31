@@ -7,11 +7,13 @@ import {
   getScopedProjects,
   getUnitMembers,
   getUnitTags,
+  getUnitById,
 } from "@/lib/queries"
 import { PageHeader } from "@/components/shared/page-header"
 import { UnitKanban } from "@/components/kanban/unit-kanban"
-import { EmptyState } from "@/components/shared/empty-state"
 import { LaneDialog } from "@/components/kanban/lane-dialog"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 
 export default async function TasksPage({
   params,
@@ -26,19 +28,31 @@ export default async function TasksPage({
   const user = await getCurrentUser()
   if (!user || !user.companyId) redirect("/onboarding")
 
+  // Verify unit exists and belongs to user's company
+  const unit = await getUnitById(unitId)
+  if (!unit || unit.companyId !== user.companyId) {
+    redirect("/dashboard")
+  }
+
+  // Verify unit permission (ADMIN and USER must match unitId)
+  if (user.role !== "OWNER" && user.unitId !== unitId) {
+    redirect(user.unitId ? `/unite/${user.unitId}/tasks` : "/dashboard")
+  }
+
   const canEdit = user.role === "OWNER" || user.role === "ADMIN"
 
   const currentUser = {
+    id: user.id, // Pass user ID to support USER tasks dragging
     name: user.name ?? null,
     avatarUrl: user.avatarUrl ?? null,
   }
 
   const [lanes, tasks, projects, teamMembers, tags] = await Promise.all([
-    getUnitLanes(unitId),
-    getUnitTasks(unitId),
+    getUnitLanes(unitId, user.companyId),
+    getUnitTasks(unitId, user.companyId),
     getScopedProjects(user.companyId, unitId, user.id, user.role),
-    getUnitMembers(unitId),
-    getUnitTags(unitId),
+    getUnitMembers(unitId, user.companyId),
+    getUnitTags(unitId, user.companyId),
   ])
 
   // Map lanes
@@ -77,15 +91,26 @@ export default async function TasksPage({
           title="Tâches"
           description="Tableau Kanban de votre unité"
         />
-        <EmptyState
-          title="Aucune colonne"
-          description="Créez votre première colonne pour commencer à organiser vos tâches."
-        />
-        {canEdit && (
-          <div className="-mt-4 flex justify-center">
-            <LaneDialog unitId={unitId} />
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card/60 p-8 text-center backdrop-blur-xs">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Plus className="h-6 w-6" />
           </div>
-        )}
+          <h3 className="text-lg font-medium">Aucune colonne</h3>
+          <p className="mt-2 mb-6 max-w-sm text-sm text-muted-foreground">
+            Créez votre première colonne pour commencer à organiser vos tâches.
+          </p>
+          {canEdit && (
+            <LaneDialog
+              unitId={unitId}
+              trigger={
+                <Button size="lg" className="gap-2 shadow-md hover:shadow-lg transition-all">
+                  <Plus className="size-4" />
+                  Créer la première colonne
+                </Button>
+              }
+            />
+          )}
+        </div>
       </div>
     )
   }
@@ -108,6 +133,7 @@ export default async function TasksPage({
     tagIds: t.Tags.map((tag) => tag.id),
     tagNames: t.Tags.map((tag) => tag.name),
     tagColors: t.Tags.map((tag) => tag.color),
+    order: t.order, // Map order for sorting
     projectId: t.projectId,
     projectName: projects.find((p) => p.id === t.projectId)?.name ?? "",
     phaseName: t.Phase?.name ?? null,

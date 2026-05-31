@@ -2,7 +2,7 @@
 
 > **Project:** PMA (Project Management App)
 > **PRD Version:** 3.2.0
-> **Last Updated:** 2026-04-07 (M7 Gantt Chart completed)
+> **Last Updated:** 2026-05-31 (Tâches route fixes completed)
 > **Plan Reference:** [implementation_plan.md](./implementation_plan.md)
 > **Schema Reference:** [schema.prisma](./schema.prisma)
 > **PRD Reference:** [PRD.md](./PRD.md)
@@ -1044,24 +1044,82 @@
 
 ---
 
+## Correction & Amélioration Route Tâches
+
+**Status:** `[x] COMPLETED 2026-05-31`
+**Depends on:** Milestone 8 (Kanban board exists), Kanban Revamp
+**Plan:** [task-route-fixes.md](./plans/task-route-fixes.md) (inline)
+**Goal:** Fix empty state button, DnD bugs, tenant isolation, UX improvements.
+
+### 1 — Amélioration Affichage (Bouton État Vide)
+
+- [x] Add `trigger` prop to `LaneDialog` (optional, default button when uncontrolled) ✅ 2026-05-31
+- [x] Integrate `trigger` with styled button in empty state of `tasks/page.tsx` ✅ 2026-05-31
+- **Files**: `components/kanban/lane-dialog.tsx`, `app/(dashboard)/unite/[unitId]/tasks/page.tsx`
+
+### 2 — Contrôle d'Accès & Isolation Unité
+
+- [x] Validate unit belongs to user's company (`unit.companyId !== user.companyId` → redirect) ✅ 2026-05-31
+- [x] ADMIN/USER must match `user.unitId === unitId` → redirect if mismatch ✅ 2026-05-31
+- [x] Pass `currentUser.id` to `UnitKanban` for USER task ownership checks ✅ 2026-05-31
+- **Files**: `app/(dashboard)/unite/[unitId]/tasks/page.tsx`
+
+### 3 — Tenant Isolation (BR-01) dans les Queries
+
+- [x] Update `getUnitLanes(unitId, companyId?)` → optional `companyId` filter ✅ 2026-05-31
+- [x] Update `getUnitTasks(unitId, companyId?)` → optional `companyId` filter ✅ 2026-05-31
+- [x] Update `getUnitMembers(unitId, companyId?)` → optional `companyId` filter ✅ 2026-05-31
+- [x] Update `getUnitTags(unitId, companyId?)` → optional `companyId` filter ✅ 2026-05-31
+- **File**: `lib/queries.ts`
+
+### 4 — Tenant Isolation (BR-01) dans les Actions Serveur
+
+- [x] `task.ts` — `companyId` in `where` for `moveTask`, `completeTask`, `deleteTask`, `updateTask`; unit validation in `createTask` ✅ 2026-05-31
+- [x] `comment.ts` — USER project team check for `createComment`, `updateComment`, `deleteComment` ✅ 2026-05-31
+- [x] `lane.ts` — Zod validation on `updateLane`; `companyId` filter on lane fetch ✅ 2026-05-31
+- [x] `task-details.ts` — restrict USER access to project team members ✅ 2026-05-31
+- **Files**: `actions/task.ts`, `actions/comment.ts`, `actions/lane.ts`, `actions/task-details.ts`
+
+### 5 — Résolution DnD Bugs
+
+- [x] Fix card-on-card drop: resolve target lane from over task's `laneId` ✅ 2026-05-31
+- [x] USER can drag own tasks: `canDrag = canEdit || (currentUser.id && draggedTask.assignedUserId === currentUser.id)` ✅ 2026-05-31
+- [x] Dynamic order calculation: `maxOrder + 1` from tasks in target lane ✅ 2026-05-31
+- **File**: `components/kanban/unit-kanban.tsx`
+
+### 6 — Améliorations UX
+
+- [x] Pass `defaultPhaseId`/`defaultSubPhaseId` from filter bar to `TaskDialog` ✅ 2026-05-31
+- [x] Visual save indicator (spinner/check) on `onBlur` saves in `TaskDetailModal` ✅ 2026-05-31
+- [x] `@mentions` autocomplete in comment form with keyboard navigation ✅ 2026-05-31
+- **Files**: `components/kanban/task-dialog.tsx`, `components/kanban/unit-kanban.tsx`, `components/kanban/task-detail-modal.tsx`, `components/kanban/task-comments.tsx`
+
+### 7 — Validation Finale
+
+- [x] `pnpm typecheck` — 0 errors (fixed 2 pre-existing TS errors, removed unused import) ✅ 2026-05-31
+- [x] `pnpm lint` — 0 errors (2 pre-existing TanStack warnings only) ✅ 2026-05-31
+
+---
+
 ## Summary Table
 
-| #         | Milestone                                 | Tasks   | Status |
-| --------- | ----------------------------------------- | ------- | ------ |
-| 1         | Foundation & Database                     | 26      | `[x]`  |
-| 2         | Layout & Navigation                       | 13      | `[x]`  |
-| 3         | Onboarding & Auth Flow                    | 9       | `[x]`  |
-| 4         | Company & Unit Management                 | 16      | `[x]`  |
-| 5         | Client CRM                                | 7       | `[x]`  |
-| 5.5       | PRD v3.2.0 Infrastructure                 | 21      | `[x]`  |
-| 6         | Project Management & Phases               | 17      | `[x]`  |
-| 7         | Gantt Chart                               | 8       | `[x]`  |
-| 8         | Kanban Board & Tasks                      | 21      | `[x]`  |
-| —         | **Gantt Feature Upgrade (Post-M7)**       | **18**  | `[x]`  |
-| —         | **Kanban Revamp (Post-M8)**               | **7**   | `[x]`  |
-| 9         | Production, Time Tracking & Notifications | 18      | `[x]`  |
-| 10        | Activity Logs, User Dashboard & Polish    | 17      | `[ ]`  |
-| **TOTAL** |                                           | **198** | 12/13  |
+| #         | Milestone                                  | Tasks   | Status |
+| --------- | ------------------------------------------ | ------- | ------ |
+| 1         | Foundation & Database                      | 26      | `[x]`  |
+| 2         | Layout & Navigation                        | 13      | `[x]`  |
+| 3         | Onboarding & Auth Flow                     | 9       | `[x]`  |
+| 4         | Company & Unit Management                  | 16      | `[x]`  |
+| 5         | Client CRM                                 | 7       | `[x]`  |
+| 5.5       | PRD v3.2.0 Infrastructure                  | 21      | `[x]`  |
+| 6         | Project Management & Phases                | 17      | `[x]`  |
+| 7         | Gantt Chart                                | 8       | `[x]`  |
+| 8         | Kanban Board & Tasks                       | 21      | `[x]`  |
+| —         | **Gantt Feature Upgrade (Post-M7)**        | **18**  | `[x]`  |
+| —         | **Kanban Revamp (Post-M8)**                | **7**   | `[x]`  |
+| 9         | Production, Time Tracking & Notifications  | 18      | `[x]`  |
+| —         | **Correction & Amélioration Route Tâches** | **7**   | `[x]`  |
+| 10        | Activity Logs, User Dashboard & Polish     | 17      | `[ ]`  |
+| **TOTAL** |                                            | **205** | 13/14  |
 
 ---
 

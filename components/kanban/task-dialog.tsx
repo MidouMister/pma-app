@@ -86,6 +86,12 @@ export interface TaskDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   laneId?: string
+  /** Pre-fill project when creating from a filtered view */
+  defaultProjectId?: string
+  /** Pre-fill phase when creating from a filtered view */
+  defaultPhaseId?: string
+  /** Pre-fill subPhase when creating from a filtered view */
+  defaultSubPhaseId?: string
 }
 
 export function TaskDialog({
@@ -100,6 +106,9 @@ export function TaskDialog({
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
   laneId: initialLaneId,
+  defaultProjectId,
+  defaultPhaseId,
+  defaultSubPhaseId,
 }: TaskDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -108,11 +117,12 @@ export function TaskDialog({
   const setIsOpen = externalOnOpenChange ?? setInternalOpen
 
   const [formData, setFormData] = useState(() => {
-    // Compute smart default phase: if project has exactly 1 phase, auto-select
+    // Compute smart default phase: from task (edit), smart single-phase, or filter bar
+    const effectiveProjectId = task?.projectId ?? defaultProjectId ?? ""
     let phaseId = task?.phaseId ?? ""
     let subPhaseId = task?.subPhaseId ?? ""
-    if (!task?.phaseId && task?.projectId) {
-      const project = projects.find((p) => p.id === task.projectId)
+    if (!task?.phaseId && effectiveProjectId) {
+      const project = projects.find((p) => p.id === effectiveProjectId)
       if (project?.phases.length === 1) {
         phaseId = project.phases[0].id
         const subPhases = project.phases[0].SubPhases
@@ -121,10 +131,17 @@ export function TaskDialog({
         }
       }
     }
+    // Fall back to filter-bar defaults if no smart match
+    if (!phaseId && defaultPhaseId) {
+      phaseId = defaultPhaseId
+    }
+    if (!subPhaseId && defaultSubPhaseId) {
+      subPhaseId = defaultSubPhaseId
+    }
     return {
       title: task?.title ?? "",
       description: task?.description ?? "",
-      projectId: task?.projectId ?? "",
+      projectId: effectiveProjectId,
       phaseId,
       subPhaseId,
       laneId: task?.laneId ?? initialLaneId ?? "",

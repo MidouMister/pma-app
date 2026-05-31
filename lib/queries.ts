@@ -120,12 +120,15 @@ export async function getUnitById(unitId: string) {
   return prisma.unit.findUnique({ where: { id: unitId } })
 }
 
-export async function getUnitMembers(unitId: string) {
+export async function getUnitMembers(unitId: string, companyId?: string) {
   "use cache"
   cacheTag(unitMembersTag(unitId))
   cacheLife(HOURS)
   return prisma.user.findMany({
-    where: { unitId },
+    where: { 
+      unitId,
+      ...(companyId && { companyId }),
+    },
     select: {
       id: true,
       name: true,
@@ -206,22 +209,28 @@ export async function getScopedClients(
   })
 }
 
-export async function getUnitLanes(unitId: string) {
+export async function getUnitLanes(unitId: string, companyId?: string) {
   "use cache"
   cacheTag(unitLanesTag(unitId))
   cacheLife(SECONDS)
   return prisma.lane.findMany({
-    where: { unitId },
+    where: { 
+      unitId,
+      ...(companyId && { companyId }),
+    },
     orderBy: { order: "asc" },
   })
 }
 
-export async function getUnitTasks(unitId: string) {
+export async function getUnitTasks(unitId: string, companyId?: string) {
   "use cache"
   cacheTag(unitTasksTag(unitId))
   cacheLife(SECONDS)
   return prisma.task.findMany({
-    where: { unitId },
+    where: { 
+      unitId,
+      ...(companyId && { companyId }),
+    },
     include: {
       Assigned: { select: { id: true, name: true, avatarUrl: true } },
       Tags: true,
@@ -233,12 +242,15 @@ export async function getUnitTasks(unitId: string) {
   })
 }
 
-export async function getUnitTags(unitId: string) {
+export async function getUnitTags(unitId: string, companyId?: string) {
   "use cache"
   cacheTag(unitTagsTag(unitId))
   cacheLife(HOURS)
   return prisma.tag.findMany({
-    where: { unitId },
+    where: { 
+      unitId,
+      ...(companyId && { Unit: { companyId } }),
+    },
     orderBy: { name: "asc" },
   })
 }

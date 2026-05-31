@@ -90,6 +90,7 @@ interface KanbanTask {
   tagNames: string[]
   tagColors: string[]
   commentCount: number
+  order: number
   projectId: string
   projectName: string
   phaseName: string | null
@@ -127,6 +128,7 @@ interface TeamMember {
 }
 
 interface CurrentUser {
+  id: string
   name: string | null
   avatarUrl: string | null
 }
@@ -238,13 +240,41 @@ export function UnitKanban({
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event
-      if (!over || !canEdit) return
+      if (!over) return
+
       const taskId = active.id as string
-      const targetLane = lanes.find((l) => l.id === over.id)
+      const draggedTask = tasks.find((t) => t.id === taskId)
+      if (!draggedTask) return
+
+      // Allow OWNER/ADMIN (canEdit) or USER dragging their own assigned task
+      const canDrag =
+        canEdit ||
+        (currentUser.id && draggedTask.assignedUserId === currentUser.id)
+      if (!canDrag) return
+
+      // Resolve the target lane: over.id may be a lane ID or a task ID
+      let targetLane = lanes.find((l) => l.id === over.id)
+      if (!targetLane) {
+        // Dropped on a task card — find which lane that task belongs to
+        const overTask = tasks.find((t) => t.id === over.id)
+        if (overTask?.laneId) {
+          targetLane = lanes.find((l) => l.id === overTask.laneId)
+        }
+      }
       if (!targetLane) return
-      const task = tasks.find((t) => t.id === taskId)
-      if (!task || task.laneId === targetLane.id) return
-      const result = await moveTask(taskId, targetLane.id, 0)
+
+      // Skip if the task is already in the target lane
+      if (draggedTask.laneId === targetLane.id) return
+
+      // Calculate dynamic order: place at the end of the target lane
+      const tasksInTargetLane = tasks.filter((t) => t.laneId === targetLane!.id)
+      const maxOrder =
+        tasksInTargetLane.length > 0
+          ? Math.max(...tasksInTargetLane.map((t) => t.order ?? 0))
+          : 0
+      const newOrder = maxOrder + 1
+
+      const result = await moveTask(taskId, targetLane.id, newOrder)
       if (result.success) {
         toast.success("Tâche déplacée")
         router.refresh()
@@ -252,7 +282,7 @@ export function UnitKanban({
         toast.error(result.error ?? "Erreur lors du déplacement")
       }
     },
-    [canEdit, lanes, tasks, router]
+    [canEdit, currentUser.id, lanes, tasks, router]
   )
 
   const handleComplete = useCallback(
@@ -857,6 +887,17 @@ export function UnitKanban({
             }
           }}
           laneId={taskDialogLaneId ?? undefined}
+          defaultProjectId={
+            !editingTask && projectFilter !== "all" ? projectFilter : undefined
+          }
+          defaultPhaseId={
+            !editingTask && phaseFilter !== "all" ? phaseFilter : undefined
+          }
+          defaultSubPhaseId={
+            !editingTask && subPhaseFilter !== "all"
+              ? subPhaseFilter
+              : undefined
+          }
           onSuccess={() => {
             setTaskDialogOpen(false)
             setTaskDialogLaneId(null)
