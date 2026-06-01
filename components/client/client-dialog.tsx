@@ -16,8 +16,11 @@ import { FormModal } from "@/components/shared/form-modal"
 interface ClientDialogProps {
   unitId: string
   companyId: string
-  client?: Client // If provided, we're in edit mode
-  trigger?: React.ReactNode // Custom trigger button if needed
+  client?: Client
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onSuccess?: (client: Client) => void
 }
 
 export function ClientDialog({
@@ -25,9 +28,17 @@ export function ClientDialog({
   companyId,
   client,
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onSuccess,
 }: ClientDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled
+    ? (next: boolean) => controlledOnOpenChange?.(next)
+    : setInternalOpen
   const [isPending, startTransition] = useTransition()
   const isEditing = !!client
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -101,7 +112,11 @@ export function ClientDialog({
           isEditing ? "Client mis à jour" : "Client créé avec succès"
         )
         setOpen(false)
-        router.refresh()
+        if (!isEditing && onSuccess) {
+          onSuccess((res as { success: true; client: Client }).client)
+        } else {
+          router.refresh()
+        }
       } else {
         toast.error(res.error || "Une erreur est survenue")
         if (res.error) {
@@ -122,12 +137,14 @@ export function ClientDialog({
           : "Créez un nouveau client pour cette unité."
       }
       trigger={
-        trigger ?? (
-          <Button className="gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30">
-            <Plus className="size-4" />
-            Nouveau client
-          </Button>
-        )
+        trigger === null
+          ? undefined
+          : (trigger ?? (
+              <Button className="gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30">
+                <Plus className="size-4" />
+                Nouveau client
+              </Button>
+            ))
       }
       size="lg"
       isPending={isPending}

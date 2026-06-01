@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import Link from "next/link"
-import { formatCurrency, formatDate } from "@/lib/format"
+import { formatCurrency, formatDate, formatDelai } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
@@ -42,33 +42,46 @@ const STATUS_CONFIG = {
   },
 }
 
+import { type ProjectWithClient } from "@/lib/types"
+
 export interface ProjectRow {
   id: string
   name: string
   code: string
+  type: string
   status: string
+  signe: boolean
+  montantHT: number
   montantTTC: number
+  delaiMonths: number
+  delaiDays: number
   ods: Date | null
+  clientId: string
   clientName: string | null
   progress: number
   unitId: string
+  rawProject: ProjectWithClient
 }
 
 interface ProjectColumnsProps {
   unitId: string
   canEdit: boolean
   onArchive: (id: string) => void
+  onEdit?: (project: ProjectRow) => void
 }
 
 export function getProjectColumns({
   unitId,
   canEdit,
   onArchive,
+  onEdit,
 }: ProjectColumnsProps): ColumnDef<ProjectRow>[] {
+  const canEdit_ = canEdit && typeof onEdit === "function"
   return [
     {
       accessorKey: "name",
       header: "Projet",
+      enableSorting: true,
       size: 280,
       cell: ({ row }) => {
         const project = row.original
@@ -92,6 +105,7 @@ export function getProjectColumns({
     {
       accessorKey: "clientName",
       header: "Client",
+      enableSorting: true,
       size: 150,
       cell: ({ row }) => {
         const name = row.getValue("clientName") as string | null
@@ -105,6 +119,7 @@ export function getProjectColumns({
     {
       accessorKey: "status",
       header: "Statut",
+      enableSorting: true,
       size: 140,
       cell: ({ row }) => {
         const status = row.getValue("status") as string
@@ -130,6 +145,7 @@ export function getProjectColumns({
     {
       accessorKey: "montantTTC",
       header: "Montant TTC",
+      enableSorting: true,
       size: 160,
       cell: ({ row }) => {
         const amount = row.getValue("montantTTC") as number
@@ -141,8 +157,38 @@ export function getProjectColumns({
       },
     },
     {
+      accessorKey: "montantHT",
+      header: "Montant HT",
+      enableSorting: true,
+      size: 160,
+      cell: ({ row }) => {
+        const amount = row.getValue("montantHT") as number
+        return (
+          <span className="text-right font-mono text-sm font-semibold tabular-nums">
+            {formatCurrency(amount)}
+          </span>
+        )
+      },
+    },
+    {
+      id: "delai",
+      header: "Délai",
+      enableSorting: true,
+      size: 120,
+      accessorFn: (row) => row.delaiMonths * 30 + row.delaiDays,
+      cell: ({ row }) => {
+        const { delaiMonths, delaiDays } = row.original
+        return (
+          <span className="text-sm text-muted-foreground">
+            {formatDelai(delaiMonths, delaiDays)}
+          </span>
+        )
+      },
+    },
+    {
       accessorKey: "progress",
       header: "Progression",
+      enableSorting: true,
       size: 160,
       cell: ({ row }) => {
         const progress = row.getValue("progress") as number
@@ -173,6 +219,7 @@ export function getProjectColumns({
     {
       accessorKey: "ods",
       header: "ODS",
+      enableSorting: true,
       size: 120,
       cell: ({ row }) => {
         const ods = row.getValue("ods") as Date | null
@@ -206,17 +253,13 @@ export function getProjectColumns({
                   Voir
                 </Link>
               </DropdownMenuItem>
-              {canEdit && (
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/unite/${unitId}/projects/${project.id}?edit=true`}
-                  >
-                    <Pencil className="mr-2 size-4" />
-                    Modifier
-                  </Link>
+              {canEdit_ && (
+                <DropdownMenuItem onClick={() => onEdit!(project)}>
+                  <Pencil className="mr-2 size-4" />
+                  Modifier
                 </DropdownMenuItem>
               )}
-              {canEdit && (
+              {canEdit_ && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => onArchive(project.id)}

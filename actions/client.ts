@@ -71,7 +71,7 @@ export async function createClient(data: unknown) {
     }
 
     // 6. Execute create (CLT-01, CLT-03)
-    await prisma.client.create({
+    const newClient = await prisma.client.create({
       data: {
         name: validData.name,
         wilaya: validData.wilaya ?? null,
@@ -105,7 +105,7 @@ export async function createClient(data: unknown) {
       })
     } catch {}
 
-    return { success: true }
+    return { success: true, client: newClient }
   } catch (error) {
     console.error("createClient error:", error)
 

@@ -42,17 +42,34 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
 
   const canCreate = user.role === "OWNER" || user.role === "ADMIN"
 
-  const projectRows = projects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    code: p.code,
-    status: p.status,
-    montantTTC: p.montantTTC,
-    ods: p.ods,
-    clientName: p.Client?.name ?? null,
-    progress: 0,
-    unitId,
-  }))
+  const projectRows = projects.map((p) => {
+    const totalProdAmount = p.phases.reduce((sum, ph) => {
+      const prodAmount = ph.Product?.montantProd ?? (ph.progress / 100) * ph.montantHT
+      return sum + prodAmount
+    }, 0)
+    const progress = p.montantHT > 0
+      ? Math.round((totalProdAmount / p.montantHT) * 100)
+      : 0
+
+    return {
+      id: p.id,
+      name: p.name,
+      code: p.code,
+      type: p.type,
+      status: p.status,
+      signe: p.signe,
+      montantHT: p.montantHT,
+      montantTTC: p.montantTTC,
+      delaiMonths: p.delaiMonths,
+      delaiDays: p.delaiDays,
+      ods: p.ods,
+      clientId: p.clientId,
+      clientName: p.Client?.name ?? null,
+      progress,
+      unitId,
+      rawProject: p,
+    }
+  })
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
@@ -95,6 +112,7 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
       <ProjectList
         projects={projectRows}
         unitId={unitId}
+        companyId={user.companyId!}
         canEdit={canCreate}
         clients={clients}
       />

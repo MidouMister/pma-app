@@ -422,6 +422,13 @@ export async function getScopedProjects(
         select: {
           id: true,
           name: true,
+          montantHT: true,
+          progress: true,
+          Product: {
+            select: {
+              montantProd: true,
+            },
+          },
           SubPhases: { select: { id: true, name: true } },
         },
         orderBy: { startDate: "asc" },

@@ -1,11 +1,14 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { DataTable } from "@/components/ui/data-table"
 import { getProjectColumns, type ProjectRow } from "./columns"
 import { ProjectToolbar } from "./projects-toolbar"
 import { archiveProject } from "@/actions/project"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { FileDown } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,10 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ProjectDialog } from "@/components/project/project-dialog"
 
 interface ProjectListProps {
   projects: ProjectRow[]
   unitId: string
+  companyId: string
   canEdit: boolean
   clients: Array<{ id: string; name: string }>
 }
@@ -27,13 +32,20 @@ interface ProjectListProps {
 export function ProjectList({
   projects,
   unitId,
+  companyId,
   canEdit,
   clients,
 }: ProjectListProps) {
+  const router = useRouter()
+  const [editingProject, setEditingProject] = useState<ProjectRow | null>(null)
   const [archiveDialogId, setArchiveDialogId] = useState<string | null>(null)
   const [globalFilter, setGlobalFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [clientFilter, setClientFilter] = useState("all")
+
+  const handleEdit = useCallback((project: ProjectRow) => {
+    setEditingProject(project)
+  }, [])
 
   const columns = useMemo(
     () =>
@@ -41,8 +53,9 @@ export function ProjectList({
         unitId,
         canEdit,
         onArchive: (id) => setArchiveDialogId(id),
+        onEdit: handleEdit,
       }),
-    [unitId, canEdit]
+    [unitId, canEdit, handleEdit]
   )
 
   // Apply filters
@@ -96,6 +109,20 @@ export function ProjectList({
     setArchiveDialogId(null)
   }
 
+  const handleExport = async () => {
+    try {
+      const { exportProjectsToExcel } = await import("@/lib/excel-export")
+      await exportProjectsToExcel(
+        filteredData,
+        "PMA",
+        `Unité ${unitId.slice(0, 8)}`
+      )
+      toast.success("Export Excel réussi")
+    } catch {
+      toast.error("Erreur lors de l'export Excel")
+    }
+  }
+
   return (
     <>
       <DataTable
@@ -104,19 +131,49 @@ export function ProjectList({
         emptyTitle="Aucun projet trouvé"
         emptyDescription="Aucun projet ne correspond à vos critères de recherche."
         toolbar={
-          <ProjectToolbar
-            globalFilter={globalFilter}
-            setGlobalFilter={setGlobalFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            clientFilter={clientFilter}
-            setClientFilter={setClientFilter}
-            clients={clients}
-            hasActiveFilters={hasActiveFilters}
-            onReset={resetFilters}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ProjectToolbar
+              globalFilter={globalFilter}
+              setGlobalFilter={setGlobalFilter}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              clientFilter={clientFilter}
+              setClientFilter={setClientFilter}
+              clients={clients}
+              hasActiveFilters={hasActiveFilters}
+              onReset={resetFilters}
+            />
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="h-10 shrink-0 gap-1.5"
+              >
+                <FileDown className="size-3.5" />
+                Exporter
+              </Button>
+            )}
+          </div>
         }
       />
+
+      {/* Edit Dialog */}
+      {editingProject && (
+        <ProjectDialog
+          key={editingProject.id}
+          open={!!editingProject}
+          onOpenChange={(open) => !open && setEditingProject(null)}
+          project={editingProject.rawProject}
+          unitId={unitId}
+          companyId={companyId}
+          clients={clients}
+          onSuccess={() => {
+            setEditingProject(null)
+            router.refresh()
+          }}
+        />
+      )}
 
       {/* Archive Confirmation */}
       <AlertDialog
