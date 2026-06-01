@@ -125,7 +125,7 @@ export async function getUnitMembers(unitId: string, companyId?: string) {
   cacheTag(unitMembersTag(unitId))
   cacheLife(HOURS)
   return prisma.user.findMany({
-    where: { 
+    where: {
       unitId,
       ...(companyId && { companyId }),
     },
@@ -214,7 +214,7 @@ export async function getUnitLanes(unitId: string, companyId?: string) {
   cacheTag(unitLanesTag(unitId))
   cacheLife(SECONDS)
   return prisma.lane.findMany({
-    where: { 
+    where: {
       unitId,
       ...(companyId && { companyId }),
     },
@@ -227,7 +227,7 @@ export async function getUnitTasks(unitId: string, companyId?: string) {
   cacheTag(unitTasksTag(unitId))
   cacheLife(SECONDS)
   return prisma.task.findMany({
-    where: { 
+    where: {
       unitId,
       ...(companyId && { companyId }),
     },
@@ -247,7 +247,7 @@ export async function getUnitTags(unitId: string, companyId?: string) {
   cacheTag(unitTagsTag(unitId))
   cacheLife(HOURS)
   return prisma.tag.findMany({
-    where: { 
+    where: {
       unitId,
       ...(companyId && { Unit: { companyId } }),
     },
@@ -518,7 +518,9 @@ export async function getGanttData(projectId: string) {
     prisma.phase.findMany({
       where: { projectId },
       include: {
-        SubPhases: true,
+        SubPhases: {
+          orderBy: { startDate: "asc" },
+        },
         Product: { select: { taux: true } },
       },
       orderBy: { startDate: "asc" },

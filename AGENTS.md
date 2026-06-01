@@ -767,6 +767,15 @@ const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban")
 
 Both modes share the same filter state (search query, project/phase/subPhase filters).
 
+**Locked project filter (`defaultProjectFilter`):** The component accepts an optional `defaultProjectFilter?: string` prop. When provided:
+
+- `projectFilter` initializes to this value (locked to a specific project)
+- The project combobox is hidden on both desktop and mobile filter bars
+- `resetFilters()` does NOT reset the project filter (preserving the lock)
+- `filterCount` excludes the project filter from the active-filters badge
+- The `TaskDialog` `defaultProjectId` inherits this value automatically since `projectFilter` starts non-"all"
+- Used by the project detail page (`defaultProjectFilter={projectId}`) to show only the current project's tasks in the tasks tab
+
 ---
 
 ## 8. Environment Variables

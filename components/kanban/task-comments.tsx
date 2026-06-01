@@ -81,9 +81,7 @@ export const TaskComments: FC<TaskCommentsProps> = ({
   const insertMention = useCallback(
     (user: MentionableUser) => {
       const before = newComment.slice(0, mentionStartPos)
-      const after = newComment.slice(
-        mentionStartPos + 1 + mentionQuery.length
-      )
+      const after = newComment.slice(mentionStartPos + 1 + mentionQuery.length)
       const inserted = `${before}@${user.name} ${after}`
       onCommentChange(inserted)
       setShowMentionMenu(false)
@@ -100,16 +98,12 @@ export const TaskComments: FC<TaskCommentsProps> = ({
       if (showMentionMenu && filteredMentions.length > 0) {
         if (e.key === "ArrowDown") {
           e.preventDefault()
-          setMentionIndex((i) =>
-            i < filteredMentions.length - 1 ? i + 1 : 0
-          )
+          setMentionIndex((i) => (i < filteredMentions.length - 1 ? i + 1 : 0))
           return
         }
         if (e.key === "ArrowUp") {
           e.preventDefault()
-          setMentionIndex((i) =>
-            i > 0 ? i - 1 : filteredMentions.length - 1
-          )
+          setMentionIndex((i) => (i > 0 ? i - 1 : filteredMentions.length - 1))
           return
         }
         if (e.key === "Enter" && !e.ctrlKey) {
@@ -174,7 +168,7 @@ export const TaskComments: FC<TaskCommentsProps> = ({
 
             {/* @mention autocomplete dropdown */}
             {showMentionMenu && filteredMentions.length > 0 && (
-              <div className="absolute bottom-14 left-2 z-50 max-h-48 w-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg animate-in fade-in slide-in-from-bottom-2">
+              <div className="absolute bottom-14 left-2 z-50 max-h-48 w-64 animate-in overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg fade-in slide-in-from-bottom-2">
                 {filteredMentions.map((user, idx) => (
                   <button
                     key={user.id}

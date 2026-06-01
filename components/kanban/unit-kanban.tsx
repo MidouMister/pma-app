@@ -154,6 +154,7 @@ interface UnitKanbanProps {
     }>
   }>
   availableTags: Array<{ id: string; name: string; color: string }>
+  defaultProjectFilter?: string
 }
 
 export function UnitKanban({
@@ -169,10 +170,13 @@ export function UnitKanban({
   currentUser,
   dialogProjects,
   availableTags,
+  defaultProjectFilter,
 }: UnitKanbanProps) {
   const router = useRouter()
   const [selectedTask, setSelectedTask] = useState<KanbanTask | null>(null)
-  const [projectFilter, setProjectFilter] = useState("all")
+  const [projectFilter, setProjectFilter] = useState(
+    defaultProjectFilter ?? "all"
+  )
   const [phaseFilter, setPhaseFilter] = useState("all")
   const [subPhaseFilter, setSubPhaseFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -324,14 +328,14 @@ export function UnitKanban({
   }, [selectedTask])
 
   const resetFilters = () => {
-    setProjectFilter("all")
+    if (!defaultProjectFilter) setProjectFilter("all")
     setPhaseFilter("all")
     setSubPhaseFilter("all")
     setSearchQuery("")
   }
 
   const filterCount = [
-    projectFilter,
+    ...(defaultProjectFilter ? [] : [projectFilter]),
     phaseFilter,
     subPhaseFilter,
     searchQuery,
@@ -372,78 +376,82 @@ export function UnitKanban({
 
         {/* Desktop selects — hidden on mobile */}
         <div className="hidden items-center gap-2 lg:flex">
-          {/* Project Combobox — searchable, handles long names */}
-          <Tooltip delayDuration={200}>
-            <TooltipTrigger asChild>
-              <Popover
-                open={projectComboboxOpen}
-                onOpenChange={setProjectComboboxOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    role="combobox"
-                    aria-expanded={projectComboboxOpen}
-                    aria-label="Filtrer par projet"
-                    className="h-9 w-[200px] justify-between gap-1 px-3 font-normal hover:bg-muted/40"
+          {!defaultProjectFilter && (
+            <>
+              {/* Project Combobox — searchable, handles long names */}
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Popover
+                    open={projectComboboxOpen}
+                    onOpenChange={setProjectComboboxOpen}
                   >
-                    <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="flex-1 truncate text-left text-xs">
-                      {projectFilter === "all"
-                        ? "Tous les projets"
-                        : (projects.find((p) => p.id === projectFilter)?.name ??
-                          "Projet")}
-                    </span>
-                    <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[450px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Rechercher un projet..." />
-                    <CommandList>
-                      <CommandEmpty>Aucun projet trouvé</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          value="Tous les projets"
-                          onSelect={() => {
-                            setProjectFilter("all")
-                            setPhaseFilter("all")
-                            setSubPhaseFilter("all")
-                            setProjectComboboxOpen(false)
-                          }}
-                          data-checked={projectFilter === "all"}
-                        >
-                          Tous les projets
-                        </CommandItem>
-                        {projects.map((p) => (
-                          <CommandItem
-                            key={p.id}
-                            value={p.name}
-                            onSelect={() => {
-                              setProjectFilter(p.id)
-                              setPhaseFilter("all")
-                              setSubPhaseFilter("all")
-                              setProjectComboboxOpen(false)
-                            }}
-                            data-checked={projectFilter === p.id}
-                          >
-                            <span className="wrap-break-word whitespace-normal">
-                              {p.name}
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </TooltipTrigger>
-            {projectFilter !== "all" && (
-              <TooltipContent side="bottom" className="max-w-[400px]">
-                {projects.find((p) => p.id === projectFilter)?.name ?? ""}
-              </TooltipContent>
-            )}
-          </Tooltip>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        role="combobox"
+                        aria-expanded={projectComboboxOpen}
+                        aria-label="Filtrer par projet"
+                        className="h-9 w-[200px] justify-between gap-1 px-3 font-normal hover:bg-muted/40"
+                      >
+                        <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="flex-1 truncate text-left text-xs">
+                          {projectFilter === "all"
+                            ? "Tous les projets"
+                            : (projects.find((p) => p.id === projectFilter)
+                                ?.name ?? "Projet")}
+                        </span>
+                        <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[450px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Rechercher un projet..." />
+                        <CommandList>
+                          <CommandEmpty>Aucun projet trouvé</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="Tous les projets"
+                              onSelect={() => {
+                                setProjectFilter("all")
+                                setPhaseFilter("all")
+                                setSubPhaseFilter("all")
+                                setProjectComboboxOpen(false)
+                              }}
+                              data-checked={projectFilter === "all"}
+                            >
+                              Tous les projets
+                            </CommandItem>
+                            {projects.map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={p.name}
+                                onSelect={() => {
+                                  setProjectFilter(p.id)
+                                  setPhaseFilter("all")
+                                  setSubPhaseFilter("all")
+                                  setProjectComboboxOpen(false)
+                                }}
+                                data-checked={projectFilter === p.id}
+                              >
+                                <span className="wrap-break-word whitespace-normal">
+                                  {p.name}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </TooltipTrigger>
+                {projectFilter !== "all" && (
+                  <TooltipContent side="bottom" className="max-w-[400px]">
+                    {projects.find((p) => p.id === projectFilter)?.name ?? ""}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </>
+          )}
 
           <div className="relative">
             <Layers className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -510,33 +518,35 @@ export function UnitKanban({
             </PopoverTrigger>
             <PopoverContent className="w-[280px] p-4">
               <div className="flex flex-col gap-3">
-                <div>
-                  <Label className="text-xs text-muted-foreground">
-                    Projet
-                  </Label>
-                  <Select
-                    value={projectFilter}
-                    onValueChange={(v) => {
-                      setProjectFilter(v)
-                      setPhaseFilter("all")
-                      setSubPhaseFilter("all")
-                    }}
-                  >
-                    <SelectTrigger className="mt-1 h-9">
-                      <SelectValue placeholder="Tous les projets" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les projets</SelectItem>
-                      {projects.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          <span className="max-w-[220px] truncate">
-                            {p.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!defaultProjectFilter && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Projet
+                    </Label>
+                    <Select
+                      value={projectFilter}
+                      onValueChange={(v) => {
+                        setProjectFilter(v)
+                        setPhaseFilter("all")
+                        setSubPhaseFilter("all")
+                      }}
+                    >
+                      <SelectTrigger className="mt-1 h-9">
+                        <SelectValue placeholder="Tous les projets" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les projets</SelectItem>
+                        {projects.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            <span className="max-w-[220px] truncate">
+                              {p.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div>
                   <Label className="text-xs text-muted-foreground">Phase</Label>

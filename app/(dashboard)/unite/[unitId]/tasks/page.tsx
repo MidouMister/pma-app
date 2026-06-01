@@ -103,7 +103,10 @@ export default async function TasksPage({
             <LaneDialog
               unitId={unitId}
               trigger={
-                <Button size="lg" className="gap-2 shadow-md hover:shadow-lg transition-all">
+                <Button
+                  size="lg"
+                  className="gap-2 shadow-md transition-all hover:shadow-lg"
+                >
                   <Plus className="size-4" />
                   Créer la première colonne
                 </Button>

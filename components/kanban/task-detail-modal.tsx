@@ -116,7 +116,9 @@ export function TaskDetailModal({
   const [dueDate, setDueDate] = useState<Date | null>(null)
   const [newComment, setNewComment] = useState("")
   const [activeTab, setActiveTab] = useState("activity")
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle"
+  )
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -352,7 +354,7 @@ export function TaskDetailModal({
             {saveStatus === "saving" ? (
               <Loader2 className="size-4 animate-spin text-muted-foreground" />
             ) : (
-              <Check className="size-4 text-emerald-500 animate-in fade-in" />
+              <Check className="size-4 animate-in text-emerald-500 fade-in" />
             )}
           </span>
         )}

@@ -192,6 +192,10 @@ export async function updateTask(data: unknown) {
 
     const { id, ...fields } = validation.data
 
+    // Extract tagIds from fields BEFORE spreading into Prisma data, because
+    // tagIds is NOT a Prisma Task field — it must be passed as Tags: { set: [...] }.
+    const { tagIds, ...prismaData } = fields
+
     const task = await prisma.task.findFirst({
       where: { id, companyId: user.companyId },
     })
@@ -200,10 +204,10 @@ export async function updateTask(data: unknown) {
     }
 
     // Verify assignee is a TeamMember
-    if (fields.assignedUserId) {
+    if (prismaData.assignedUserId) {
       const isTeamMember = await prisma.teamMember.findFirst({
         where: {
-          userId: fields.assignedUserId,
+          userId: prismaData.assignedUserId,
           team: { projectId: task.projectId },
         },
       })
@@ -220,10 +224,10 @@ export async function updateTask(data: unknown) {
     await prisma.task.update({
       where: { id },
       data: {
-        ...fields,
-        ...(fields.tagIds !== undefined && {
+        ...prismaData,
+        ...(tagIds !== undefined && {
           Tags: {
-            set: fields.tagIds.map((id) => ({ id })),
+            set: tagIds.map((id) => ({ id })),
           },
         }),
       },

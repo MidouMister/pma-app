@@ -252,77 +252,84 @@ export function PhaseList({
                     </div>
                   </div>
 
-                  {expandedPhases.has(phase.id) &&
-                    phase.SubPhases.length > 0 && (
-                      <div className="space-y-2 border-t bg-muted/30 p-3">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Sous-phases:
+                  {expandedPhases.has(phase.id) && (
+                    <div className="space-y-2 border-t bg-muted/30 p-3">
+                      {phase.SubPhases.length > 0 ? (
+                        <>
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Sous-phases:
+                          </p>
+                          {phase.SubPhases.map((subphase) => (
+                            <div
+                              key={subphase.id}
+                              className="flex items-center justify-between rounded bg-background p-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{subphase.name}</span>
+                                <Badge
+                                  className={
+                                    subPhaseStatusColors[
+                                      subphase.status as keyof typeof subPhaseStatusColors
+                                    ]
+                                  }
+                                >
+                                  {subphase.status === "TODO"
+                                    ? "À faire"
+                                    : "Terminé"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Progress
+                                  value={subphase.progress}
+                                  className="h-1.5 w-16"
+                                />
+                                <span className="text-xs">
+                                  {subphase.progress}%
+                                </span>
+                                {canEdit && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <MoreHorizontal className="h-3 w-3" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          setEditingSubPhase(subphase)
+                                        }
+                                      >
+                                        Modifier
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setDeleteDialogId(subphase.id)
+                                          setDeleteType("subphase")
+                                        }}
+                                      >
+                                        Supprimer
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <p className="mb-2 text-xs text-muted-foreground italic">
+                          Aucune sous-phase définie pour le moment.
                         </p>
-                        {phase.SubPhases.map((subphase) => (
-                          <div
-                            key={subphase.id}
-                            className="flex items-center justify-between rounded bg-background p-2"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{subphase.name}</span>
-                              <Badge
-                                className={
-                                  subPhaseStatusColors[
-                                    subphase.status as keyof typeof subPhaseStatusColors
-                                  ]
-                                }
-                              >
-                                {subphase.status === "TODO"
-                                  ? "À faire"
-                                  : "Terminé"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Progress
-                                value={subphase.progress}
-                                className="h-1.5 w-16"
-                              />
-                              <span className="text-xs">
-                                {subphase.progress}%
-                              </span>
-                              {canEdit && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-3 w-3" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        setEditingSubPhase(subphase)
-                                      }
-                                    >
-                                      Modifier
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setDeleteDialogId(subphase.id)
-                                        setDeleteType("subphase")
-                                      }}
-                                    >
-                                      Supprimer
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {canEdit && (
-                          <SubPhaseDialog
-                            phaseId={phase.id}
-                            phaseStartDate={phase.startDate}
-                            phaseEndDate={phase.endDate}
-                          />
-                        )}
-                      </div>
-                    )}
+                      )}
+                      {canEdit && (
+                        <SubPhaseDialog
+                          phaseId={phase.id}
+                          phaseStartDate={phase.startDate}
+                          phaseEndDate={phase.endDate}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

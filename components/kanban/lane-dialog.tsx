@@ -99,14 +99,14 @@ export function LaneDialog({
       submitLabel={isEdit ? "Enregistrer" : "Créer"}
       submitPendingLabel={isEdit ? "Enregistrement..." : "Création..."}
       trigger={
-        trigger !== undefined ? trigger : (
-          externalOpen === undefined ? (
-            <Button className="gap-2">
-              <Plus className="size-4" />
-              {isEdit ? "Modifier" : "Nouvelle colonne"}
-            </Button>
-          ) : undefined
-        )
+        trigger !== undefined ? (
+          trigger
+        ) : externalOpen === undefined ? (
+          <Button className="gap-2">
+            <Plus className="size-4" />
+            {isEdit ? "Modifier" : "Nouvelle colonne"}
+          </Button>
+        ) : undefined
       }
     >
       <div className="flex flex-col gap-4 py-4">

@@ -6,7 +6,7 @@ import { revalidateTag } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { isMutationAllowed } from "@/lib/subscription"
 import { subPhaseSchema, updateSubPhaseSchema } from "@/lib/validators"
-import { projectPhasesTag, projectTag } from "@/lib/cache"
+import { projectPhasesTag, projectTag, projectGanttTag } from "@/lib/cache"
 
 async function recalculatePhaseProgress(phaseId: string) {
   const subPhases = await prisma.subPhase.findMany({ where: { phaseId } })
@@ -123,6 +123,7 @@ export async function createSubPhase(data: unknown) {
     await recalculatePhaseProgress(phase.id)
 
     revalidateTag(projectPhasesTag(phase.Project.id), "max")
+    revalidateTag(projectGanttTag(phase.Project.id), "max")
     revalidateTag(projectTag(phase.Project.id), "max")
 
     return { success: true }
@@ -241,6 +242,7 @@ export async function updateSubPhase(data: unknown) {
     await recalculatePhaseProgress(subPhase.phaseId)
 
     revalidateTag(projectPhasesTag(subPhase.Phase.Project.id), "max")
+    revalidateTag(projectGanttTag(subPhase.Phase.Project.id), "max")
     revalidateTag(projectTag(subPhase.Phase.Project.id), "max")
 
     return { success: true }
@@ -315,6 +317,7 @@ export async function deleteSubPhase(subPhaseId: string) {
     await recalculatePhaseProgress(phaseId)
 
     revalidateTag(projectPhasesTag(subPhase.Phase.Project.id), "max")
+    revalidateTag(projectGanttTag(subPhase.Phase.Project.id), "max")
     revalidateTag(projectTag(subPhase.Phase.Project.id), "max")
 
     return { success: true }

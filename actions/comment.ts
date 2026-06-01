@@ -46,7 +46,10 @@ export async function createComment(taskId: string, body: string) {
         },
       })
       if (!isMember) {
-        return { success: false, error: "Accès refusé: vous ne faites pas partie de ce projet." }
+        return {
+          success: false,
+          error: "Accès refusé: vous ne faites pas partie de ce projet.",
+        }
       }
     }
 
