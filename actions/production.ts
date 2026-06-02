@@ -623,51 +623,60 @@ export async function bulkUpdateUnitForecasts(data: unknown) {
       return { success: false, error: "Unité introuvable" }
     }
 
-    // Load all submitted phases to get their montantHT
+    // Load all submitted phases to get their montantHT and projectId
     const phaseIds = phases.map((p) => p.phaseId)
     const dbPhases = await prisma.phase.findMany({
       where: {
         id: { in: phaseIds },
         Project: { unitId, companyId: user.companyId },
       },
-      select: { id: true, montantHT: true },
+      select: { id: true, montantHT: true, projectId: true },
     })
 
     const phaseMontants = new Map<string, number>()
-    dbPhases.forEach((p) => phaseMontants.set(p.id, p.montantHT))
+    const phaseProjects = new Map<string, string>()
+    dbPhases.forEach((p) => {
+      phaseMontants.set(p.id, p.montantHT)
+      phaseProjects.set(p.id, p.projectId)
+    })
 
-    // Prepare upsert operations
-    const operations = phases.flatMap((phase) => {
-      const montantHT = phaseMontants.get(phase.phaseId)
-      if (montantHT === undefined) return []
+    // Guard: nothing to save if no phases were found in the DB
+    if (dbPhases.length === 0) {
+      return { success: true, info: "Aucune phase trouvée à mettre à jour" }
+    }
 
-      return phase.forecasts.map((f) => {
-        const mntProd = calcMontant(montantHT, f.taux)
-        return prisma.productionForecast.upsert({
-          where: {
-            phaseId_month_year: {
+    // Use interactive transaction (like bulkUpdateUnitProductions) for consistency
+    // and better error handling
+    await prisma.$transaction(async (tx) => {
+      for (const phase of phases) {
+        const montantHT = phaseMontants.get(phase.phaseId)
+        if (montantHT === undefined) continue
+
+        for (const f of phase.forecasts) {
+          const mntProd = calcMontant(montantHT, f.taux)
+          await tx.productionForecast.upsert({
+            where: {
+              phaseId_month_year: {
+                phaseId: phase.phaseId,
+                month: f.month,
+                year,
+              },
+            },
+            create: {
               phaseId: phase.phaseId,
               month: f.month,
               year,
+              taux: f.taux,
+              mntProd,
             },
-          },
-          create: {
-            phaseId: phase.phaseId,
-            month: f.month,
-            year,
-            taux: f.taux,
-            mntProd,
-          },
-          update: {
-            taux: f.taux,
-            mntProd,
-          },
-        })
-      })
+            update: {
+              taux: f.taux,
+              mntProd,
+            },
+          })
+        }
+      }
     })
-
-    // Execute in transaction
-    await prisma.$transaction(operations)
 
     revalidateTag(unitForecastsTag(unitId), "max")
     // Revalidate per-phase forecast tags so phase-level cached queries are fresh
@@ -675,11 +684,23 @@ export async function bulkUpdateUnitForecasts(data: unknown) {
       revalidateTag(phaseForecastsTag(pid), "max")
       revalidateTag(phaseProductionTag(pid), "max")
     }
+    // Revalidate project-level tags for consistency with bulkCreateForecasts
+    const revalidatedProjects = new Set<string>()
+    for (const phase of phases) {
+      const projectId = phaseProjects.get(phase.phaseId)
+      if (projectId && !revalidatedProjects.has(projectId)) {
+        revalidatedProjects.add(projectId)
+        revalidateTag(projectTag(projectId), "max")
+        revalidateTag(projectPhasesTag(projectId), "max")
+      }
+    }
 
     return { success: true }
   } catch (error) {
     console.error("bulkUpdateUnitForecasts error:", error)
-    return { success: false, error: "Une erreur est survenue" }
+    const message =
+      error instanceof Error ? error.message : "Une erreur est survenue"
+    return { success: false, error: message }
   }
 }
 
@@ -850,7 +871,9 @@ export async function bulkUpdateUnitProductions(data: unknown) {
     return { success: true }
   } catch (error) {
     console.error("bulkUpdateUnitProductions error:", error)
-    return { success: false, error: "Une erreur est survenue" }
+    const message =
+      error instanceof Error ? error.message : "Une erreur est survenue"
+    return { success: false, error: message }
   }
 }
 
