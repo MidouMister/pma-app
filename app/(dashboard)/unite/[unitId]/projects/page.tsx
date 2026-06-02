@@ -44,12 +44,12 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
 
   const projectRows = projects.map((p) => {
     const totalProdAmount = p.phases.reduce((sum, ph) => {
-      const prodAmount = ph.Product?.montantProd ?? (ph.progress / 100) * ph.montantHT
+      const prodAmount =
+        ph.Product?.montantProd ?? (ph.progress / 100) * ph.montantHT
       return sum + prodAmount
     }, 0)
-    const progress = p.montantHT > 0
-      ? Math.round((totalProdAmount / p.montantHT) * 100)
-      : 0
+    const progress =
+      p.montantHT > 0 ? Math.round((totalProdAmount / p.montantHT) * 100) : 0
 
     return {
       id: p.id,

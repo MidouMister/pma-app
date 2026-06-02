@@ -645,38 +645,46 @@ export async function bulkUpdateUnitForecasts(data: unknown) {
       return { success: true, info: "Aucune phase trouvée à mettre à jour" }
     }
 
-    // Use interactive transaction (like bulkUpdateUnitProductions) for consistency
-    // and better error handling
-    await prisma.$transaction(async (tx) => {
-      for (const phase of phases) {
-        const montantHT = phaseMontants.get(phase.phaseId)
-        if (montantHT === undefined) continue
+    // Use interactive transaction with increased timeout and concurrent Promise.all
+    // to handle potentially thousands of upserts without timing out.
+    // Sequential await in a loop would exceed the default 5000ms timeout.
+    await prisma.$transaction(
+      async (tx) => {
+        const ops: Array<ReturnType<typeof tx.productionForecast.upsert>> = []
+        for (const phase of phases) {
+          const montantHT = phaseMontants.get(phase.phaseId)
+          if (montantHT === undefined) continue
 
-        for (const f of phase.forecasts) {
-          const mntProd = calcMontant(montantHT, f.taux)
-          await tx.productionForecast.upsert({
-            where: {
-              phaseId_month_year: {
-                phaseId: phase.phaseId,
-                month: f.month,
-                year,
-              },
-            },
-            create: {
-              phaseId: phase.phaseId,
-              month: f.month,
-              year,
-              taux: f.taux,
-              mntProd,
-            },
-            update: {
-              taux: f.taux,
-              mntProd,
-            },
-          })
+          for (const f of phase.forecasts) {
+            const mntProd = calcMontant(montantHT, f.taux)
+            ops.push(
+              tx.productionForecast.upsert({
+                where: {
+                  phaseId_month_year: {
+                    phaseId: phase.phaseId,
+                    month: f.month,
+                    year,
+                  },
+                },
+                create: {
+                  phaseId: phase.phaseId,
+                  month: f.month,
+                  year,
+                  taux: f.taux,
+                  mntProd,
+                },
+                update: {
+                  taux: f.taux,
+                  mntProd,
+                },
+              })
+            )
+          }
         }
-      }
-    })
+        await Promise.all(ops)
+      },
+      { timeout: 60000 }
+    )
 
     revalidateTag(unitForecastsTag(unitId), "max")
     // Revalidate per-phase forecast tags so phase-level cached queries are fresh
@@ -780,71 +788,79 @@ export async function bulkUpdateUnitProductions(data: unknown) {
       prev: number
     }> = []
 
-    await prisma.$transaction(async (tx) => {
-      for (const phaseInput of phases) {
-        const phaseDb = phaseMap.get(phaseInput.phaseId)
-        if (!phaseDb) continue
+    await prisma.$transaction(
+      async (tx) => {
+        for (const phaseInput of phases) {
+          const phaseDb = phaseMap.get(phaseInput.phaseId)
+          if (!phaseDb) continue
 
-        // Ensure Product exists for this phase before looping over productions
-        const product = await tx.product.upsert({
-          where: { phaseId: phaseInput.phaseId },
-          create: {
-            phaseId: phaseInput.phaseId,
-            taux: 0,
-            montantProd: 0,
-          },
-          update: {},
-          select: { id: true },
-        })
-
-        for (const prodInput of phaseInput.productions) {
-          const mntProd = calcMontant(phaseDb.montantHT, prodInput.taux)
-
-          await tx.production.upsert({
-            where: {
-              phaseId_month_year: {
-                phaseId: phaseInput.phaseId,
-                month: prodInput.month,
-                year,
-              },
-            },
+          // Ensure Product exists for this phase before looping over productions
+          const product = await tx.product.upsert({
+            where: { phaseId: phaseInput.phaseId },
             create: {
               phaseId: phaseInput.phaseId,
-              productId: product.id,
-              month: prodInput.month,
-              year,
-              taux: prodInput.taux,
-              mntProd,
+              taux: 0,
+              montantProd: 0,
             },
-            update: {
-              taux: prodInput.taux,
-              mntProd,
-            },
+            update: {},
+            select: { id: true },
           })
 
-          // Check alert
-          const forecast = forecasts.find(
-            (f) =>
-              f.phaseId === phaseInput.phaseId && f.month === prodInput.month
-          )
-          if (forecast && forecast.taux > 0) {
-            const minRequired = (forecast.taux * threshold) / 100
-            if (prodInput.taux < minRequired) {
-              notificationsToCreate.push({
-                phaseName: phaseDb.name,
-                projectName: phaseDb.Project.name,
-                month: prodInput.month,
-                taux: prodInput.taux,
-                prev: forecast.taux,
+          // Collect all production upserts for this phase and run them concurrently
+          const prodOps: Array<ReturnType<typeof tx.production.upsert>> = []
+          for (const prodInput of phaseInput.productions) {
+            const mntProd = calcMontant(phaseDb.montantHT, prodInput.taux)
+
+            prodOps.push(
+              tx.production.upsert({
+                where: {
+                  phaseId_month_year: {
+                    phaseId: phaseInput.phaseId,
+                    month: prodInput.month,
+                    year,
+                  },
+                },
+                create: {
+                  phaseId: phaseInput.phaseId,
+                  productId: product.id,
+                  month: prodInput.month,
+                  year,
+                  taux: prodInput.taux,
+                  mntProd,
+                },
+                update: {
+                  taux: prodInput.taux,
+                  mntProd,
+                },
               })
+            )
+
+            // Check alert (pure in-memory operation, no DB call)
+            const forecast = forecasts.find(
+              (f) =>
+                f.phaseId === phaseInput.phaseId && f.month === prodInput.month
+            )
+            if (forecast && forecast.taux > 0) {
+              const minRequired = (forecast.taux * threshold) / 100
+              if (prodInput.taux < minRequired) {
+                notificationsToCreate.push({
+                  phaseName: phaseDb.name,
+                  projectName: phaseDb.Project.name,
+                  month: prodInput.month,
+                  taux: prodInput.taux,
+                  prev: forecast.taux,
+                })
+              }
             }
           }
-        }
+          await Promise.all(prodOps)
 
-        // Recalculate Product for the phase
-        await recalculateProduct(phaseInput.phaseId, tx)
-      }
-    })
+          // Recalculate Product for the phase
+          await recalculateProduct(phaseInput.phaseId, tx)
+        }
+      },
+      { timeout: 30000 }
+    )
 
     // Dispatch notifications after transaction
     for (const notif of notificationsToCreate) {

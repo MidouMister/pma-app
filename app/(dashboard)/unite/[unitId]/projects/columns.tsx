@@ -1,6 +1,6 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
+import { ColumnDef, type Column } from "@tanstack/react-table"
 import Link from "next/link"
 import { formatCurrency, formatDate, formatDelai } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
@@ -12,8 +12,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Archive, Eye, MoreHorizontal, Pencil } from "lucide-react"
+import {
+  Archive,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
+import { type ProjectWithClient } from "@/lib/types"
 
 const STATUS_CONFIG = {
   New: {
@@ -42,8 +51,6 @@ const STATUS_CONFIG = {
   },
 }
 
-import { type ProjectWithClient } from "@/lib/types"
-
 export interface ProjectRow {
   id: string
   name: string
@@ -70,6 +77,46 @@ interface ProjectColumnsProps {
   onEdit?: (project: ProjectRow) => void
 }
 
+interface SortableHeaderProps<TData> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  column: Column<TData, any>
+  title: string
+  align?: "left" | "right"
+}
+
+function SortableHeader<TData>({
+  column,
+  title,
+  align = "left",
+}: SortableHeaderProps<TData>) {
+  const isSorted = column.getIsSorted()
+  return (
+    <div
+      className={cn("flex items-center", align === "right" && "justify-end")}
+    >
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(isSorted === "asc")}
+        className={cn(
+          "group h-8 gap-1.5 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase transition-colors hover:bg-muted/70 hover:text-foreground",
+          align === "right" ? "-mr-3" : "-ml-3"
+        )}
+      >
+        {title}
+        {isSorted === "asc" && (
+          <ArrowUp className="size-3.5 shrink-0 text-primary" />
+        )}
+        {isSorted === "desc" && (
+          <ArrowDown className="size-3.5 shrink-0 text-primary" />
+        )}
+        {!isSorted && (
+          <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-muted-foreground" />
+        )}
+      </Button>
+    </div>
+  )
+}
+
 export function getProjectColumns({
   unitId,
   canEdit,
@@ -80,7 +127,7 @@ export function getProjectColumns({
   return [
     {
       accessorKey: "name",
-      header: "Projet",
+      header: ({ column }) => <SortableHeader column={column} title="Projet" />,
       enableSorting: true,
       size: 280,
       cell: ({ row }) => {
@@ -104,7 +151,7 @@ export function getProjectColumns({
     },
     {
       accessorKey: "clientName",
-      header: "Client",
+      header: ({ column }) => <SortableHeader column={column} title="Client" />,
       enableSorting: true,
       size: 150,
       cell: ({ row }) => {
@@ -118,7 +165,7 @@ export function getProjectColumns({
     },
     {
       accessorKey: "status",
-      header: "Statut",
+      header: ({ column }) => <SortableHeader column={column} title="Statut" />,
       enableSorting: true,
       size: 140,
       cell: ({ row }) => {
@@ -144,35 +191,43 @@ export function getProjectColumns({
     },
     {
       accessorKey: "montantTTC",
-      header: "Montant TTC",
+      header: ({ column }) => (
+        <SortableHeader column={column} title="Montant TTC" align="right" />
+      ),
       enableSorting: true,
       size: 160,
       cell: ({ row }) => {
         const amount = row.getValue("montantTTC") as number
         return (
-          <span className="text-right font-mono text-sm font-semibold tabular-nums">
-            {formatCurrency(amount)}
-          </span>
+          <div className="text-right">
+            <span className="font-mono text-sm font-semibold tabular-nums">
+              {formatCurrency(amount)}
+            </span>
+          </div>
         )
       },
     },
     {
       accessorKey: "montantHT",
-      header: "Montant HT",
+      header: ({ column }) => (
+        <SortableHeader column={column} title="Montant HT" align="right" />
+      ),
       enableSorting: true,
       size: 160,
       cell: ({ row }) => {
         const amount = row.getValue("montantHT") as number
         return (
-          <span className="text-right font-mono text-sm font-semibold tabular-nums">
-            {formatCurrency(amount)}
-          </span>
+          <div className="text-right">
+            <span className="font-mono text-sm font-semibold tabular-nums">
+              {formatCurrency(amount)}
+            </span>
+          </div>
         )
       },
     },
     {
       id: "delai",
-      header: "Délai",
+      header: ({ column }) => <SortableHeader column={column} title="Délai" />,
       enableSorting: true,
       size: 120,
       accessorFn: (row) => row.delaiMonths * 30 + row.delaiDays,
@@ -187,7 +242,9 @@ export function getProjectColumns({
     },
     {
       accessorKey: "progress",
-      header: "Progression",
+      header: ({ column }) => (
+        <SortableHeader column={column} title="Progression" />
+      ),
       enableSorting: true,
       size: 160,
       cell: ({ row }) => {
@@ -218,7 +275,7 @@ export function getProjectColumns({
     },
     {
       accessorKey: "ods",
-      header: "ODS",
+      header: ({ column }) => <SortableHeader column={column} title="ODS" />,
       enableSorting: true,
       size: 120,
       cell: ({ row }) => {
